@@ -1,44 +1,35 @@
 <!-- Parent: ../AGENTS.md -->
 # 日志封装 (pkg/logger)
 
-**最后更新时间**: 2026-02-09
+**最后更新时间**: 2026-03-06
 
 ## 模块目的
-基于 `go.uber.org/zap` 实现 Kratos 的 `log.Logger` 接口。支持分级日志、日志轮转（Lumberjack）、多环境适配及 GORM 日志集成。
 
-## 关键文件
-- `log.go`: Zap 适配器实现与初始化。
-- `gorm_log.go`: GORM v2 日志接口适配。
+基于 Zap 适配 Kratos 日志接口，并提供 GORM / Ent 日志桥接与结构化字段辅助能力。
+
+## 当前文件
+
+- `log.go`：主日志实现、`Config`、`WithModule`、`WithField`
+- `gorm_log.go`：GORM 日志适配
+- `ent_log.go`：Ent 调试日志桥接
+
+## 当前实现事实
+
+- `NewLogger` 会在配置存在且 `Filename` 为空时默认回落到 `./logs/app.log`
+- 支持 `dev`、`prod`、`test` 三类环境输出策略
+- `WithModule` 约定 module 命名形如 `组件/层/服务名`
+- `NewHelper` 支持额外 `Option` 注入
 
 ## 使用示例
 
-### 1. 初始化 Logger
 ```go
-import "github.com/horonlee/servora/pkg/logger"
-
-l := logger.NewLogger(&logger.Config{
-    Env:      "dev",
-    Filename: "logs/app.log",
-})
-```
-
-### 2. 使用 Option 模式添加字段
-```go
-// 仅添加 module
-helper := log.NewHelper(logger.With(l, logger.WithModule("auth/biz")))
-helper.Info("service started")
-
-// 添加多个字段
-helper := log.NewHelper(logger.With(l, 
-    logger.WithModule("auth/biz"),
-    logger.WithField("version", "v1.0.0"),
-    logger.WithField("instance", "node-1"),
-))
+l := logger.NewLogger(&logger.Config{Env: "dev"})
+helper := logger.NewHelper(l, logger.WithModule("auth/biz/servora-service"))
 helper.Info("service started")
 ```
 
-## 测试指南
+## 测试
+
 ```bash
-go test -v ./pkg/logger/...
+go test ./pkg/logger/...
 ```
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
