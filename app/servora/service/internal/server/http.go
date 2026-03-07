@@ -3,15 +3,10 @@ package server
 import (
 	"crypto/tls"
 
-	"github.com/go-kratos/kratos/contrib/middleware/validate/v2"
 	"github.com/go-kratos/kratos/v2/middleware"
-	"github.com/go-kratos/kratos/v2/middleware/logging"
-	"github.com/go-kratos/kratos/v2/middleware/metrics"
-	"github.com/go-kratos/kratos/v2/middleware/ratelimit"
-	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/selector"
-	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/go-kratos/kratos/v2/transport/http"
+
 	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
 	servorav1 "github.com/Servora-Kit/servora/api/gen/go/servora/service/v1"
 	"github.com/Servora-Kit/servora/app/servora/service/internal/consts"
@@ -21,6 +16,7 @@ import (
 	"github.com/Servora-Kit/servora/pkg/logger"
 	mwpkg "github.com/Servora-Kit/servora/pkg/middleware"
 	"github.com/Servora-Kit/servora/pkg/middleware/cors"
+	coremw "github.com/Servora-Kit/servora/pkg/transport/server/middleware"
 )
 
 // HTTPMiddleware 用于 Wire 注入的中间件切片包装类型
@@ -33,24 +29,10 @@ func NewHTTPMiddleware(
 	l logger.Logger,
 	authJWT mwinter.AuthJWT,
 ) HTTPMiddleware {
-	httpLogger := logger.With(l, logger.WithModule("http/server/servora-service"))
-
-	var ms []middleware.Middleware
-	ms = append(ms, recovery.Recovery())
-	if trace != nil && trace.Endpoint != "" {
-		ms = append(ms, tracing.Server())
-	}
-	ms = append(ms,
-		logging.Server(httpLogger),
-		ratelimit.Server(),
-		validate.ProtoValidate(),
-	)
-	if m != nil {
-		ms = append(ms, metrics.Server(
-			metrics.WithSeconds(m.Seconds),
-			metrics.WithRequests(m.Requests),
-		))
-	}
+	ms := coremw.NewChainBuilder(logger.With(l, logger.WithModule("http/server/servora-service"))).
+		WithTrace(trace).
+		WithMetrics(m).
+		Build()
 
 	// 公开接口白名单（无需认证）
 	publicWhitelist := mwpkg.NewWhiteList(mwpkg.Exact,

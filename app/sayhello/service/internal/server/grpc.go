@@ -3,40 +3,27 @@ package server
 import (
 	"crypto/tls"
 
+	"github.com/go-kratos/kratos/v2/transport/grpc"
+	gogrpc "google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+
 	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
 	sayhellov1 "github.com/Servora-Kit/servora/api/gen/go/sayhello/service/v1"
 	"github.com/Servora-Kit/servora/app/sayhello/service/internal/service"
 	"github.com/Servora-Kit/servora/pkg/governance/telemetry"
 	"github.com/Servora-Kit/servora/pkg/logger"
-
-	"github.com/go-kratos/kratos/contrib/middleware/validate/v2"
-	"github.com/go-kratos/kratos/v2/middleware"
-	"github.com/go-kratos/kratos/v2/middleware/logging"
-	"github.com/go-kratos/kratos/v2/middleware/metrics"
-	"github.com/go-kratos/kratos/v2/middleware/recovery"
-	"github.com/go-kratos/kratos/v2/middleware/tracing"
-	"github.com/go-kratos/kratos/v2/transport/grpc"
-	gogrpc "google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	srvmw "github.com/Servora-Kit/servora/pkg/transport/server/middleware"
 )
 
 func NewGRPCServer(c *conf.Server, trace *conf.Trace, mtc *telemetry.Metrics, l logger.Logger, sayhello *service.SayHelloService) *grpc.Server {
 	helper := logger.NewHelper(l)
-	var mds []middleware.Middleware
-	mds = []middleware.Middleware{recovery.Recovery()}
-	if trace != nil && trace.Endpoint != "" {
-		mds = append(mds, tracing.Server())
-	}
-	mds = append(mds,
-		logging.Server(l),
-		validate.ProtoValidate(),
-	)
-	if mtc != nil {
-		mds = append(mds, metrics.Server(
-			metrics.WithSeconds(mtc.Seconds),
-			metrics.WithRequests(mtc.Requests),
-		))
-	}
+	grpcLogger := logger.With(l, logger.WithModule("grpc/server/sayhello-service"))
+
+	mds := srvmw.NewChainBuilder(grpcLogger).
+		WithTrace(trace).
+		WithMetrics(mtc).
+		WithoutRateLimit().
+		Build()
 
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(mds...),

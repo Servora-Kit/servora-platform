@@ -3,20 +3,15 @@ package server
 import (
 	"crypto/tls"
 
-	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
-	"github.com/Servora-Kit/servora/pkg/governance/telemetry"
-	"github.com/Servora-Kit/servora/pkg/logger"
-
-	"github.com/go-kratos/kratos/contrib/middleware/validate/v2"
 	"github.com/go-kratos/kratos/v2/middleware"
-	"github.com/go-kratos/kratos/v2/middleware/logging"
-	"github.com/go-kratos/kratos/v2/middleware/metrics"
-	"github.com/go-kratos/kratos/v2/middleware/ratelimit"
-	"github.com/go-kratos/kratos/v2/middleware/recovery"
-	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	gogrpc "google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
+	"github.com/Servora-Kit/servora/pkg/governance/telemetry"
+	"github.com/Servora-Kit/servora/pkg/logger"
+	coremw "github.com/Servora-Kit/servora/pkg/transport/server/middleware"
 )
 
 // GRPCMiddleware 用于 Wire 注入的中间件切片包装类型
@@ -28,26 +23,10 @@ func NewGRPCMiddleware(
 	mtc *telemetry.Metrics,
 	l logger.Logger,
 ) GRPCMiddleware {
-	grpcLogger := logger.With(l, logger.WithModule("grpc/server/servora-service"))
-
-	var ms []middleware.Middleware
-	ms = append(ms, recovery.Recovery())
-	if trace != nil && trace.Endpoint != "" {
-		ms = append(ms, tracing.Server())
-	}
-	ms = append(ms,
-		logging.Server(grpcLogger),
-		ratelimit.Server(),
-		validate.ProtoValidate(),
-	)
-	if mtc != nil {
-		ms = append(ms, metrics.Server(
-			metrics.WithSeconds(mtc.Seconds),
-			metrics.WithRequests(mtc.Requests),
-		))
-	}
-
-	return ms
+	return coremw.NewChainBuilder(logger.With(l, logger.WithModule("grpc/server/servora-service"))).
+		WithTrace(trace).
+		WithMetrics(mtc).
+		Build()
 }
 
 // NewGRPCServer new a gRPC server.
