@@ -3,17 +3,17 @@ package server
 import (
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/middleware/selector"
-	kratoshttp "github.com/go-kratos/kratos/v2/transport/http"
+	khttp "github.com/go-kratos/kratos/v2/transport/http"
 
 	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
 	servorav1 "github.com/Servora-Kit/servora/api/gen/go/servora/service/v1"
 	"github.com/Servora-Kit/servora/app/servora/service/internal/consts"
-	mwinter "github.com/Servora-Kit/servora/app/servora/service/internal/server/middleware"
+	innermw "github.com/Servora-Kit/servora/app/servora/service/internal/server/middleware"
 	"github.com/Servora-Kit/servora/app/servora/service/internal/service"
 	"github.com/Servora-Kit/servora/pkg/governance/telemetry"
 	"github.com/Servora-Kit/servora/pkg/logger"
 	"github.com/Servora-Kit/servora/pkg/transport/server/http"
-	coremw "github.com/Servora-Kit/servora/pkg/transport/server/middleware"
+	svrmw "github.com/Servora-Kit/servora/pkg/transport/server/middleware"
 )
 
 // HTTPMiddleware 用于 Wire 注入的中间件切片包装类型
@@ -23,14 +23,14 @@ func NewHTTPMiddleware(
 	trace *conf.Trace,
 	m *telemetry.Metrics,
 	l logger.Logger,
-	authJWT mwinter.AuthJWT,
+	authJWT innermw.AuthJWT,
 ) HTTPMiddleware {
-	ms := coremw.NewChainBuilder(logger.With(l, logger.WithModule("http/server/servora-service"))).
+	ms := svrmw.NewChainBuilder(logger.With(l, logger.WithModule("http/server/servora-service"))).
 		WithTrace(trace).
 		WithMetrics(m).
 		Build()
 
-	publicWhitelist := coremw.NewWhiteList(coremw.Exact,
+	publicWhitelist := svrmw.NewWhiteList(svrmw.Exact,
 		servorav1.OperationAuthServiceLoginByEmailPassword,
 		servorav1.OperationAuthServiceRefreshToken,
 		servorav1.OperationAuthServiceSignupByEmail,
@@ -38,7 +38,7 @@ func NewHTTPMiddleware(
 		servorav1.OperationTestServiceHello,
 	)
 
-	userWhitelist := coremw.NewWhiteList(coremw.Exact,
+	userWhitelist := svrmw.NewWhiteList(svrmw.Exact,
 		servorav1.OperationUserServiceCurrentUserInfo,
 		servorav1.OperationUserServiceUpdateUser,
 		servorav1.OperationAuthServiceLogout,
@@ -69,7 +69,7 @@ func NewHTTPServer(
 	auth *service.AuthService,
 	user *service.UserService,
 	test *service.TestService,
-) *kratoshttp.Server {
+) *khttp.Server {
 	hlog := logger.With(l, logger.WithModule("http/server/servora-service"))
 
 	opts := []http.ServerOption{
@@ -77,9 +77,9 @@ func NewHTTPServer(
 		http.WithMiddleware(mw...),
 		http.WithMetrics(mtc),
 		http.WithServices(
-			func(s *kratoshttp.Server) { servorav1.RegisterAuthServiceHTTPServer(s, auth) },
-			func(s *kratoshttp.Server) { servorav1.RegisterUserServiceHTTPServer(s, user) },
-			func(s *kratoshttp.Server) { servorav1.RegisterTestServiceHTTPServer(s, test) },
+			func(s *khttp.Server) { servorav1.RegisterAuthServiceHTTPServer(s, auth) },
+			func(s *khttp.Server) { servorav1.RegisterUserServiceHTTPServer(s, user) },
+			func(s *khttp.Server) { servorav1.RegisterTestServiceHTTPServer(s, test) },
 		),
 	}
 	if c != nil && c.Http != nil {
