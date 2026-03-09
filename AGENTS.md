@@ -1,6 +1,6 @@
 # AGENTS.md - servora 项目根目录
 
-<!-- Generated: 2026-03-09 | Commit: 1f79cd0 | Branch: example -->
+<!-- Generated: 2026-03-09 | Commit: 1f79cd0 | Branch: example | Strategy: Multi-branch Development -->
 
 ## 项目概览
 
@@ -13,22 +13,40 @@
 
 ## 开发约束
 
-### 双分支策略
+### 多分支开发策略
 
-**重要**：本仓库采用双分支架构，AI 开发时必须遵循以下规则：
+**重要**：本仓库采用多分支开发架构，AI 开发时必须遵循以下规则：
 
 - **main 分支**：纯框架代码，用于 Go module 发布
   - 包含：`pkg/`、`cmd/svr/`、`api/protos/`、`templates/`、文档
   - 不包含：服务实现（`app/`）、部署配置（`manifests/`、`docker-compose.yaml`）
+  - 作用：框架主线，接收来自功能分支的框架相关提交
 
 - **example 分支**：完整示例项目
   - 包含：框架代码 + 示例服务（servora、sayhello）+ 部署配置
   - 用于：开发、测试、演示
+  - 作用：展示框架完整用法的参考实现
+
+- **功能分支**（如 `feature/iam-service`）：独立功能开发
+  - 从 example 或其他分支创建
+  - 包含：完整的服务实现 + 框架改进
+  - 用于：独立开发特定功能或服务
+  - 作用：隔离开发，避免相互干扰
 
 **AI 开发规则**：
-1. 始终在 example 分支开发
-2. 不要在 main 分支直接开发（缺少服务代码和部署配置，无法运行和测试）
-3. 框架提交（`pkg/` 或 `cmd/`）需要同步到 main 分支（使用 `git cherry-pick`）
+1. 根据任务选择合适的分支：
+   - 示例项目开发 → example 分支
+   - 独立功能开发 → 创建功能分支（如 feature/iam-service）
+   - 纯框架开发 → 可在 main 分支（但需要测试环境）
+2. 不要在 main 分支直接开发服务代码（缺少运行环境）
+3. **框架提交同步规则**：
+   - 所有功能分支中的框架相关提交（`pkg/`、`cmd/`、`api/protos/`、`templates/`、`openspec/`）
+   - 都可以通过 `git cherry-pick` 同步到 main 分支
+   - 服务实现提交（`app/`、`manifests/`、`docker-compose.yaml`）不同步到 main
+4. **分支独立性**：
+   - 各功能分支独立开发，互不干扰
+   - 通过 cherry-pick 共享框架改进
+   - 避免直接合并整个分支到 main
 
 ### templates vs manifests
 
@@ -48,19 +66,19 @@ type(scope): description
 **允许的 type**：`feat`、`fix`、`refactor`、`docs`、`test`、`chore`
 
 **建议的 scope**：
-- `api`：API / Proto / OpenAPI 相关
-- `buf`：Buf 配置与生成链路
-- `cmd`：CLI 工具（需要同步到 main）
-- `pkg`：框架核心代码（需要同步到 main）
-- `scripts`：脚本与自动化任务
-- `templates`：模板资源（需要同步到 main）
-- `tool-chain`：工具链与构建体系（如 `tool-chain/mk`）
-- `md`：Markdown 文档（建议使用二级域，如 `md/readme`）
-- `docs`：非 Markdown 文档或文档体系治理（建议使用二级域，如 `docs/reference`）
-- `openspec`：OpenSpec 变更管理（需要同步到 main）
-- `repo`：仓库治理/元信息（如 hooks、ignore、目录约定）
-- `app`：应用服务（仅 example 分支）
-- `infra`：基础设施/部署（需要同步到 main）
+- `api`：API / Proto / OpenAPI 相关（可 cherry-pick 到 main）
+- `buf`：Buf 配置与生成链路（可 cherry-pick 到 main）
+- `cmd`：CLI 工具（可 cherry-pick 到 main）
+- `pkg`：框架核心代码（可 cherry-pick 到 main）
+- `scripts`：脚本与自动化任务（可 cherry-pick 到 main）
+- `templates`：模板资源（可 cherry-pick 到 main）
+- `tool-chain`：工具链与构建体系（如 `tool-chain/mk`，可 cherry-pick 到 main）
+- `md`：Markdown 文档（建议使用二级域，如 `md/readme`，可 cherry-pick 到 main）
+- `docs`：非 Markdown 文档或文档体系治理（建议使用二级域，如 `docs/reference`，可 cherry-pick 到 main）
+- `openspec`：OpenSpec 变更管理（可 cherry-pick 到 main）
+- `repo`：仓库治理/元信息（如 hooks、ignore、目录约定，可 cherry-pick 到 main）
+- `app`：应用服务（仅功能分支，不 cherry-pick 到 main）
+- `infra`：基础设施/部署（可 cherry-pick 到 main）
 
 > 说明：git hooks 不再强制 scope 必须来自上述列表；只校验 `type(scope): description` 基本格式。
 > scope 仍建议使用小写、语义化、简短命名（可包含 `a-z`、`0-9`、`.`、`_`、`/`、`-`）。
@@ -83,22 +101,51 @@ type(scope): description
 本仓库使用 git hooks 强制执行规范：
 
 - **commit-msg hook**：验证提交消息格式
-- **pre-commit hook**：防止在 main 分支提交服务代码，执行 gofmt 格式检查
+- **pre-commit hook**：防止在 main 分支提交服务代码（`app/`、`manifests/`、`docker-compose.yaml`），执行 gofmt 格式检查
 - **post-merge hook**：自动同步 git hooks
 
 安装 hooks：`bash scripts/install-hooks.sh`
 
-**重要**：不要使用 `--no-verify` 跳过 hooks 验证。
+**重要**：
+- 不要使用 `--no-verify` 跳过 hooks 验证
+- 在功能分支开发时，hooks 不会阻止服务代码提交
+- Cherry-pick 到 main 时，hooks 会自动验证，确保不包含服务代码
 
-### README 合并策略
+### Cherry-Pick 工作流
 
-main 和 example 分支的 README.md 内容不同，合并时会产生冲突。
+**框架提交同步流程**：
 
-**合并规则**：
-- 从 example 合并到 main：保留 main 分支的 README.md（框架说明）
-- 从 main 合并到 example：保留 example 分支的 README.md（完整项目说明）
+1. **识别框架提交**：
+   - 提交涉及 `pkg/`、`cmd/`、`api/protos/`、`templates/`、`openspec/` 等框架目录
+   - 提交 scope 为 `pkg`、`cmd`、`templates`、`openspec`、`infra` 等
 
-**原则**：始终保留目标分支（你当前所在分支）的 README 内容。
+2. **同步到 main**：
+   ```bash
+   # 在功能分支完成框架相关提交后
+   git checkout main
+   git cherry-pick <commit-hash>
+   git push origin main
+   ```
+
+3. **处理冲突**：
+   - 如果 cherry-pick 产生冲突，手动解决后继续
+   - 确保 main 分支不包含服务实现代码
+
+4. **验证**：
+   - 确认 main 分支只包含框架代码
+   - 确认提交历史清晰
+
+**README 策略**：
+
+不同分支的 README.md 内容不同，cherry-pick 时需要注意：
+
+- **main 分支**：框架说明（如何使用框架）
+- **example 分支**：完整项目说明（示例服务 + 框架）
+- **功能分支**：特定功能说明（如 IAM 服务）
+
+**原则**：
+- Cherry-pick 框架提交时，如果涉及 README.md，需要手动调整内容以适配目标分支
+- 避免直接 cherry-pick 包含 README.md 的提交，或在 cherry-pick 后单独调整
 
 ## 顶层目录
 
