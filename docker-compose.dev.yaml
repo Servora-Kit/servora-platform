@@ -1,31 +1,62 @@
 services:
   servora:
+    container_name: servora
+    pull_policy: never
     build:
       context: .
       dockerfile: Dockerfile.air
     working_dir: /workspace/app/servora/service
     command: ["air", "-c", ".air.toml"]
     environment:
+      TZ: Asia/Shanghai
       GOMODCACHE: /go/pkg/mod
       GOCACHE: /go/cache
     volumes:
       - ./:/workspace
       - servora_go_mod_cache:/go/pkg/mod
       - servora_go_build_cache:/go/cache
+      - ./app/servora/service/configs/docker/:/app/configs/:ro
+      - servora-logs:/app/logs
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    depends_on:
+      consul:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    networks:
+      - servora-network
 
   sayhello:
+    container_name: sayhello
+    pull_policy: never
     build:
       context: .
       dockerfile: Dockerfile.air
     working_dir: /workspace/app/sayhello/service
     command: ["air", "-c", ".air.toml"]
     environment:
+      TZ: Asia/Shanghai
       GOMODCACHE: /go/pkg/mod
       GOCACHE: /go/cache
     volumes:
       - ./:/workspace
       - servora_go_mod_cache:/go/pkg/mod
       - servora_go_build_cache:/go/cache
+      - ./app/sayhello/service/configs/docker/:/app/configs/:ro
+      - sayhello-logs:/app/logs
+    depends_on:
+      consul:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    networks:
+      - servora-network
 
 volumes:
   servora_go_mod_cache:

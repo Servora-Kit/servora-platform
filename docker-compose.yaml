@@ -24,49 +24,6 @@ services:
     networks:
       - servora-network
 
-  servora:
-    image: servora/servora-service:latest
-    container_name: servora
-    restart: unless-stopped
-    command: ["/app/servora", "-conf", "/app/configs/config-docker.yaml"]
-    environment:
-      TZ: Asia/Shanghai
-    volumes:
-      - ./app/servora/service/configs/config-docker.yaml:/app/configs/config-docker.yaml:ro
-      - servora-logs:/app/logs
-    ports:
-      - "8000:8000"
-      - "8001:8001"
-    depends_on:
-      consul:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      otel-collector:
-        condition: service_started
-    networks:
-      - servora-network
-
-  sayhello:
-    image: servora/sayhello-service:latest
-    container_name: sayhello
-    restart: unless-stopped
-    command: ["/app/sayhello", "-conf", "/app/configs/config-docker.yaml"]
-    environment:
-      TZ: Asia/Shanghai
-    volumes:
-      - ./app/sayhello/service/configs/config-docker.yaml:/app/configs/config-docker.yaml:ro
-      - sayhello-logs:/app/logs
-    depends_on:
-      consul:
-        condition: service_healthy
-      otel-collector:
-        condition: service_started
-    networks:
-      - servora-network
-
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: servora_jaeger
