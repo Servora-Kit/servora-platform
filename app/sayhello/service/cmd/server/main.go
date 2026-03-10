@@ -13,9 +13,13 @@ import (
 	_ "go.uber.org/automaxprocs"
 )
 
+// Injected at build time via -ldflags:
+//
+//	-X main.Name=<service-name>.service
+//	-X main.Version=<git-tag>
 var (
-	Name     = "sayhello.service"
-	Version  = "v1.0.0"
+	Name     = "unknown.service"
+	Version  = "dev"
 	flagconf string
 )
 
