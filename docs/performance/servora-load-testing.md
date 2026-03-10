@@ -85,6 +85,13 @@ Prometheus 已在 `manifests/prometheus/prometheus.yml` 中配置抓取 `servora
 - 已鉴权接口的中间件开销
 - Token 刷新路径的稳定性
 
+对于刷新 Token 场景，建议不要让多个 VU 复用同一个 refresh token。更稳妥的做法有两种：
+
+- 预先准备一组 refresh token，按 VU 分配
+- 或者在每次刷新前先登录一次，获取新的 refresh token，再执行刷新
+
+第一种更适合测 refresh 接口本身，第二种更适合做链路可用性验证。
+
 ### 3.4 写路径场景
 
 - 注册：`POST /v1/auth/signup/using-email`
@@ -116,6 +123,8 @@ Prometheus 已在 `manifests/prometheus/prometheus.yml` 中配置抓取 `servora
 1. 先预热 `30-60` 秒
 2. 用 `ramping-arrival-rate` 找到延迟和错误率开始恶化的拐点
 3. 选择拐点前一档速率，再用 `constant-arrival-rate` 稳态跑 `3-5` 分钟
+
+对于鉴权脚本，建议把登录、已鉴权读取、刷新三个子场景拆开看，不要混用一个总阈值。否则你只能得到一个混合延迟分位，无法判断到底是哪条子链路先成为瓶颈。
 
 ## 6. 结果判定方法
 
