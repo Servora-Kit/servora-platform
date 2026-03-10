@@ -4,10 +4,10 @@ server:
     timeout: 10s
 
 app:
-  env: "dev"
+  env: "prod"
   log:
     level: 0
-    filename: "./logs/sayhello.service.log"
+    filename: "/app/logs/sayhello.service.log"
     max_size: 20
     max_age: 30
     max_backups: 10
