@@ -133,7 +133,7 @@ services:
       - servora-network
 
   redis:
-    image: redis:7-alpine
+    image: redis:8.6.1-alpine
     container_name: servora_redis
     restart: unless-stopped
     command: redis-server --requirepass servora_redis_pwd --appendonly yes
