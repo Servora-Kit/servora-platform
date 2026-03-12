@@ -15,6 +15,8 @@ import (
 	"github.com/Servora-Kit/servora/pkg/bootstrap"
 	"github.com/Servora-Kit/servora/pkg/governance/registry"
 	"github.com/Servora-Kit/servora/pkg/governance/telemetry"
+	"github.com/Servora-Kit/servora/pkg/jwks"
+	"github.com/Servora-Kit/servora/pkg/openfga"
 	"github.com/Servora-Kit/servora/pkg/transport/client"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
@@ -53,7 +55,7 @@ func wireApp(confServer *conf.Server, discovery *conf.Discovery, confRegistry *c
 		return nil, nil, err
 	}
 	authRepo := data.NewAuthRepo(dataData, logger)
-	keyManager, err := server.NewKeyManager(app)
+	keyManager, err := jwks.NewKeyManagerFromConfig(app)
 	if err != nil {
 		cleanup2()
 		cleanup()
@@ -61,7 +63,7 @@ func wireApp(confServer *conf.Server, discovery *conf.Discovery, confRegistry *c
 	}
 	organizationRepo := data.NewOrganizationRepo(dataData, logger)
 	projectRepo := data.NewProjectRepo(dataData, logger)
-	openfgaClient := server.NewOpenFGAClient(app, logger)
+	openfgaClient := openfga.NewClientOptional(app, logger)
 	platformRootID, err := data.NewPlatformRootID(entClient, openfgaClient, app, logger)
 	if err != nil {
 		cleanup2()

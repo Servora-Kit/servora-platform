@@ -2,17 +2,15 @@ package data
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"strings"
 
-	"entgo.io/ent/dialect"
-	entsql "entgo.io/ent/dialect/sql"
 	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/platform"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/user"
+	entdrv "github.com/Servora-Kit/servora/pkg/ent"
 	"github.com/Servora-Kit/servora/pkg/governance/registry"
 	"github.com/Servora-Kit/servora/pkg/helpers"
 	"github.com/Servora-Kit/servora/pkg/logger"
@@ -52,7 +50,7 @@ func NewData(entClient *ent.Client, c *conf.Data, l logger.Logger, client client
 }
 
 func NewDBClient(cfg *conf.Data, app *conf.App, l logger.Logger) (*ent.Client, error) {
-	driver, err := newEntDriver(cfg)
+	driver, err := entdrv.NewDriver(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -180,32 +178,6 @@ func seedPlatformAdminFGA(ctx context.Context, ec *ent.Client, fga *openfga.Clie
 		return
 	}
 	seedLog.Infof("seeded platform admin FGA tuple for %s", seed.AdminEmail)
-}
-
-func newEntDriver(cfg *conf.Data) (*entsql.Driver, error) {
-	var driverName string
-	var entDialect string
-
-	switch strings.ToLower(cfg.Database.GetDriver()) {
-	case "mysql":
-		driverName = "mysql"
-		entDialect = dialect.MySQL
-	case "postgres", "postgresql":
-		driverName = "postgres"
-		entDialect = dialect.Postgres
-	case "sqlite":
-		driverName = "sqlite3"
-		entDialect = dialect.SQLite
-	default:
-		return nil, errors.New("unsupported db driver: " + cfg.Database.GetDriver())
-	}
-
-	db, err := sql.Open(driverName, cfg.Database.GetSource())
-	if err != nil {
-		return nil, err
-	}
-
-	return entsql.OpenDB(entDialect, db), nil
 }
 
 func NewRedis(cfg *conf.Data, l logger.Logger) (*redis.Client, func(), error) {
