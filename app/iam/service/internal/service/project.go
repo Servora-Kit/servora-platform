@@ -7,7 +7,6 @@ import (
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
 	"github.com/Servora-Kit/servora/pkg/pagination"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type ProjectService struct {
@@ -30,7 +29,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *projectpb.Creat
 	if err != nil {
 		return nil, err
 	}
-	return &projectpb.CreateProjectResponse{Project: projectToProto(p)}, nil
+	return &projectpb.CreateProjectResponse{Project: projectInfoMapper.Map(p)}, nil
 }
 
 func (s *ProjectService) GetProject(ctx context.Context, req *projectpb.GetProjectRequest) (*projectpb.GetProjectResponse, error) {
@@ -38,7 +37,7 @@ func (s *ProjectService) GetProject(ctx context.Context, req *projectpb.GetProje
 	if err != nil {
 		return nil, err
 	}
-	return &projectpb.GetProjectResponse{Project: projectToProto(p)}, nil
+	return &projectpb.GetProjectResponse{Project: projectInfoMapper.Map(p)}, nil
 }
 
 func (s *ProjectService) ListProjects(ctx context.Context, req *projectpb.ListProjectsRequest) (*projectpb.ListProjectsResponse, error) {
@@ -47,10 +46,7 @@ func (s *ProjectService) ListProjects(ctx context.Context, req *projectpb.ListPr
 	if err != nil {
 		return nil, err
 	}
-	items := make([]*projectpb.ProjectInfo, 0, len(projects))
-	for _, p := range projects {
-		items = append(items, projectToProto(p))
-	}
+	items := projectInfoMapper.MapSlice(projects)
 	return &projectpb.ListProjectsResponse{
 		Projects:   items,
 		Pagination: pagination.BuildPageResponse(total, page, pageSize),
@@ -66,7 +62,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *projectpb.Updat
 	if err != nil {
 		return nil, err
 	}
-	return &projectpb.UpdateProjectResponse{Project: projectToProto(p)}, nil
+	return &projectpb.UpdateProjectResponse{Project: projectInfoMapper.Map(p)}, nil
 }
 
 func (s *ProjectService) DeleteProject(ctx context.Context, req *projectpb.DeleteProjectRequest) (*projectpb.DeleteProjectResponse, error) {
@@ -88,7 +84,7 @@ func (s *ProjectService) RestoreProject(ctx context.Context, req *projectpb.Rest
 	if err != nil {
 		return nil, err
 	}
-	return &projectpb.RestoreProjectResponse{Project: projectToProto(p)}, nil
+	return &projectpb.RestoreProjectResponse{Project: projectInfoMapper.Map(p)}, nil
 }
 
 func (s *ProjectService) AddMember(ctx context.Context, req *projectpb.AddMemberRequest) (*projectpb.AddMemberResponse, error) {
@@ -100,7 +96,7 @@ func (s *ProjectService) AddMember(ctx context.Context, req *projectpb.AddMember
 	if err != nil {
 		return nil, err
 	}
-	return &projectpb.AddMemberResponse{Member: projectMemberToProto(m)}, nil
+	return &projectpb.AddMemberResponse{Member: projectMemberInfoMapper.Map(m)}, nil
 }
 
 func (s *ProjectService) RemoveMember(ctx context.Context, req *projectpb.RemoveMemberRequest) (*projectpb.RemoveMemberResponse, error) {
@@ -116,10 +112,7 @@ func (s *ProjectService) ListMembers(ctx context.Context, req *projectpb.ListMem
 	if err != nil {
 		return nil, err
 	}
-	items := make([]*projectpb.ProjectMemberInfo, 0, len(members))
-	for _, m := range members {
-		items = append(items, projectMemberToProto(m))
-	}
+	items := projectMemberInfoMapper.MapSlice(members)
 	return &projectpb.ListMembersResponse{
 		Members:    items,
 		Pagination: pagination.BuildPageResponse(total, page, pageSize),
@@ -131,29 +124,5 @@ func (s *ProjectService) UpdateMemberRole(ctx context.Context, req *projectpb.Up
 	if err != nil {
 		return nil, err
 	}
-	return &projectpb.UpdateMemberRoleResponse{Member: projectMemberToProto(m)}, nil
-}
-
-func projectToProto(p *entity.Project) *projectpb.ProjectInfo {
-	return &projectpb.ProjectInfo{
-		Id:             p.ID,
-		OrganizationId: p.OrganizationID,
-		Name:           p.Name,
-		Slug:           p.Slug,
-		Description:    p.Description,
-		CreatedAt:      timestamppb.New(p.CreatedAt),
-		UpdatedAt:      timestamppb.New(p.UpdatedAt),
-	}
-}
-
-func projectMemberToProto(m *entity.ProjectMember) *projectpb.ProjectMemberInfo {
-	return &projectpb.ProjectMemberInfo{
-		Id:        m.ID,
-		ProjectId: m.ProjectID,
-		UserId:    m.UserID,
-		UserName:  m.UserName,
-		UserEmail: m.UserEmail,
-		Role:      m.Role,
-		CreatedAt: timestamppb.New(m.CreatedAt),
-	}
+	return &projectpb.UpdateMemberRoleResponse{Member: projectMemberInfoMapper.Map(m)}, nil
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
 	"github.com/Servora-Kit/servora/pkg/pagination"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type OrganizationService struct {
@@ -29,7 +28,7 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, req *orgpb
 	if err != nil {
 		return nil, err
 	}
-	return &orgpb.CreateOrganizationResponse{Organization: orgToProto(org)}, nil
+	return &orgpb.CreateOrganizationResponse{Organization: orgInfoMapper.Map(org)}, nil
 }
 
 func (s *OrganizationService) GetOrganization(ctx context.Context, req *orgpb.GetOrganizationRequest) (*orgpb.GetOrganizationResponse, error) {
@@ -37,7 +36,7 @@ func (s *OrganizationService) GetOrganization(ctx context.Context, req *orgpb.Ge
 	if err != nil {
 		return nil, err
 	}
-	return &orgpb.GetOrganizationResponse{Organization: orgToProto(org)}, nil
+	return &orgpb.GetOrganizationResponse{Organization: orgInfoMapper.Map(org)}, nil
 }
 
 func (s *OrganizationService) ListOrganizations(ctx context.Context, req *orgpb.ListOrganizationsRequest) (*orgpb.ListOrganizationsResponse, error) {
@@ -47,10 +46,7 @@ func (s *OrganizationService) ListOrganizations(ctx context.Context, req *orgpb.
 		return nil, err
 	}
 
-	items := make([]*orgpb.OrganizationInfo, 0, len(orgs))
-	for _, o := range orgs {
-		items = append(items, orgToProto(o))
-	}
+	items := orgInfoMapper.MapSlice(orgs)
 	return &orgpb.ListOrganizationsResponse{
 		Organizations: items,
 		Pagination:    pagination.BuildPageResponse(total, page, pageSize),
@@ -66,7 +62,7 @@ func (s *OrganizationService) UpdateOrganization(ctx context.Context, req *orgpb
 	if err != nil {
 		return nil, err
 	}
-	return &orgpb.UpdateOrganizationResponse{Organization: orgToProto(org)}, nil
+	return &orgpb.UpdateOrganizationResponse{Organization: orgInfoMapper.Map(org)}, nil
 }
 
 func (s *OrganizationService) DeleteOrganization(ctx context.Context, req *orgpb.DeleteOrganizationRequest) (*orgpb.DeleteOrganizationResponse, error) {
@@ -88,7 +84,7 @@ func (s *OrganizationService) RestoreOrganization(ctx context.Context, req *orgp
 	if err != nil {
 		return nil, err
 	}
-	return &orgpb.RestoreOrganizationResponse{Organization: orgToProto(org)}, nil
+	return &orgpb.RestoreOrganizationResponse{Organization: orgInfoMapper.Map(org)}, nil
 }
 
 func (s *OrganizationService) AddMember(ctx context.Context, req *orgpb.AddMemberRequest) (*orgpb.AddMemberResponse, error) {
@@ -100,7 +96,7 @@ func (s *OrganizationService) AddMember(ctx context.Context, req *orgpb.AddMembe
 	if err != nil {
 		return nil, err
 	}
-	return &orgpb.AddMemberResponse{Member: orgMemberToProto(m)}, nil
+	return &orgpb.AddMemberResponse{Member: orgMemberInfoMapper.Map(m)}, nil
 }
 
 func (s *OrganizationService) RemoveMember(ctx context.Context, req *orgpb.RemoveMemberRequest) (*orgpb.RemoveMemberResponse, error) {
@@ -116,10 +112,7 @@ func (s *OrganizationService) ListMembers(ctx context.Context, req *orgpb.ListMe
 	if err != nil {
 		return nil, err
 	}
-	items := make([]*orgpb.OrganizationMemberInfo, 0, len(members))
-	for _, m := range members {
-		items = append(items, orgMemberToProto(m))
-	}
+	items := orgMemberInfoMapper.MapSlice(members)
 	return &orgpb.ListMembersResponse{
 		Members:    items,
 		Pagination: pagination.BuildPageResponse(total, page, pageSize),
@@ -131,28 +124,5 @@ func (s *OrganizationService) UpdateMemberRole(ctx context.Context, req *orgpb.U
 	if err != nil {
 		return nil, err
 	}
-	return &orgpb.UpdateMemberRoleResponse{Member: orgMemberToProto(m)}, nil
-}
-
-func orgToProto(o *entity.Organization) *orgpb.OrganizationInfo {
-	return &orgpb.OrganizationInfo{
-		Id:          o.ID,
-		Name:        o.Name,
-		Slug:        o.Slug,
-		DisplayName: o.DisplayName,
-		CreatedAt:   timestamppb.New(o.CreatedAt),
-		UpdatedAt:   timestamppb.New(o.UpdatedAt),
-	}
-}
-
-func orgMemberToProto(m *entity.OrganizationMember) *orgpb.OrganizationMemberInfo {
-	return &orgpb.OrganizationMemberInfo{
-		Id:             m.ID,
-		OrganizationId: m.OrganizationID,
-		UserId:         m.UserID,
-		UserName:       m.UserName,
-		UserEmail:      m.UserEmail,
-		Role:           m.Role,
-		CreatedAt:      timestamppb.New(m.CreatedAt),
-	}
+	return &orgpb.UpdateMemberRoleResponse{Member: orgMemberInfoMapper.Map(m)}, nil
 }

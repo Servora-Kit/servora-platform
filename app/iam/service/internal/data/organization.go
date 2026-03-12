@@ -47,7 +47,7 @@ func (r *organizationRepo) Create(ctx context.Context, org *entity.Organization)
 	if err != nil {
 		return nil, fmt.Errorf("create organization: %w", err)
 	}
-	return entOrgToEntity(created), nil
+	return orgMapper.Map(created), nil
 }
 
 func (r *organizationRepo) GetByID(ctx context.Context, id string) (*entity.Organization, error) {
@@ -62,7 +62,7 @@ func (r *organizationRepo) GetByID(ctx context.Context, id string) (*entity.Orga
 	if err != nil {
 		return nil, err
 	}
-	return entOrgToEntity(org), nil
+	return orgMapper.Map(org), nil
 }
 
 func (r *organizationRepo) GetBySlug(ctx context.Context, slug string) (*entity.Organization, error) {
@@ -73,7 +73,7 @@ func (r *organizationRepo) GetBySlug(ctx context.Context, slug string) (*entity.
 	if err != nil {
 		return nil, err
 	}
-	return entOrgToEntity(org), nil
+	return orgMapper.Map(org), nil
 }
 
 func (r *organizationRepo) GetByIDs(ctx context.Context, ids []string, page, pageSize int32) ([]*entity.Organization, int64, error) {
@@ -100,11 +100,7 @@ func (r *organizationRepo) GetByIDs(ctx context.Context, ids []string, page, pag
 		return nil, 0, err
 	}
 
-	result := make([]*entity.Organization, 0, len(orgs))
-	for _, o := range orgs {
-		result = append(result, entOrgToEntity(o))
-	}
-	return result, int64(total), nil
+	return orgMapper.MapSlice(orgs), int64(total), nil
 }
 
 func (r *organizationRepo) ListByUserID(ctx context.Context, userID string, page, pageSize int32) ([]*entity.Organization, int64, error) {
@@ -144,11 +140,7 @@ func (r *organizationRepo) ListByUserID(ctx context.Context, userID string, page
 		return nil, 0, err
 	}
 
-	result := make([]*entity.Organization, 0, len(orgs))
-	for _, o := range orgs {
-		result = append(result, entOrgToEntity(o))
-	}
-	return result, int64(total), nil
+	return orgMapper.MapSlice(orgs), int64(total), nil
 }
 
 func (r *organizationRepo) Update(ctx context.Context, org *entity.Organization) (*entity.Organization, error) {
@@ -167,7 +159,7 @@ func (r *organizationRepo) Update(ctx context.Context, org *entity.Organization)
 	if err != nil {
 		return nil, fmt.Errorf("update organization: %w", err)
 	}
-	return entOrgToEntity(updated), nil
+	return orgMapper.Map(updated), nil
 }
 
 func (r *organizationRepo) Delete(ctx context.Context, id string) error {
@@ -233,7 +225,7 @@ func (r *organizationRepo) Restore(ctx context.Context, id string) (*entity.Orga
 	if err != nil {
 		return nil, err
 	}
-	return entOrgToEntity(org), nil
+	return orgMapper.Map(org), nil
 }
 
 func (r *organizationRepo) GetByIDIncludingDeleted(ctx context.Context, id string) (*entity.Organization, error) {
@@ -247,7 +239,7 @@ func (r *organizationRepo) GetByIDIncludingDeleted(ctx context.Context, id strin
 	if err != nil {
 		return nil, err
 	}
-	return entOrgToEntity(org), nil
+	return orgMapper.Map(org), nil
 }
 
 func (r *organizationRepo) AddMember(ctx context.Context, m *entity.OrganizationMember) (*entity.OrganizationMember, error) {
@@ -465,19 +457,4 @@ func (r *organizationRepo) enrichMember(ctx context.Context, m *ent.Organization
 		Role:           m.Role,
 		CreatedAt:      m.CreatedAt,
 	}, nil
-}
-
-func entOrgToEntity(o *ent.Organization) *entity.Organization {
-	e := &entity.Organization{
-		ID:         o.ID.String(),
-		PlatformID: o.PlatformID.String(),
-		Name:       o.Name,
-		Slug:       o.Slug,
-		CreatedAt:  o.CreatedAt,
-		UpdatedAt:  o.UpdatedAt,
-	}
-	if o.DisplayName != nil {
-		e.DisplayName = *o.DisplayName
-	}
-	return e
 }

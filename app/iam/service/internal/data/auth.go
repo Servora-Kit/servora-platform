@@ -45,7 +45,7 @@ func (r *authRepo) SaveUser(ctx context.Context, u *entity.User) (*entity.User, 
 		r.log.Errorf("SaveUser failed: %v", err)
 		return nil, err
 	}
-	return entUserToEntity(created), nil
+	return userMapper.Map(created), nil
 }
 
 func (r *authRepo) GetUserByUserName(ctx context.Context, name string) (*entity.User, error) {
@@ -53,7 +53,7 @@ func (r *authRepo) GetUserByUserName(ctx context.Context, name string) (*entity.
 	if err != nil {
 		return nil, err
 	}
-	return entUserToEntity(entUser), nil
+	return userMapper.Map(entUser), nil
 }
 
 func (r *authRepo) GetUserByEmail(ctx context.Context, email string) (*entity.User, error) {
@@ -61,7 +61,7 @@ func (r *authRepo) GetUserByEmail(ctx context.Context, email string) (*entity.Us
 	if err != nil {
 		return nil, err
 	}
-	return entUserToEntity(entUser), nil
+	return userMapper.Map(entUser), nil
 }
 
 func (r *authRepo) GetUserByID(ctx context.Context, id string) (*entity.User, error) {
@@ -73,7 +73,7 @@ func (r *authRepo) GetUserByID(ctx context.Context, id string) (*entity.User, er
 	if err != nil {
 		return nil, err
 	}
-	return entUserToEntity(entUser), nil
+	return userMapper.Map(entUser), nil
 }
 
 func (r *authRepo) UpdatePassword(ctx context.Context, userID string, hashedPassword string) error {

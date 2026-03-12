@@ -10,7 +10,6 @@ import (
 
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
-	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/organizationmember"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/projectmember"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/user"
@@ -57,7 +56,7 @@ func (r *userRepo) SaveUser(ctx context.Context, u *entity.User) (*entity.User, 
 		r.log.Errorf("SaveUser failed: %v", err)
 		return nil, err
 	}
-	return entUserToEntity(created), nil
+	return userMapper.Map(created), nil
 }
 
 func (r *userRepo) GetUserById(ctx context.Context, id string) (*entity.User, error) {
@@ -69,7 +68,7 @@ func (r *userRepo) GetUserById(ctx context.Context, id string) (*entity.User, er
 	if err != nil {
 		return nil, err
 	}
-	return entUserToEntity(entUser), nil
+	return userMapper.Map(entUser), nil
 }
 
 func (r *userRepo) DeleteUser(ctx context.Context, u *entity.User) (*entity.User, error) {
@@ -130,7 +129,7 @@ func (r *userRepo) RestoreUser(ctx context.Context, id string) (*entity.User, er
 	if err != nil {
 		return nil, err
 	}
-	return entUserToEntity(u), nil
+	return userMapper.Map(u), nil
 }
 
 func (r *userRepo) GetUserByIdIncludingDeleted(ctx context.Context, id string) (*entity.User, error) {
@@ -142,7 +141,7 @@ func (r *userRepo) GetUserByIdIncludingDeleted(ctx context.Context, id string) (
 	if err != nil {
 		return nil, err
 	}
-	return entUserToEntity(entUser), nil
+	return userMapper.Map(entUser), nil
 }
 
 func (r *userRepo) UpdateUser(ctx context.Context, u *entity.User) (*entity.User, error) {
@@ -166,7 +165,7 @@ func (r *userRepo) UpdateUser(ctx context.Context, u *entity.User) (*entity.User
 	if err != nil {
 		return nil, err
 	}
-	return entUserToEntity(updated), nil
+	return userMapper.Map(updated), nil
 }
 
 func (r *userRepo) ListUsers(ctx context.Context, page int32, pageSize int32) ([]*entity.User, int64, error) {
@@ -184,20 +183,5 @@ func (r *userRepo) ListUsers(ctx context.Context, page int32, pageSize int32) ([
 		return nil, 0, err
 	}
 
-	users := make([]*entity.User, 0, len(entUsers))
-	for _, eu := range entUsers {
-		users = append(users, entUserToEntity(eu))
-	}
-
-	return users, int64(total), nil
-}
-
-func entUserToEntity(u *ent.User) *entity.User {
-	return &entity.User{
-		ID:       u.ID.String(),
-		Name:     u.Name,
-		Email:    u.Email,
-		Password: u.Password,
-		Role:     u.Role,
-	}
+	return userMapper.MapSlice(entUsers), int64(total), nil
 }

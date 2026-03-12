@@ -45,7 +45,7 @@ func (r *projectRepo) Create(ctx context.Context, p *entity.Project) (*entity.Pr
 	if err != nil {
 		return nil, fmt.Errorf("create project: %w", err)
 	}
-	return entProjectToEntity(created), nil
+	return projectMapper.Map(created), nil
 }
 
 func (r *projectRepo) GetByID(ctx context.Context, id string) (*entity.Project, error) {
@@ -60,7 +60,7 @@ func (r *projectRepo) GetByID(ctx context.Context, id string) (*entity.Project, 
 	if err != nil {
 		return nil, err
 	}
-	return entProjectToEntity(p), nil
+	return projectMapper.Map(p), nil
 }
 
 func (r *projectRepo) GetByIDs(ctx context.Context, ids []string, page, pageSize int32) ([]*entity.Project, int64, error) {
@@ -87,11 +87,7 @@ func (r *projectRepo) GetByIDs(ctx context.Context, ids []string, page, pageSize
 		return nil, 0, err
 	}
 
-	result := make([]*entity.Project, 0, len(projects))
-	for _, p := range projects {
-		result = append(result, entProjectToEntity(p))
-	}
-	return result, int64(total), nil
+	return projectMapper.MapSlice(projects), int64(total), nil
 }
 
 func (r *projectRepo) ListByOrgID(ctx context.Context, orgID string, page, pageSize int32) ([]*entity.Project, int64, error) {
@@ -115,11 +111,7 @@ func (r *projectRepo) ListByOrgID(ctx context.Context, orgID string, page, pageS
 		return nil, 0, err
 	}
 
-	result := make([]*entity.Project, 0, len(projects))
-	for _, p := range projects {
-		result = append(result, entProjectToEntity(p))
-	}
-	return result, int64(total), nil
+	return projectMapper.MapSlice(projects), int64(total), nil
 }
 
 func (r *projectRepo) Update(ctx context.Context, p *entity.Project) (*entity.Project, error) {
@@ -138,7 +130,7 @@ func (r *projectRepo) Update(ctx context.Context, p *entity.Project) (*entity.Pr
 	if err != nil {
 		return nil, fmt.Errorf("update project: %w", err)
 	}
-	return entProjectToEntity(updated), nil
+	return projectMapper.Map(updated), nil
 }
 
 func (r *projectRepo) Delete(ctx context.Context, id string) error {
@@ -186,7 +178,7 @@ func (r *projectRepo) Restore(ctx context.Context, id string) (*entity.Project, 
 	if err != nil {
 		return nil, err
 	}
-	return entProjectToEntity(p), nil
+	return projectMapper.Map(p), nil
 }
 
 func (r *projectRepo) GetByIDIncludingDeleted(ctx context.Context, id string) (*entity.Project, error) {
@@ -200,7 +192,7 @@ func (r *projectRepo) GetByIDIncludingDeleted(ctx context.Context, id string) (*
 	if err != nil {
 		return nil, err
 	}
-	return entProjectToEntity(p), nil
+	return projectMapper.Map(p), nil
 }
 
 func (r *projectRepo) AddMember(ctx context.Context, m *entity.ProjectMember) (*entity.ProjectMember, error) {
@@ -378,11 +370,7 @@ func (r *projectRepo) ListAllByOrgID(ctx context.Context, orgID string) ([]*enti
 	if err != nil {
 		return nil, err
 	}
-	result := make([]*entity.Project, len(projects))
-	for i, p := range projects {
-		result[i] = entProjectToEntity(p)
-	}
-	return result, nil
+	return projectMapper.MapSlice(projects), nil
 }
 
 func (r *projectRepo) ListMembershipsByUserID(ctx context.Context, userID string) ([]*entity.ProjectMember, error) {
@@ -437,19 +425,4 @@ func (r *projectRepo) enrichMember(ctx context.Context, m *ent.ProjectMember) (*
 		Role:      m.Role,
 		CreatedAt: m.CreatedAt,
 	}, nil
-}
-
-func entProjectToEntity(p *ent.Project) *entity.Project {
-	e := &entity.Project{
-		ID:             p.ID.String(),
-		OrganizationID: p.OrganizationID.String(),
-		Name:           p.Name,
-		Slug:           p.Slug,
-		CreatedAt:      p.CreatedAt,
-		UpdatedAt:      p.UpdatedAt,
-	}
-	if p.Description != nil {
-		e.Description = *p.Description
-	}
-	return e
 }

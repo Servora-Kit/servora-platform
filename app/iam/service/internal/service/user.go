@@ -40,15 +40,7 @@ func (s *UserService) ListUsers(ctx context.Context, req *userpb.ListUsersReques
 		return nil, err
 	}
 
-	respUsers := make([]*userpb.UserInfo, 0, len(users))
-	for _, user := range users {
-		respUsers = append(respUsers, &userpb.UserInfo{
-			Id:    user.ID,
-			Name:  user.Name,
-			Email: user.Email,
-			Role:  user.Role,
-		})
-	}
+	respUsers := userInfoMapper.MapSlice(users)
 
 	return &userpb.ListUsersResponse{
 		Users:      respUsers,
@@ -68,12 +60,7 @@ func (s *UserService) UpdateUser(ctx context.Context, req *userpb.UpdateUserRequ
 		return nil, err
 	}
 	return &userpb.UpdateUserResponse{
-		User: &userpb.UserInfo{
-			Id:    updated.ID,
-			Name:  updated.Name,
-			Email: updated.Email,
-			Role:  updated.Role,
-		},
+		User: userInfoMapper.Map(updated),
 	}, nil
 }
 
@@ -114,10 +101,5 @@ func (s *UserService) RestoreUser(ctx context.Context, req *userpb.RestoreUserRe
 	if err != nil {
 		return nil, err
 	}
-	return &userpb.RestoreUserResponse{User: &userpb.UserInfo{
-		Id:    u.ID,
-		Name:  u.Name,
-		Email: u.Email,
-		Role:  u.Role,
-	}}, nil
+	return &userpb.RestoreUserResponse{User: userInfoMapper.Map(u)}, nil
 }
