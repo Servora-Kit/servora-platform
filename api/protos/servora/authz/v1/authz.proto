@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package servora.authz.v1;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/Servora-Kit/servora/api/gen/go/servora/authz/v1;authzpb";
+
+// AuthzMode 定义了 AuthZ 中间件如何解析目标对象。
+enum AuthzMode {
+  // 未指定
+  AUTHZ_MODE_UNSPECIFIED = 0;
+  // 完全跳过鉴权（公开接口）。
+  AUTHZ_MODE_NONE = 1;
+  // 从请求中解析 organization_id，并校验 organization:{id} 上的关系。
+  AUTHZ_MODE_ORGANIZATION = 2;
+  // 从请求中解析 project_id，并校验 project:{id} 上的关系。
+  AUTHZ_MODE_PROJECT = 3;
+  // 从请求中解析 object_type 和 object_id，并校验 {type}:{id} 上的关系。
+  AUTHZ_MODE_OBJECT = 4;
+}
+
+// ObjectType 枚举了 OpenFGA 模型中的资源类型。
+enum ObjectType {
+  // 未指定
+  OBJECT_TYPE_UNSPECIFIED = 0;
+  // 平台
+  OBJECT_TYPE_PLATFORM = 1;
+  // 组织
+  OBJECT_TYPE_ORGANIZATION = 2;
+  // 项目
+  OBJECT_TYPE_PROJECT = 3;
+}
+
+// Relation 枚举了 OpenFGA 模型中所有可分配的角色和计算所得的权限。
+enum Relation {
+  RELATION_UNSPECIFIED = 0;
+
+  // --- 可分配角色 ---
+  RELATION_OWNER = 1;       // 拥有者
+  RELATION_ADMIN = 2;       // 管理员
+  RELATION_MEMBER = 3;      // 成员
+  RELATION_DEVELOPER = 4;   // 开发者
+  RELATION_VIEWER = 5;      // 只读者
+
+  // --- 计算权限（由 OpenFGA 模型解析） ---
+  RELATION_CAN_VIEW = 10;           // 可查看
+  RELATION_CAN_EDIT = 11;           // 可编辑
+  RELATION_CAN_ADMIN = 12;          // 可管理
+  RELATION_CAN_MANAGE = 13;         // 可运营
+  RELATION_CAN_MANAGE_MEMBERS = 14; // 可管理成员
+}
+
+// AuthzRule 用于绑定到 RPC 方法，声明其授权需求。
+message AuthzRule {
+  // 目标对象的解析方式（组织/项目/自定义对象）。
+  AuthzMode mode = 1;
+  // 需要在目标对象上拥有的关系（权限）。
+  Relation relation = 2;
+  // 对于 AUTHZ_MODE_OBJECT：需要校验的具体对象类型。
+  ObjectType object_type = 3;
+  // 请求中携带资源 ID 的字段名（如 "id", "organization_id"）。
+  string id_field = 4;
+}
+
+extend google.protobuf.MethodOptions {
+  // rule 声明了 RPC 方法的授权需求。
+  AuthzRule rule = 50100;
+}

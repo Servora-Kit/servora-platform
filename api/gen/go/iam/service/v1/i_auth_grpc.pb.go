@@ -29,8 +29,6 @@ const (
 // AuthServiceClient is the client API for AuthService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// Auth HTTP 服务 - 用于 OpenAPI 生成
 type AuthServiceClient interface {
 	SignupByEmail(ctx context.Context, in *v1.SignupByEmailRequest, opts ...grpc.CallOption) (*v1.SignupByEmailResponse, error)
 	LoginByEmailPassword(ctx context.Context, in *v1.LoginByEmailPasswordRequest, opts ...grpc.CallOption) (*v1.LoginByEmailPasswordResponse, error)
@@ -89,8 +87,6 @@ func (c *authServiceClient) Logout(ctx context.Context, in *v1.LogoutRequest, op
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
-//
-// Auth HTTP 服务 - 用于 OpenAPI 生成
 type AuthServiceServer interface {
 	SignupByEmail(context.Context, *v1.SignupByEmailRequest) (*v1.SignupByEmailResponse, error)
 	LoginByEmailPassword(context.Context, *v1.LoginByEmailPasswordRequest) (*v1.LoginByEmailPasswordResponse, error)

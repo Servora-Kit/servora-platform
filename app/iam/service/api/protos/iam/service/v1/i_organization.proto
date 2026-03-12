@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package iam.service.v1;
+
+import "google/api/annotations.proto";
+import "organization/service/v1/organization.proto";
+import "servora/authz/v1/authz.proto";
+
+option go_package = "github.com/Servora-Kit/servora/api/gen/go/iam/service/v1;iampb";
+
+service OrganizationService {
+  rpc CreateOrganization(organization.service.v1.CreateOrganizationRequest) returns (organization.service.v1.CreateOrganizationResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations"
+      body: "*"
+    };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
+  }
+
+  rpc GetOrganization(organization.service.v1.GetOrganizationRequest) returns (organization.service.v1.GetOrganizationResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{id}"};
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_ORGANIZATION
+      relation: RELATION_CAN_VIEW
+      id_field: "id"
+    };
+  }
+
+  rpc ListOrganizations(organization.service.v1.ListOrganizationsRequest) returns (organization.service.v1.ListOrganizationsResponse) {
+    option (google.api.http) = {get: "/v1/organizations"};
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
+  }
+
+  rpc UpdateOrganization(organization.service.v1.UpdateOrganizationRequest) returns (organization.service.v1.UpdateOrganizationResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{id}"
+      body: "*"
+    };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_ORGANIZATION
+      relation: RELATION_CAN_MANAGE
+      id_field: "id"
+    };
+  }
+
+  rpc DeleteOrganization(organization.service.v1.DeleteOrganizationRequest) returns (organization.service.v1.DeleteOrganizationResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{id}"};
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_ORGANIZATION
+      relation: RELATION_CAN_MANAGE
+      id_field: "id"
+    };
+  }
+
+  rpc AddMember(organization.service.v1.AddMemberRequest) returns (organization.service.v1.AddMemberResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization_id}/members"
+      body: "*"
+    };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_ORGANIZATION
+      relation: RELATION_CAN_MANAGE_MEMBERS
+      id_field: "organization_id"
+    };
+  }
+
+  rpc RemoveMember(organization.service.v1.RemoveMemberRequest) returns (organization.service.v1.RemoveMemberResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization_id}/members/{user_id}"};
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_ORGANIZATION
+      relation: RELATION_CAN_MANAGE_MEMBERS
+      id_field: "organization_id"
+    };
+  }
+
+  rpc ListMembers(organization.service.v1.ListMembersRequest) returns (organization.service.v1.ListMembersResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization_id}/members"};
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_ORGANIZATION
+      relation: RELATION_CAN_VIEW
+      id_field: "organization_id"
+    };
+  }
+
+  rpc UpdateMemberRole(organization.service.v1.UpdateMemberRoleRequest) returns (organization.service.v1.UpdateMemberRoleResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organization_id}/members/{user_id}/role"
+      body: "*"
+    };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_ORGANIZATION
+      relation: RELATION_CAN_MANAGE_MEMBERS
+      id_field: "organization_id"
+    };
+  }
+}

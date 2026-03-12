@@ -3,16 +3,19 @@ syntax = "proto3";
 package iam.service.v1;
 
 import "google/api/annotations.proto";
+import "servora/authz/v1/authz.proto";
 import "test/service/v1/test.proto";
 
 option go_package = "github.com/Servora-Kit/servora/api/gen/go/iam/service/v1;iampb";
 
-// Test HTTP 服务 - 用于 OpenAPI 生成
 service TestService {
   rpc Hello(test.service.v1.HelloRequest) returns (test.service.v1.HelloResponse) {
     option (google.api.http) = {
       post: "/v1/test/Hello"
       body: "*"
+    };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
     };
   }
 
@@ -21,12 +24,18 @@ service TestService {
       post: "/v1/test/test"
       body: "*"
     };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
   }
 
   rpc PrivateTest(test.service.v1.PrivateTestRequest) returns (test.service.v1.PrivateTestResponse) {
     option (google.api.http) = {
       post: "/v1/test/private"
       body: "*"
+    };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
     };
   }
 }

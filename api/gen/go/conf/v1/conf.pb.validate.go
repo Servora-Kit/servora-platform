@@ -1176,6 +1176,64 @@ func (m *App) validate(all bool) error {
 
 	// no validation rules for Metadata
 
+	if all {
+		switch v := interface{}(m.GetOpenfga()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AppValidationError{
+					field:  "Openfga",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AppValidationError{
+					field:  "Openfga",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOpenfga()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AppValidationError{
+				field:  "Openfga",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetSeed()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AppValidationError{
+					field:  "Seed",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AppValidationError{
+					field:  "Seed",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSeed()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AppValidationError{
+				field:  "Seed",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return AppMultiError(errors)
 	}
@@ -4176,3 +4234,215 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = App_LogValidationError{}
+
+// Validate checks the field values on App_OpenFGA with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *App_OpenFGA) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on App_OpenFGA with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in App_OpenFGAMultiError, or
+// nil if none found.
+func (m *App_OpenFGA) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *App_OpenFGA) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ApiUrl
+
+	// no validation rules for StoreId
+
+	// no validation rules for ModelId
+
+	// no validation rules for ApiToken
+
+	if len(errors) > 0 {
+		return App_OpenFGAMultiError(errors)
+	}
+
+	return nil
+}
+
+// App_OpenFGAMultiError is an error wrapping multiple validation errors
+// returned by App_OpenFGA.ValidateAll() if the designated constraints aren't met.
+type App_OpenFGAMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m App_OpenFGAMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m App_OpenFGAMultiError) AllErrors() []error { return m }
+
+// App_OpenFGAValidationError is the validation error returned by
+// App_OpenFGA.Validate if the designated constraints aren't met.
+type App_OpenFGAValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e App_OpenFGAValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e App_OpenFGAValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e App_OpenFGAValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e App_OpenFGAValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e App_OpenFGAValidationError) ErrorName() string { return "App_OpenFGAValidationError" }
+
+// Error satisfies the builtin error interface
+func (e App_OpenFGAValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sApp_OpenFGA.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = App_OpenFGAValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = App_OpenFGAValidationError{}
+
+// Validate checks the field values on App_Seed with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *App_Seed) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on App_Seed with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in App_SeedMultiError, or nil
+// if none found.
+func (m *App_Seed) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *App_Seed) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for AdminEmail
+
+	// no validation rules for AdminPassword
+
+	// no validation rules for AdminName
+
+	if len(errors) > 0 {
+		return App_SeedMultiError(errors)
+	}
+
+	return nil
+}
+
+// App_SeedMultiError is an error wrapping multiple validation errors returned
+// by App_Seed.ValidateAll() if the designated constraints aren't met.
+type App_SeedMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m App_SeedMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m App_SeedMultiError) AllErrors() []error { return m }
+
+// App_SeedValidationError is the validation error returned by
+// App_Seed.Validate if the designated constraints aren't met.
+type App_SeedValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e App_SeedValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e App_SeedValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e App_SeedValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e App_SeedValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e App_SeedValidationError) ErrorName() string { return "App_SeedValidationError" }
+
+// Error satisfies the builtin error interface
+func (e App_SeedValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sApp_Seed.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = App_SeedValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = App_SeedValidationError{}

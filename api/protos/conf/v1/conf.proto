@@ -143,12 +143,25 @@ message App {
     int32 max_age = 5; // 日志文件最大保留天数
     bool compress = 6; // 是否压缩日志文件
   }
+  message OpenFGA {
+    string api_url = 1;   // OpenFGA HTTP API 地址
+    string store_id = 2;  // Store ID
+    string model_id = 3;  // Authorization Model ID
+    string api_token = 4; // API Token（可选，生产环境使用）
+  }
+  message Seed {
+    string admin_email = 1;    // 平台管理员邮箱
+    string admin_password = 2; // 平台管理员密码
+    string admin_name = 3;     // 平台管理员用户名
+  }
   string env = 1; // dev test prod
   string name = 2;
   string version = 3;
   Jwt jwt = 4; // JWT配置
   Log log = 5; // 日志配置
   map<string, string> metadata = 6; // 元数据
+  OpenFGA openfga = 7; // OpenFGA 配置
+  Seed seed = 8; // 种子数据配置
 }
 
 // =============================================================================

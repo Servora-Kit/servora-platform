@@ -7,6 +7,7 @@
 package iampb
 
 import (
+	_ "github.com/Servora-Kit/servora/api/gen/go/servora/authz/v1"
 	v1 "github.com/Servora-Kit/servora/api/gen/go/user/service/v1"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -26,15 +27,15 @@ var File_iam_service_v1_i_user_proto protoreflect.FileDescriptor
 
 const file_iam_service_v1_i_user_proto_rawDesc = "" +
 	"\n" +
-	"\x1biam/service/v1/i_user.proto\x12\x0eiam.service.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1auser/service/v1/user.proto2\xc4\x04\n" +
-	"\vUserService\x12{\n" +
-	"\x0fCurrentUserInfo\x12'.user.service.v1.CurrentUserInfoRequest\x1a(.user.service.v1.CurrentUserInfoResponse\"\x15\x82\xd3\xe4\x93\x02\x0f\x12\r/v1/user/info\x12e\n" +
-	"\tListUsers\x12!.user.service.v1.ListUsersRequest\x1a\".user.service.v1.ListUsersResponse\"\x11\x82\xd3\xe4\x93\x02\v\x12\t/v1/users\x12q\n" +
+	"\x1biam/service/v1/i_user.proto\x12\x0eiam.service.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1cservora/authz/v1/authz.proto\x1a\x1auser/service/v1/user.proto2\x82\x05\n" +
+	"\vUserService\x12\x81\x01\n" +
+	"\x0fCurrentUserInfo\x12'.user.service.v1.CurrentUserInfoRequest\x1a(.user.service.v1.CurrentUserInfoResponse\"\x1b\xa2\xbb\x18\x02\b\x01\x82\xd3\xe4\x93\x02\x0f\x12\r/v1/user/info\x12u\n" +
+	"\tListUsers\x12!.user.service.v1.ListUsersRequest\x1a\".user.service.v1.ListUsersResponse\"!\xa2\xbb\x18\f\b\x04\x10\x02\x18\x01\"\x04root\x82\xd3\xe4\x93\x02\v\x12\t/v1/users\x12w\n" +
 	"\n" +
-	"UpdateUser\x12\".user.service.v1.UpdateUserRequest\x1a#.user.service.v1.UpdateUserResponse\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/user/update\x12i\n" +
-	"\bSaveUser\x12 .user.service.v1.SaveUserRequest\x1a!.user.service.v1.SaveUserResponse\"\x18\x82\xd3\xe4\x93\x02\x12:\x01*\"\r/v1/user/save\x12s\n" +
+	"UpdateUser\x12\".user.service.v1.UpdateUserRequest\x1a#.user.service.v1.UpdateUserResponse\" \xa2\xbb\x18\x02\b\x01\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/user/update\x12y\n" +
+	"\bSaveUser\x12 .user.service.v1.SaveUserRequest\x1a!.user.service.v1.SaveUserResponse\"(\xa2\xbb\x18\f\b\x04\x10\x02\x18\x01\"\x04root\x82\xd3\xe4\x93\x02\x12:\x01*\"\r/v1/user/save\x12\x83\x01\n" +
 	"\n" +
-	"DeleteUser\x12\".user.service.v1.DeleteUserRequest\x1a#.user.service.v1.DeleteUserResponse\"\x1c\x82\xd3\xe4\x93\x02\x16*\x14/v1/user/delete/{id}B\xba\x01\n" +
+	"DeleteUser\x12\".user.service.v1.DeleteUserRequest\x1a#.user.service.v1.DeleteUserResponse\",\xa2\xbb\x18\f\b\x04\x10\x02\x18\x01\"\x04root\x82\xd3\xe4\x93\x02\x16*\x14/v1/user/delete/{id}B\xba\x01\n" +
 	"\x12com.iam.service.v1B\n" +
 	"IUserProtoP\x01Z>github.com/Servora-Kit/servora/api/gen/go/iam/service/v1;iampb\xa2\x02\x03ISX\xaa\x02\x0eIam.Service.V1\xca\x02\x0eIam\\Service\\V1\xe2\x02\x1aIam\\Service\\V1\\GPBMetadata\xea\x02\x10Iam::Service::V1b\x06proto3"
 

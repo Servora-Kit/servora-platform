@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package iam.service.v1;
+
+import "google/api/annotations.proto";
+import "project/service/v1/project.proto";
+import "servora/authz/v1/authz.proto";
+
+option go_package = "github.com/Servora-Kit/servora/api/gen/go/iam/service/v1;iampb";
+
+service ProjectService {
+  rpc CreateProject(project.service.v1.CreateProjectRequest) returns (project.service.v1.CreateProjectResponse) {
+    option (google.api.http) = {
+      post: "/v1/projects"
+      body: "*"
+    };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_ORGANIZATION
+      relation: RELATION_CAN_MANAGE
+      id_field: "organization_id"
+    };
+  }
+
+  rpc GetProject(project.service.v1.GetProjectRequest) returns (project.service.v1.GetProjectResponse) {
+    option (google.api.http) = {get: "/v1/projects/{id}"};
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_PROJECT
+      relation: RELATION_CAN_VIEW
+      id_field: "id"
+    };
+  }
+
+  rpc ListProjects(project.service.v1.ListProjectsRequest) returns (project.service.v1.ListProjectsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization_id}/projects"};
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_ORGANIZATION
+      relation: RELATION_CAN_VIEW
+      id_field: "organization_id"
+    };
+  }
+
+  rpc UpdateProject(project.service.v1.UpdateProjectRequest) returns (project.service.v1.UpdateProjectResponse) {
+    option (google.api.http) = {
+      put: "/v1/projects/{id}"
+      body: "*"
+    };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_PROJECT
+      relation: RELATION_CAN_EDIT
+      id_field: "id"
+    };
+  }
+
+  rpc DeleteProject(project.service.v1.DeleteProjectRequest) returns (project.service.v1.DeleteProjectResponse) {
+    option (google.api.http) = {delete: "/v1/projects/{id}"};
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_PROJECT
+      relation: RELATION_CAN_ADMIN
+      id_field: "id"
+    };
+  }
+
+  rpc AddMember(project.service.v1.AddMemberRequest) returns (project.service.v1.AddMemberResponse) {
+    option (google.api.http) = {
+      post: "/v1/projects/{project_id}/members"
+      body: "*"
+    };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_PROJECT
+      relation: RELATION_CAN_ADMIN
+      id_field: "project_id"
+    };
+  }
+
+  rpc RemoveMember(project.service.v1.RemoveMemberRequest) returns (project.service.v1.RemoveMemberResponse) {
+    option (google.api.http) = {delete: "/v1/projects/{project_id}/members/{user_id}"};
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_PROJECT
+      relation: RELATION_CAN_ADMIN
+      id_field: "project_id"
+    };
+  }
+
+  rpc ListMembers(project.service.v1.ListMembersRequest) returns (project.service.v1.ListMembersResponse) {
+    option (google.api.http) = {get: "/v1/projects/{project_id}/members"};
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_PROJECT
+      relation: RELATION_CAN_VIEW
+      id_field: "project_id"
+    };
+  }
+
+  rpc UpdateMemberRole(project.service.v1.UpdateMemberRoleRequest) returns (project.service.v1.UpdateMemberRoleResponse) {
+    option (google.api.http) = {
+      put: "/v1/projects/{project_id}/members/{user_id}/role"
+      body: "*"
+    };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_PROJECT
+      relation: RELATION_CAN_ADMIN
+      id_field: "project_id"
+    };
+  }
+}

@@ -4,15 +4,18 @@ package iam.service.v1;
 
 import "auth/service/v1/auth.proto";
 import "google/api/annotations.proto";
+import "servora/authz/v1/authz.proto";
 
 option go_package = "github.com/Servora-Kit/servora/api/gen/go/iam/service/v1;iampb";
 
-// Auth HTTP 服务 - 用于 OpenAPI 生成
 service AuthService {
   rpc SignupByEmail(auth.service.v1.SignupByEmailRequest) returns (auth.service.v1.SignupByEmailResponse) {
     option (google.api.http) = {
       post: "/v1/auth/signup/using-email"
       body: "*"
+    };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
     };
   }
 
@@ -21,6 +24,9 @@ service AuthService {
       post: "/v1/auth/login/email-password"
       body: "*"
     };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
   }
 
   rpc RefreshToken(auth.service.v1.RefreshTokenRequest) returns (auth.service.v1.RefreshTokenResponse) {
@@ -28,12 +34,18 @@ service AuthService {
       post: "/v1/auth/refresh-token"
       body: "*"
     };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
   }
 
   rpc Logout(auth.service.v1.LogoutRequest) returns (auth.service.v1.LogoutResponse) {
     option (google.api.http) = {
       post: "/v1/auth/logout"
       body: "*"
+    };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
     };
   }
 }

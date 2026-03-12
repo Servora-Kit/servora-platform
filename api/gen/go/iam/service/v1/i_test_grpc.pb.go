@@ -28,8 +28,6 @@ const (
 // TestServiceClient is the client API for TestService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// Test HTTP 服务 - 用于 OpenAPI 生成
 type TestServiceClient interface {
 	Hello(ctx context.Context, in *v1.HelloRequest, opts ...grpc.CallOption) (*v1.HelloResponse, error)
 	Test(ctx context.Context, in *v1.TestRequest, opts ...grpc.CallOption) (*v1.TestResponse, error)
@@ -77,8 +75,6 @@ func (c *testServiceClient) PrivateTest(ctx context.Context, in *v1.PrivateTestR
 // TestServiceServer is the server API for TestService service.
 // All implementations must embed UnimplementedTestServiceServer
 // for forward compatibility.
-//
-// Test HTTP 服务 - 用于 OpenAPI 生成
 type TestServiceServer interface {
 	Hello(context.Context, *v1.HelloRequest) (*v1.HelloResponse, error)
 	Test(context.Context, *v1.TestRequest) (*v1.TestResponse, error)

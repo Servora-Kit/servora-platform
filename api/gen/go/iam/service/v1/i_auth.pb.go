@@ -8,6 +8,7 @@ package iampb
 
 import (
 	v1 "github.com/Servora-Kit/servora/api/gen/go/auth/service/v1"
+	_ "github.com/Servora-Kit/servora/api/gen/go/servora/authz/v1"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -26,12 +27,12 @@ var File_iam_service_v1_i_auth_proto protoreflect.FileDescriptor
 
 const file_iam_service_v1_i_auth_proto_rawDesc = "" +
 	"\n" +
-	"\x1biam/service/v1/i_auth.proto\x12\x0eiam.service.v1\x1a\x1aauth/service/v1/auth.proto\x1a\x1cgoogle/api/annotations.proto2\x9d\x04\n" +
-	"\vAuthService\x12\x86\x01\n" +
-	"\rSignupByEmail\x12%.auth.service.v1.SignupByEmailRequest\x1a&.auth.service.v1.SignupByEmailResponse\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/auth/signup/using-email\x12\x9d\x01\n" +
-	"\x14LoginByEmailPassword\x12,.auth.service.v1.LoginByEmailPasswordRequest\x1a-.auth.service.v1.LoginByEmailPasswordResponse\"(\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v1/auth/login/email-password\x12~\n" +
-	"\fRefreshToken\x12$.auth.service.v1.RefreshTokenRequest\x1a%.auth.service.v1.RefreshTokenResponse\"!\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/v1/auth/refresh-token\x12e\n" +
-	"\x06Logout\x12\x1e.auth.service.v1.LogoutRequest\x1a\x1f.auth.service.v1.LogoutResponse\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/auth/logoutB\xba\x01\n" +
+	"\x1biam/service/v1/i_auth.proto\x12\x0eiam.service.v1\x1a\x1aauth/service/v1/auth.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1cservora/authz/v1/authz.proto2\xb6\x04\n" +
+	"\vAuthService\x12\x8c\x01\n" +
+	"\rSignupByEmail\x12%.auth.service.v1.SignupByEmailRequest\x1a&.auth.service.v1.SignupByEmailResponse\",\xa2\xbb\x18\x02\b\x01\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/auth/signup/using-email\x12\xa3\x01\n" +
+	"\x14LoginByEmailPassword\x12,.auth.service.v1.LoginByEmailPasswordRequest\x1a-.auth.service.v1.LoginByEmailPasswordResponse\".\xa2\xbb\x18\x02\b\x01\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v1/auth/login/email-password\x12\x84\x01\n" +
+	"\fRefreshToken\x12$.auth.service.v1.RefreshTokenRequest\x1a%.auth.service.v1.RefreshTokenResponse\"'\xa2\xbb\x18\x02\b\x01\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/v1/auth/refresh-token\x12k\n" +
+	"\x06Logout\x12\x1e.auth.service.v1.LogoutRequest\x1a\x1f.auth.service.v1.LogoutResponse\" \xa2\xbb\x18\x02\b\x01\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/auth/logoutB\xba\x01\n" +
 	"\x12com.iam.service.v1B\n" +
 	"IAuthProtoP\x01Z>github.com/Servora-Kit/servora/api/gen/go/iam/service/v1;iampb\xa2\x02\x03ISX\xaa\x02\x0eIam.Service.V1\xca\x02\x0eIam\\Service\\V1\xe2\x02\x1aIam\\Service\\V1\\GPBMetadata\xea\x02\x10Iam::Service::V1b\x06proto3"
 

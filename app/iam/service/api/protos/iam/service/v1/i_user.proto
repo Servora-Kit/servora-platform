@@ -3,24 +3,36 @@ syntax = "proto3";
 package iam.service.v1;
 
 import "google/api/annotations.proto";
+import "servora/authz/v1/authz.proto";
 import "user/service/v1/user.proto";
 
 option go_package = "github.com/Servora-Kit/servora/api/gen/go/iam/service/v1;iampb";
 
-// User HTTP 服务 - 用于 OpenAPI 生成
 service UserService {
   rpc CurrentUserInfo(user.service.v1.CurrentUserInfoRequest) returns (user.service.v1.CurrentUserInfoResponse) {
     option (google.api.http) = {get: "/v1/user/info"};
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
   }
 
   rpc ListUsers(user.service.v1.ListUsersRequest) returns (user.service.v1.ListUsersResponse) {
     option (google.api.http) = {get: "/v1/users"};
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_OBJECT
+      object_type: OBJECT_TYPE_PLATFORM
+      relation: RELATION_ADMIN
+      id_field: "root"
+    };
   }
 
   rpc UpdateUser(user.service.v1.UpdateUserRequest) returns (user.service.v1.UpdateUserResponse) {
     option (google.api.http) = {
       post: "/v1/user/update"
       body: "*"
+    };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
     };
   }
 
@@ -29,9 +41,21 @@ service UserService {
       post: "/v1/user/save"
       body: "*"
     };
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_OBJECT
+      object_type: OBJECT_TYPE_PLATFORM
+      relation: RELATION_ADMIN
+      id_field: "root"
+    };
   }
 
   rpc DeleteUser(user.service.v1.DeleteUserRequest) returns (user.service.v1.DeleteUserResponse) {
     option (google.api.http) = {delete: "/v1/user/delete/{id}"};
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_OBJECT
+      object_type: OBJECT_TYPE_PLATFORM
+      relation: RELATION_ADMIN
+      id_field: "root"
+    };
   }
 }
