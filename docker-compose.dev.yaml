@@ -7,14 +7,15 @@ services:
       dockerfile: Dockerfile.air
     working_dir: /workspace/app/iam/service
     command: ["air", "-c", ".air.toml"]
+    env_file: .env
     environment:
       TZ: Asia/Shanghai
       GOMODCACHE: /go/pkg/mod
       GOCACHE: /go/cache
     volumes:
       - ./:/workspace
-      - servora_go_mod_cache:/go/pkg/mod
-      - servora_go_build_cache:/go/cache
+      - ./.cache/go-mod:/go/pkg/mod
+      - ./.cache/go-build:/go/cache
       - ./app/iam/service/configs/docker/:/app/configs/
       - ./app/iam/service/configs/keys/:/app/configs/keys/:ro
       - iam-logs:/app/logs
@@ -47,8 +48,8 @@ services:
       GOCACHE: /go/cache
     volumes:
       - ./:/workspace
-      - servora_go_mod_cache:/go/pkg/mod
-      - servora_go_build_cache:/go/cache
+      - ./.cache/go-mod:/go/pkg/mod
+      - ./.cache/go-build:/go/cache
       - ./app/sayhello/service/configs/docker/:/app/configs/:ro
       - sayhello-logs:/app/logs
     depends_on:
@@ -59,6 +60,3 @@ services:
     networks:
       - servora-network
 
-volumes:
-  servora_go_mod_cache:
-  servora_go_build_cache:
