@@ -1,59 +1,18 @@
 # AGENTS.md - servora 项目根目录
 
-<!-- Generated: 2026-03-11 | Commit: 11857e3 | Branch: feature/iam-service | Strategy: Multi-branch Development -->
+<!-- Generated: 2026-03-12 | Commit: af6206c | Branch: main -->
 
 ## 项目概览
 
-`servora` 是一个基于 Go Kratos 的微服务快开框架，当前采用 **Go workspace + 多模块** 与 **Buf v2 workspace** 组织方式。
+`servora` 是一个基于 **Go Kratos** 的微服务脚手架框架，采用 **Go workspace + 多模块** 与 **Buf v2 workspace** 组织方式。项目同时包含框架核心（`pkg/`、`cmd/`）和服务实现（`app/`），当前已完成 IAM 服务的主要开发。
 
 当前主线事实：
-- 根目录仍保留 `go.mod`，并通过 `go.work` 纳管 `api/gen`、`app/iam/service`、`app/sayhello/service`
-- Proto 采用四处模块联合编排：`api/protos/`、`app/iam/service/api/protos/`、`app/sayhello/service/api/protos/`
+- 所有开发均在 `main` 分支进行，不使用多分支策略
+- 根目录保留 `go.mod`，并通过 `go.work` 纳管 `api/gen`、`app/iam/service`、`app/sayhello/service`
+- Proto 采用多模块联合编排：`api/protos/`、`app/iam/service/api/protos/`、`app/sayhello/service/api/protos/`
 - 共享生成入口在根目录：`make gen`、`make api`、`make openapi`、`make wire`、`make ent`
 
 ## 开发约束
-
-### 多分支开发策略
-
-**重要**：本仓库采用多分支开发架构，AI 开发时必须遵循以下规则：
-
-- **main 分支**：纯框架代码，用于 Go module 发布
-  - 包含：`pkg/`、`cmd/svr/`、`api/protos/`、`templates/`、文档
-  - 不包含：服务实现（`app/`）、部署配置（`manifests/`、`docker-compose.yaml`）
-  - 作用：框架主线，接收来自功能分支的框架相关提交
-
-- **example 分支**：完整示例项目
-  - 包含：框架代码 + 示例服务（servora、sayhello）+ 部署配置
-  - 用于：开发、测试、演示
-  - 作用：展示框架完整用法的参考实现
-
-- **功能分支**（如 `feature/iam-service`）：独立功能开发
-  - 从 example 或其他分支创建
-  - 包含：完整的服务实现 + 框架改进
-  - 用于：独立开发特定功能或服务
-  - 作用：隔离开发，避免相互干扰
-
-**AI 开发规则**：
-1. 根据任务选择合适的分支：
-   - 示例项目开发 → example 分支
-   - 独立功能开发 → 创建功能分支（如 feature/iam-service）
-   - 纯框架开发 → 可在 main 分支（但需要测试环境）
-2. 不要在 main 分支直接开发服务代码（缺少运行环境）
-3. **框架提交同步规则**：
-   - 所有功能分支中的框架相关提交（`pkg/`、`cmd/`、`api/protos/`、`templates/`、`openspec/`）
-   - 都可以通过 `git cherry-pick` 同步到 main 分支
-   - 服务实现提交（`app/`、`manifests/`、`docker-compose.yaml`）不同步到 main
-4. **分支独立性**：
-   - 各功能分支独立开发，互不干扰
-   - 通过 cherry-pick 共享框架改进
-   - 避免直接合并整个分支到 main
-
-### templates vs manifests
-
-**重要区别**：这两个目录服务于不同的目的，不应该相互同步。
-
-- **templates/**（main 分支）：通用的、框架级别的部署模板，给使用框架的人作为参考
-- **manifests/**（example 分支）：具体的、可运行的部署配置，基于 templates 创建的实例
 
 ### 提交消息格式
 
@@ -66,34 +25,33 @@ type(scope): description
 **允许的 type**：`feat`、`fix`、`refactor`、`docs`、`test`、`chore`
 
 **建议的 scope**：
-- `api`：API / Proto / OpenAPI 相关（可 cherry-pick 到 main）
-- `buf`：Buf 配置与生成链路（可 cherry-pick 到 main）
-- `cmd`：CLI 工具（可 cherry-pick 到 main）
-- `pkg`：框架核心代码（可 cherry-pick 到 main）
-- `scripts`：脚本与自动化任务（可 cherry-pick 到 main）
-- `templates`：模板资源（可 cherry-pick 到 main）
-- `tool-chain`：工具链与构建体系（如 `tool-chain/mk`，可 cherry-pick 到 main）
-- `md`：Markdown 文档（建议使用二级域，如 `md/readme`，可 cherry-pick 到 main）
-- `docs`：非 Markdown 文档或文档体系治理（建议使用二级域，如 `docs/reference`，可 cherry-pick 到 main）
-- `openspec`：OpenSpec 变更管理（可 cherry-pick 到 main）
-- `repo`：仓库治理/元信息（如 hooks、ignore、目录约定，可 cherry-pick 到 main）
-- `app`：应用服务（仅功能分支，不 cherry-pick 到 main）
-- `infra`：基础设施/部署（可 cherry-pick 到 main）
+- `api`：API / Proto / OpenAPI 相关
+- `buf`：Buf 配置与生成链路
+- `cmd`：CLI 工具
+- `pkg`：框架核心代码
+- `scripts`：脚本与自动化任务
+- `templates`：模板资源
+- `tool-chain`：工具链与构建体系（如 `tool-chain/mk`）
+- `md`：Markdown 文档（建议使用二级域，如 `md/readme`）
+- `docs`：非 Markdown 文档或文档体系治理（建议使用二级域，如 `docs/reference`）
+- `openspec`：OpenSpec 变更管理
+- `repo`：仓库治理/元信息（如 hooks、ignore、目录约定）
+- `app`：应用服务
+- `infra`：基础设施/部署
 
 > 说明：git hooks 不再强制 scope 必须来自上述列表；只校验 `type(scope): description` 基本格式。
 > scope 仍建议使用小写、语义化、简短命名（可包含 `a-z`、`0-9`、`.`、`_`、`/`、`-`）。
-> 推荐优先采用“一级域/二级域”结构，例如：`tool-chain/mk`、`md/readme`、`api/proto`。
+> 推荐优先采用"一级域/二级域"结构，例如：`tool-chain/mk`、`md/readme`、`api/proto`。
 
 **提交最佳实践**：
 1. 保持提交小而专注：一个提交只做一件事
-2. 避免混合提交：不要在同一个提交中同时修改框架和服务代码
-3. 使用清晰的描述：描述"做了什么"，而不是"怎么做的"
-4. 遵循格式：git hooks 会自动验证，不符合格式的提交会被拒绝
+2. 使用清晰的描述：描述"做了什么"，而不是"怎么做的"
+3. 遵循格式：git hooks 会自动验证，不符合格式的提交会被拒绝
 
 **规范的灵活性**：
 - 当现有建议的一级域能够表达语义时，优先在其下使用二级域（如 `md/readme`、`tool-chain/mk`）
-- 优先保持 scope 与改动边界一致，避免为了“套用已有分类”而使用不准确 scope
-- 若新增 scope 会被频繁复用，可将其补充到本节“建议的 scope”中
+- 优先保持 scope 与改动边界一致，避免为了"套用已有分类"而使用不准确 scope
+- 若新增 scope 会被频繁复用，可将其补充到本节"建议的 scope"中
 - 若判断没有合适的**一级域**，必须先向用户/维护者申请新增域；在获得同意后，再同步更新 `scripts/git-hooks/commit-msg` 与本文件
 
 ### Git Hooks
@@ -101,59 +59,22 @@ type(scope): description
 本仓库使用 git hooks 强制执行规范：
 
 - **commit-msg hook**：验证提交消息格式
-- **pre-commit hook**：防止在 main 分支提交服务代码（`app/`、`manifests/`、`docker-compose.yaml`），执行 gofmt 格式检查
+- **pre-commit hook**：执行 gofmt 格式检查
 - **post-merge hook**：自动同步 git hooks
 
 安装 hooks：`bash scripts/install-hooks.sh`
 
-**重要**：
-- 不要使用 `--no-verify` 跳过 hooks 验证
-- 在功能分支开发时，hooks 不会阻止服务代码提交
-- Cherry-pick 到 main 时，hooks 会自动验证，确保不包含服务代码
-
-### Cherry-Pick 工作流
-
-**框架提交同步流程**：
-
-1. **识别框架提交**：
-   - 提交涉及 `pkg/`、`cmd/`、`api/protos/`、`templates/`、`openspec/` 等框架目录
-   - 提交 scope 为 `pkg`、`cmd`、`templates`、`openspec`、`infra` 等
-
-2. **同步到 main**：
-   ```bash
-   # 在功能分支完成框架相关提交后
-   git checkout main
-   git cherry-pick <commit-hash>
-   git push origin main
-   ```
-
-3. **处理冲突**：
-   - 如果 cherry-pick 产生冲突，手动解决后继续
-   - 确保 main 分支不包含服务实现代码
-
-4. **验证**：
-   - 确认 main 分支只包含框架代码
-   - 确认提交历史清晰
-
-**README 策略**：
-
-不同分支的 README.md 内容不同，cherry-pick 时需要注意：
-
-- **main 分支**：框架说明（如何使用框架）
-- **example 分支**：完整项目说明（示例服务 + 框架）
-- **功能分支**：特定功能说明（如 IAM 服务）
-
-**原则**：
-- Cherry-pick 框架提交时，如果涉及 README.md，需要手动调整内容以适配目标分支
-- 避免直接 cherry-pick 包含 README.md 的提交，或在 cherry-pick 后单独调整
+**重要**：不要使用 `--no-verify` 跳过 hooks 验证。
 
 ## 顶层目录
 
 - `api/`：共享 proto、生成产物 `api/gen/` 与相关 AGENTS
 - `app/`：服务实现；当前包含 `iam/service/`（IAM 微服务）与 `sayhello/service/`（示例服务）
 - `cmd/svr/`：中心化 CLI，当前提供 `svr gen gorm`
-- `pkg/`：共享基础库，现有 `bootstrap`、`governance`、`helpers`、`jwt`、`jwks`、`k8s`、`logger`、`mapper`、`middleware`、`openfga`、`redis`、`transport`、`ent/mixin`、`actor`
-- `manifests/`：统一部署清单，K8s 已收敛到 `manifests/k8s/`；OpenFGA model 在 `manifests/openfga/`
+- `cmd/protoc-gen-servora-authz/`：自定义 protoc 插件，用于生成 AuthZ 规则
+- `pkg/`：共享基础库，现有 `actor`、`bootstrap`、`ent/mixin`、`governance`、`health`、`helpers`、`jwks`、`jwt`、`k8s`、`logger`、`mapper`、`openfga`、`redis`、`transport`
+- `manifests/`：统一部署清单，K8s 在 `manifests/k8s/`；OpenFGA model 在 `manifests/openfga/`
+- `templates/`：通用部署模板，给使用框架的人作为参考
 - `docs/`：文档目录；当前包含 `design/`、`development/`、`knowledge/`、`reference/`
 - `openspec/`：OpenSpec 变更与归档
 
