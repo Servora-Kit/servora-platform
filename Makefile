@@ -275,15 +275,15 @@ compose.dev.logs:
 compose.dev.ps:
 	@$(COMPOSE) $(COMPOSE_DEV_FILES) ps $(COMPOSE_STACK_SERVICES)
 
-# stop Air-based development stack without removing containers
+# stop dev microservice containers (infrastructure keeps running)
 compose.dev.stop:
-	@$(COMPOSE) $(COMPOSE_DEV_FILES) stop $(COMPOSE_STACK_SERVICES)
+	@$(COMPOSE) $(COMPOSE_DEV_FILES) stop $(MICROSERVICES)
 
-# remove Air-based development stack containers/networks
+# remove dev microservice containers (infrastructure keeps running)
 compose.dev.down:
-	@$(COMPOSE_STACK_DOWN)
+	@$(COMPOSE) $(COMPOSE_DEV_FILES) rm -sf $(MICROSERVICES)
 
-# remove Air-based development stack containers/networks/volumes
+# remove all compose stack containers/networks/volumes (infra + dev)
 compose.dev.reset:
 	@$(COMPOSE_STACK_RESET)
 
