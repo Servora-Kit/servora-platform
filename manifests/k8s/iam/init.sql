@@ -1,3 +1,7 @@
+-- Separate databases for IAM and OpenFGA (same instance, one user).
+CREATE DATABASE iam;
+CREATE DATABASE openfga;
+
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE IF NOT EXISTS users (

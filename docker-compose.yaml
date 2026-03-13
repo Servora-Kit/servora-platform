@@ -115,12 +115,12 @@ services:
     container_name: servora_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: servora
+      POSTGRES_DB: postgres
       POSTGRES_USER: servora
       POSTGRES_PASSWORD: servora
       TZ: Asia/Shanghai
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U servora -d servora"]
+      test: ["CMD-SHELL", "pg_isready -U servora -d postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -128,6 +128,7 @@ services:
       - "5432:5432"
     volumes:
       - servora-db-data:/var/lib/postgresql/data
+      - ./scripts/postgres-init:/docker-entrypoint-initdb.d:ro
     networks:
       - servora-network
 
@@ -143,7 +144,7 @@ services:
       - --datastore-engine
       - postgres
       - --datastore-uri
-      - postgres://servora:servora@db:5432/servora?sslmode=disable
+      - postgres://servora:servora@db:5432/openfga?sslmode=disable
     networks:
       - servora-network
 
@@ -161,7 +162,7 @@ services:
       - --datastore-engine
       - postgres
       - --datastore-uri
-      - postgres://servora:servora@db:5432/servora?sslmode=disable
+      - postgres://servora:servora@db:5432/openfga?sslmode=disable
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/healthz | grep -q SERVING"]
       interval: 10s

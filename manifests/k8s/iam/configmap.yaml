@@ -25,7 +25,7 @@ data:
     data:
       database:
         driver: "postgres"
-        source: "host=postgres user=servora password=servora dbname=servora port=5432 sslmode=disable"
+        source: "host=postgres user=servora password=servora dbname=iam port=5432 sslmode=disable"
       redis:
         addr: "redis:6379"
         password: "servora_redis_pwd"
