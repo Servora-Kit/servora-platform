@@ -51,9 +51,7 @@ func NewData(entClient *ent.Client, c *conf.Data, l logger.Logger, client client
 
 type txKey struct{}
 
-// Ent returns the ent client for the current context. If a transaction is
-// active (started by InTx), returns the transactional client; otherwise the
-// default client.
+// Ent 返回当前上下文的 ent 客户端。若处于 RunInEntTx 启动的事务中，则返回事务客户端；否则返回默认客户端。
 func (d *Data) Ent(ctx context.Context) *ent.Client {
 	if c, ok := ctx.Value(txKey{}).(*ent.Client); ok {
 		return c
@@ -61,10 +59,8 @@ func (d *Data) Ent(ctx context.Context) *ent.Client {
 	return d.entClient
 }
 
-// InTx executes fn within a database transaction. The transactional client is
-// propagated through the context so that repo methods using Ent(ctx) will
-// automatically participate in the transaction.
-func (d *Data) InTx(ctx context.Context, fn func(ctx context.Context) error) error {
+// RunInEntTx 在 ent 事务中执行 fn。事务客户端通过 context 传递，使用 Ent(ctx) 的仓库方法会自动参与该事务。
+func (d *Data) RunInEntTx(ctx context.Context, fn func(ctx context.Context) error) error {
 	tx, err := d.entClient.Tx(ctx)
 	if err != nil {
 		return err

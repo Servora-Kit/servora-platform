@@ -156,7 +156,7 @@ func (r *projectRepo) PurgeCascade(ctx context.Context, id string) error {
 	if err != nil {
 		return fmt.Errorf("invalid project ID: %w", err)
 	}
-	return r.data.InTx(ctx, func(txCtx context.Context) error {
+	return r.data.RunInEntTx(ctx, func(txCtx context.Context) error {
 		c := r.data.Ent(txCtx)
 		if _, err := c.ProjectMember.Delete().
 			Where(projectmember.ProjectIDEQ(pid)).

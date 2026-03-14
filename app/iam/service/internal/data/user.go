@@ -102,7 +102,7 @@ func (r *userRepo) PurgeCascade(ctx context.Context, id string) error {
 	if err != nil {
 		return fmt.Errorf("invalid user ID: %w", err)
 	}
-	return r.data.InTx(ctx, func(txCtx context.Context) error {
+	return r.data.RunInEntTx(ctx, func(txCtx context.Context) error {
 		c := r.data.Ent(txCtx)
 		if _, err := c.OrganizationMember.Delete().
 			Where(organizationmember.UserIDEQ(uid)).

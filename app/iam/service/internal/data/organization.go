@@ -185,7 +185,7 @@ func (r *organizationRepo) PurgeCascade(ctx context.Context, id string) error {
 	if err != nil {
 		return fmt.Errorf("invalid organization ID: %w", err)
 	}
-	return r.data.InTx(ctx, func(txCtx context.Context) error {
+	return r.data.RunInEntTx(ctx, func(txCtx context.Context) error {
 		c := r.data.Ent(txCtx)
 		projIDs, err := c.Project.Query().
 			Where(project.OrganizationIDEQ(oid)).
