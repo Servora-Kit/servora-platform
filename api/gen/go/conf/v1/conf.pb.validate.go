@@ -1234,6 +1234,8 @@ func (m *App) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ExternalUrl
+
 	if len(errors) > 0 {
 		return AppMultiError(errors)
 	}
@@ -2878,9 +2880,7 @@ func (m *Mail) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for VerifyBaseUrl
-
-	// no validation rules for ResetBaseUrl
+	// no validation rules for BaseUrl
 
 	// no validation rules for TemplateDir
 
@@ -4449,8 +4449,6 @@ func (m *App_Jwt) validate(all bool) error {
 	// no validation rules for Issuer
 
 	// no validation rules for Audience
-
-	// no validation rules for IssuerUrl
 
 	if len(errors) > 0 {
 		return App_JwtMultiError(errors)

@@ -17,6 +17,7 @@ data:
 
 app:
   env: "prod"
+  external_url: "http://localhost:8000"
   jwt:
     private_key_path: "/app/configs/keys/iam.rsa.pem"
     access_expire: 3600
@@ -42,8 +43,7 @@ mail:
   from:
     address: "noreply@servora.dev"
     name: "Servora"
-  verify_base_url: "http://localhost:3000/verify-email"
-  reset_base_url: "http://localhost:3000/reset-password"
+  base_url: "http://localhost:3000"
   # 可选：挂载模板目录后设置，如 /app/configs/mail-templates
   # template_dir: "/app/configs/mail-templates"
 

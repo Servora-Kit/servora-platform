@@ -463,6 +463,7 @@ type App struct {
 	Log           *App_Log               `protobuf:"bytes,5,opt,name=log,proto3" json:"log,omitempty"`                                                                                     // 日志配置
 	Metadata      map[string]string      `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 元数据
 	Openfga       *App_OpenFGA           `protobuf:"bytes,7,opt,name=openfga,proto3" json:"openfga,omitempty"`                                                                             // OpenFGA 配置
+	ExternalUrl   string                 `protobuf:"bytes,8,opt,name=external_url,json=externalUrl,proto3" json:"external_url,omitempty"`                                                  // 应用外部访问基地址（如 https://iam.example.com），用于 OIDC Discovery、邮件链接等
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -544,6 +545,13 @@ func (x *App) GetOpenfga() *App_OpenFGA {
 		return x.Openfga
 	}
 	return nil
+}
+
+func (x *App) GetExternalUrl() string {
+	if x != nil {
+		return x.ExternalUrl
+	}
+	return ""
 }
 
 // 注册中心配置
@@ -1324,11 +1332,10 @@ func (x *Metrics) GetMeterName() string {
 // 邮件配置
 type Mail struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Smtp          *Smtp                  `protobuf:"bytes,1,opt,name=smtp,proto3" json:"smtp,omitempty"`                                          // SMTP 服务器配置
-	From          *MailFrom              `protobuf:"bytes,2,opt,name=from,proto3" json:"from,omitempty"`                                          // 发件人配置
-	VerifyBaseUrl string                 `protobuf:"bytes,3,opt,name=verify_base_url,json=verifyBaseUrl,proto3" json:"verify_base_url,omitempty"` // 邮箱验证链接前缀（如 https://app.example.com/verify）
-	ResetBaseUrl  string                 `protobuf:"bytes,4,opt,name=reset_base_url,json=resetBaseUrl,proto3" json:"reset_base_url,omitempty"`    // 密码重置链接前缀（如 https://app.example.com/reset-password）
-	TemplateDir   string                 `protobuf:"bytes,5,opt,name=template_dir,json=templateDir,proto3" json:"template_dir,omitempty"`         // 可选：邮件 HTML 模板目录，放置 verify_email.html、reset_password.html 等，未设置或文件缺失时使用内嵌默认
+	Smtp          *Smtp                  `protobuf:"bytes,1,opt,name=smtp,proto3" json:"smtp,omitempty"`                                  // SMTP 服务器配置
+	From          *MailFrom              `protobuf:"bytes,2,opt,name=from,proto3" json:"from,omitempty"`                                  // 发件人配置
+	BaseUrl       string                 `protobuf:"bytes,3,opt,name=base_url,json=baseUrl,proto3" json:"base_url,omitempty"`             // 邮件链接的前端基地址（如 https://app.example.com），用于拼接验证/重置等操作路径
+	TemplateDir   string                 `protobuf:"bytes,5,opt,name=template_dir,json=templateDir,proto3" json:"template_dir,omitempty"` // 可选：邮件 HTML 模板目录，放置 verify_email.html、reset_password.html 等，未设置或文件缺失时使用内嵌默认
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1377,16 +1384,9 @@ func (x *Mail) GetFrom() *MailFrom {
 	return nil
 }
 
-func (x *Mail) GetVerifyBaseUrl() string {
+func (x *Mail) GetBaseUrl() string {
 	if x != nil {
-		return x.VerifyBaseUrl
-	}
-	return ""
-}
-
-func (x *Mail) GetResetBaseUrl() string {
-	if x != nil {
-		return x.ResetBaseUrl
+		return x.BaseUrl
 	}
 	return ""
 }
@@ -2067,7 +2067,7 @@ func (x *Data_Client_GRPC) GetTimeout() *durationpb.Duration {
 // JWT 配置（RS256 非对称签名）
 //
 // IAM 签发端需配置 private_key_path 或 private_key_pem（二选一，path 优先）。
-// 消费端只需配置 issuer_url，通过 OIDC Discovery 自动获取 JWKS。
+// 消费端通过服务发现定位 IAM 并自动获取 JWKS，不再需要静态 URL 配置。
 type App_Jwt struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	PrivateKeyPath string                 `protobuf:"bytes,1,opt,name=private_key_path,json=privateKeyPath,proto3" json:"private_key_path,omitempty"` // RSA 私钥文件路径（PEM 格式）
@@ -2076,7 +2076,6 @@ type App_Jwt struct {
 	RefreshExpire  int32                  `protobuf:"varint,4,opt,name=refresh_expire,json=refreshExpire,proto3" json:"refresh_expire,omitempty"`     // Refresh Token 过期时间（秒）
 	Issuer         string                 `protobuf:"bytes,5,opt,name=issuer,proto3" json:"issuer,omitempty"`                                         // JWT 签发者（iss claim）
 	Audience       string                 `protobuf:"bytes,6,opt,name=audience,proto3" json:"audience,omitempty"`                                     // JWT 受众（aud claim）
-	IssuerUrl      string                 `protobuf:"bytes,7,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty"`                  // OIDC Discovery 基础 URL（消费端配置）
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -2149,13 +2148,6 @@ func (x *App_Jwt) GetIssuer() string {
 func (x *App_Jwt) GetAudience() string {
 	if x != nil {
 		return x.Audience
-	}
-	return ""
-}
-
-func (x *App_Jwt) GetIssuerUrl() string {
-	if x != nil {
-		return x.IssuerUrl
 	}
 	return ""
 }
@@ -2388,7 +2380,7 @@ const file_conf_v1_conf_proto_rawDesc = "" +
 	"\x04GRPC\x12!\n" +
 	"\fservice_name\x18\x01 \x01(\tR\vserviceName\x12\x1a\n" +
 	"\bendpoint\x18\x02 \x01(\tR\bendpoint\x123\n" +
-	"\atimeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\atimeout\"\xcd\x06\n" +
+	"\atimeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\atimeout\"\xd1\x06\n" +
 	"\x03App\x12\x10\n" +
 	"\x03env\x18\x01 \x01(\tR\x03env\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
@@ -2396,16 +2388,15 @@ const file_conf_v1_conf_proto_rawDesc = "" +
 	"\x03jwt\x18\x04 \x01(\v2\x10.conf.v1.App.JwtR\x03jwt\x12\"\n" +
 	"\x03log\x18\x05 \x01(\v2\x10.conf.v1.App.LogR\x03log\x126\n" +
 	"\bmetadata\x18\x06 \x03(\v2\x1a.conf.v1.App.MetadataEntryR\bmetadata\x12.\n" +
-	"\aopenfga\x18\a \x01(\v2\x14.conf.v1.App.OpenFGAR\aopenfga\x1a\xf6\x01\n" +
+	"\aopenfga\x18\a \x01(\v2\x14.conf.v1.App.OpenFGAR\aopenfga\x12!\n" +
+	"\fexternal_url\x18\b \x01(\tR\vexternalUrl\x1a\xd7\x01\n" +
 	"\x03Jwt\x12(\n" +
 	"\x10private_key_path\x18\x01 \x01(\tR\x0eprivateKeyPath\x12&\n" +
 	"\x0fprivate_key_pem\x18\x02 \x01(\tR\rprivateKeyPem\x12#\n" +
 	"\raccess_expire\x18\x03 \x01(\x05R\faccessExpire\x12%\n" +
 	"\x0erefresh_expire\x18\x04 \x01(\x05R\rrefreshExpire\x12\x16\n" +
 	"\x06issuer\x18\x05 \x01(\tR\x06issuer\x12\x1a\n" +
-	"\baudience\x18\x06 \x01(\tR\baudience\x12\x1d\n" +
-	"\n" +
-	"issuer_url\x18\a \x01(\tR\tissuerUrl\x1a\xa8\x01\n" +
+	"\baudience\x18\x06 \x01(\tR\baudience\x1a\xa8\x01\n" +
 	"\x03Log\x12\x14\n" +
 	"\x05level\x18\x01 \x01(\x05R\x05level\x12\x1a\n" +
 	"\bfilename\x18\x02 \x01(\tR\bfilename\x12\x19\n" +
@@ -2481,12 +2472,11 @@ const file_conf_v1_conf_proto_rawDesc = "" +
 	"\aMetrics\x12\x16\n" +
 	"\x06enable\x18\x01 \x01(\bR\x06enable\x12\x1d\n" +
 	"\n" +
-	"meter_name\x18\x02 \x01(\tR\tmeterName\"\xc1\x01\n" +
+	"meter_name\x18\x02 \x01(\tR\tmeterName\"\x8e\x01\n" +
 	"\x04Mail\x12!\n" +
 	"\x04smtp\x18\x01 \x01(\v2\r.conf.v1.SmtpR\x04smtp\x12%\n" +
-	"\x04from\x18\x02 \x01(\v2\x11.conf.v1.MailFromR\x04from\x12&\n" +
-	"\x0fverify_base_url\x18\x03 \x01(\tR\rverifyBaseUrl\x12$\n" +
-	"\x0ereset_base_url\x18\x04 \x01(\tR\fresetBaseUrl\x12!\n" +
+	"\x04from\x18\x02 \x01(\v2\x11.conf.v1.MailFromR\x04from\x12\x19\n" +
+	"\bbase_url\x18\x03 \x01(\tR\abaseUrl\x12!\n" +
 	"\ftemplate_dir\x18\x05 \x01(\tR\vtemplateDir\"\xe5\x01\n" +
 	"\x04Smtp\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +

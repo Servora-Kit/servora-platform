@@ -106,18 +106,6 @@ func NewHTTPServer(
 ) *khttp.Server {
 	hlog := logger.With(l, logger.WithModule("http/server/iam-service"))
 
-	issuerURL := ""
-	if appCfg.Jwt != nil {
-		issuerURL = appCfg.Jwt.IssuerUrl
-	}
-	if issuerURL == "" {
-		addr := "http://localhost:8000"
-		if c != nil && c.Http != nil && c.Http.Addr != "" {
-			addr = "http://" + c.Http.Addr
-		}
-		issuerURL = addr
-	}
-
 	opts := []http.ServerOption{
 		http.WithLogger(hlog),
 		http.WithMiddleware(mw...),
@@ -130,10 +118,7 @@ func NewHTTPServer(
 			func(s *khttp.Server) { iamv1.RegisterTestServiceHTTPServer(s, test) },
 			func(s *khttp.Server) { iamv1.RegisterOrganizationServiceHTTPServer(s, org) },
 			func(s *khttp.Server) { iamv1.RegisterProjectServiceHTTPServer(s, proj) },
-			func(s *khttp.Server) {
-				s.Handle("/.well-known/jwks.json", jwks.NewJWKSHandler(km))
-				s.Handle("/.well-known/openid-configuration", jwks.NewOIDCDiscoveryHandler(issuerURL))
-			},
+			func(s *khttp.Server) { jwks.NewEndpoints(km, appCfg, l).Register(s) },
 		),
 	}
 	if c != nil && c.Http != nil {

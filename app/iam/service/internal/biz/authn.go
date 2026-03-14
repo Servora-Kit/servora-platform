@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"time"
 
 	"github.com/go-kratos/kratos/v2/errors"
@@ -318,6 +317,9 @@ const (
 	purposeResetPassword = "reset_password"
 	verifyEmailTTL       = 24 * time.Hour
 	resetPasswordTTL     = 1 * time.Hour
+
+	mailPathVerifyEmail   = "/verify-email"
+	mailPathResetPassword = "/reset-password"
 )
 
 func tokenHash(raw string) string {
@@ -342,7 +344,7 @@ func (uc *AuthnUsecase) RequestEmailVerification(ctx context.Context, email stri
 		return errors.InternalServer("INTERNAL", "internal error")
 	}
 
-	link := fmt.Sprintf("%s?token=%s", uc.mailCfg.GetVerifyBaseUrl(), raw)
+	link := uc.buildTokenLink(mailPathVerifyEmail, raw)
 	subject, html, err := RenderVerifyEmail(uc.mailCfg, link)
 	if err != nil {
 		uc.log.Errorf("render verify email template failed: %v", err)
@@ -389,7 +391,7 @@ func (uc *AuthnUsecase) RequestPasswordReset(ctx context.Context, email string) 
 		return errors.InternalServer("INTERNAL", "internal error")
 	}
 
-	link := fmt.Sprintf("%s?token=%s", uc.mailCfg.GetResetBaseUrl(), raw)
+	link := uc.buildTokenLink(mailPathResetPassword, raw)
 	subject, html, err := RenderResetPassword(uc.mailCfg, link)
 	if err != nil {
 		uc.log.Errorf("render reset password template failed: %v", err)
@@ -428,4 +430,8 @@ func (uc *AuthnUsecase) ResetPassword(ctx context.Context, token, newPassword st
 		uc.log.Warnf("delete refresh tokens after reset: %v", err)
 	}
 	return nil
+}
+
+func (uc *AuthnUsecase) buildTokenLink(path, token string) string {
+	return uc.mailCfg.GetBaseUrl() + path + "?token=" + token
 }
