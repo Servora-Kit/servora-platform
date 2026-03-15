@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
-	dataent "github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
+	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
 	"github.com/Servora-Kit/servora/pkg/helpers"
 	"github.com/Servora-Kit/servora/pkg/logger"
 	"github.com/Servora-Kit/servora/pkg/redis"
@@ -164,7 +164,7 @@ func (h *LoginHandler) authenticate(ctx context.Context, authRequestID, email, p
 
 	user, err := h.authnRepo.GetUserByEmail(ctx, email)
 	if err != nil {
-		if dataent.IsNotFound(err) {
+		if ent.IsNotFound(err) {
 			return "", fmt.Errorf("invalid email or password")
 		}
 		h.log.Errorf("get user by email: %v", err)

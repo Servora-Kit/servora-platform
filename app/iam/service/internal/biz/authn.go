@@ -13,7 +13,7 @@ import (
 	authnpb "github.com/Servora-Kit/servora/api/gen/go/authn/service/v1"
 	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
-	dataent "github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
+	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
 	"github.com/Servora-Kit/servora/pkg/helpers"
 	"github.com/Servora-Kit/servora/pkg/jwks"
 	"github.com/Servora-Kit/servora/pkg/logger"
@@ -94,7 +94,7 @@ type OTPRepo interface {
 
 func (uc *AuthnUsecase) SignupByEmail(ctx context.Context, user *entity.User) (*entity.User, error) {
 	existingUser, err := uc.repo.GetUserByUserName(ctx, user.Name)
-	if err != nil && !dataent.IsNotFound(err) {
+	if err != nil && !ent.IsNotFound(err) {
 		uc.log.Errorf("check username failed: %v", err)
 		return nil, errors.InternalServer("INTERNAL", "internal error")
 	}
@@ -103,7 +103,7 @@ func (uc *AuthnUsecase) SignupByEmail(ctx context.Context, user *entity.User) (*
 	}
 
 	existingEmail, err := uc.repo.GetUserByEmail(ctx, user.Email)
-	if err != nil && !dataent.IsNotFound(err) {
+	if err != nil && !ent.IsNotFound(err) {
 		uc.log.Errorf("check email failed: %v", err)
 		return nil, errors.InternalServer("INTERNAL", "internal error")
 	}
@@ -145,7 +145,7 @@ func (uc *AuthnUsecase) generateOpaqueToken() (string, error) {
 func (uc *AuthnUsecase) LoginByEmailPassword(ctx context.Context, user *entity.User) (*TokenPair, error) {
 	foundUser, err := uc.repo.GetUserByEmail(ctx, user.Email)
 	if err != nil {
-		if dataent.IsNotFound(err) {
+		if ent.IsNotFound(err) {
 			return nil, authnpb.ErrorUserNotFound("invalid email or password")
 		}
 		uc.log.Errorf("get user by email failed: %v", err)

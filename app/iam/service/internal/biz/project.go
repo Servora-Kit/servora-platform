@@ -7,7 +7,7 @@ import (
 
 	projectpb "github.com/Servora-Kit/servora/api/gen/go/project/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
-	dataent "github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
+	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
 	"github.com/Servora-Kit/servora/pkg/actor"
 	"github.com/Servora-Kit/servora/pkg/logger"
 )
@@ -92,7 +92,8 @@ func (uc *ProjectUsecase) CreateDefault(ctx context.Context, userID, orgID, name
 	}
 	created, err := uc.repo.Create(ctx, p)
 	if err != nil {
-		return nil, err
+		uc.log.Errorf("create project failed: %v", err)
+		return nil, projectpb.ErrorProjectCreateFailed("%v", err)
 	}
 
 	if uc.authz != nil {
@@ -117,10 +118,11 @@ func (uc *ProjectUsecase) CreateDefault(ctx context.Context, userID, orgID, name
 func (uc *ProjectUsecase) Get(ctx context.Context, id string) (*entity.Project, error) {
 	p, err := uc.repo.GetByID(ctx, id)
 	if err != nil {
-		if dataent.IsNotFound(err) {
+		if ent.IsNotFound(err) {
 			return nil, projectpb.ErrorProjectNotFound("project %s not found", id)
 		}
-		return nil, err
+		uc.log.Errorf("get project failed: %v", err)
+		return nil, errors.InternalServer("INTERNAL", "internal error")
 	}
 	return p, nil
 }
@@ -135,18 +137,33 @@ func (uc *ProjectUsecase) List(ctx context.Context, orgID string, page, pageSize
 		ids, err := uc.authz.CachedListObjects(ctx, DefaultListCacheTTL, a.ID(), "can_view", "project")
 		if err != nil {
 			uc.log.Warnf("ListObjects fallback to DB: %v", err)
-			return uc.repo.ListByOrgID(ctx, orgID, page, pageSize)
+			projects, total, err := uc.repo.ListByOrgID(ctx, orgID, page, pageSize)
+			if err != nil {
+				uc.log.Errorf("list projects failed: %v", err)
+				return nil, 0, errors.InternalServer("INTERNAL", "internal error")
+			}
+			return projects, total, nil
 		}
-		return uc.repo.GetByIDs(ctx, ids, page, pageSize)
+		projects, total, err := uc.repo.GetByIDs(ctx, ids, page, pageSize)
+		if err != nil {
+			uc.log.Errorf("list projects by ids failed: %v", err)
+			return nil, 0, errors.InternalServer("INTERNAL", "internal error")
+		}
+		return projects, total, nil
 	}
 
-	return uc.repo.ListByOrgID(ctx, orgID, page, pageSize)
+	projects, total, err := uc.repo.ListByOrgID(ctx, orgID, page, pageSize)
+	if err != nil {
+		uc.log.Errorf("list projects failed: %v", err)
+		return nil, 0, errors.InternalServer("INTERNAL", "internal error")
+	}
+	return projects, total, nil
 }
 
 func (uc *ProjectUsecase) Update(ctx context.Context, p *entity.Project) (*entity.Project, error) {
 	updated, err := uc.repo.Update(ctx, p)
 	if err != nil {
-		if dataent.IsNotFound(err) {
+		if ent.IsNotFound(err) {
 			return nil, projectpb.ErrorProjectNotFound("project %s not found", p.ID)
 		}
 		uc.log.Errorf("update project failed: %v", err)
@@ -157,7 +174,7 @@ func (uc *ProjectUsecase) Update(ctx context.Context, p *entity.Project) (*entit
 
 func (uc *ProjectUsecase) Delete(ctx context.Context, id string) error {
 	if _, err := uc.repo.GetByID(ctx, id); err != nil {
-		if dataent.IsNotFound(err) {
+		if ent.IsNotFound(err) {
 			return projectpb.ErrorProjectNotFound("project %s not found", id)
 		}
 		uc.log.Errorf("get project failed: %v", err)
@@ -173,7 +190,7 @@ func (uc *ProjectUsecase) Delete(ctx context.Context, id string) error {
 func (uc *ProjectUsecase) Purge(ctx context.Context, id string) error {
 	proj, err := uc.repo.GetByID(ctx, id)
 	if err != nil {
-		if dataent.IsNotFound(err) {
+		if ent.IsNotFound(err) {
 			return projectpb.ErrorProjectNotFound("project %s not found", id)
 		}
 		uc.log.Errorf("get project failed: %v", err)
@@ -210,12 +227,18 @@ func (uc *ProjectUsecase) purgeProjectFGA(ctx context.Context, projID, orgID str
 
 func (uc *ProjectUsecase) Restore(ctx context.Context, id string) (*entity.Project, error) {
 	if _, err := uc.repo.GetByIDIncludingDeleted(ctx, id); err != nil {
-		if dataent.IsNotFound(err) {
+		if ent.IsNotFound(err) {
 			return nil, projectpb.ErrorProjectNotFound("project %s not found", id)
 		}
-		return nil, err
+		uc.log.Errorf("get project failed: %v", err)
+		return nil, errors.InternalServer("INTERNAL", "internal error")
 	}
-	return uc.repo.Restore(ctx, id)
+	p, err := uc.repo.Restore(ctx, id)
+	if err != nil {
+		uc.log.Errorf("restore project failed: %v", err)
+		return nil, projectpb.ErrorProjectUpdateFailed("%v", err)
+	}
+	return p, nil
 }
 
 func (uc *ProjectUsecase) AddMember(ctx context.Context, m *entity.ProjectMember) (*entity.ProjectMember, error) {
@@ -237,7 +260,8 @@ func (uc *ProjectUsecase) AddMember(ctx context.Context, m *entity.ProjectMember
 
 	created, err := uc.repo.AddMember(ctx, m)
 	if err != nil {
-		return nil, err
+		uc.log.Errorf("add member failed: %v", err)
+		return nil, projectpb.ErrorProjectCreateFailed("%v", err)
 	}
 
 	if uc.authz != nil {
@@ -256,7 +280,8 @@ func (uc *ProjectUsecase) RemoveMember(ctx context.Context, projID, userID strin
 	}
 
 	if err := uc.repo.RemoveMember(ctx, projID, userID); err != nil {
-		return err
+		uc.log.Errorf("remove member failed: %v", err)
+		return projectpb.ErrorProjectDeleteFailed("%v", err)
 	}
 
 	if uc.authz != nil {
@@ -269,7 +294,12 @@ func (uc *ProjectUsecase) RemoveMember(ctx context.Context, projID, userID strin
 }
 
 func (uc *ProjectUsecase) ListMembers(ctx context.Context, projID string, page, pageSize int32) ([]*entity.ProjectMember, int64, error) {
-	return uc.repo.ListMembers(ctx, projID, page, pageSize)
+	members, total, err := uc.repo.ListMembers(ctx, projID, page, pageSize)
+	if err != nil {
+		uc.log.Errorf("list members failed: %v", err)
+		return nil, 0, errors.InternalServer("INTERNAL", "internal error")
+	}
+	return members, total, nil
 }
 
 func (uc *ProjectUsecase) UpdateMemberRole(ctx context.Context, projID, userID, newRole string) (*entity.ProjectMember, error) {
@@ -284,7 +314,8 @@ func (uc *ProjectUsecase) UpdateMemberRole(ctx context.Context, projID, userID, 
 
 	updated, err := uc.repo.UpdateMemberRole(ctx, projID, userID, newRole)
 	if err != nil {
-		return nil, err
+		uc.log.Errorf("update member role failed: %v", err)
+		return nil, projectpb.ErrorProjectUpdateFailed("%v", err)
 	}
 
 	if uc.authz != nil && oldMember.Role != newRole {

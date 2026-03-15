@@ -9,7 +9,7 @@ import (
 	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
 	userpb "github.com/Servora-Kit/servora/api/gen/go/user/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
-	dataent "github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
+	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
 	"github.com/Servora-Kit/servora/pkg/actor"
 	"github.com/Servora-Kit/servora/pkg/logger"
 )
@@ -91,7 +91,7 @@ func (uc *UserUsecase) GetUser(ctx context.Context, id string) (*entity.User, er
 
 	u, err := uc.repo.GetUserById(ctx, id)
 	if err != nil {
-		if dataent.IsNotFound(err) {
+		if ent.IsNotFound(err) {
 			return nil, userpb.ErrorUserNotFound("user not found")
 		}
 		uc.log.Errorf("get user by id failed: %v", err)
@@ -108,7 +108,7 @@ func (uc *UserUsecase) UpdateUser(ctx context.Context, user *entity.User) (*enti
 
 	origUser, err := uc.repo.GetUserById(ctx, user.ID)
 	if err != nil {
-		if dataent.IsNotFound(err) {
+		if ent.IsNotFound(err) {
 			return nil, userpb.ErrorUserNotFound("user not found")
 		}
 		uc.log.Errorf("get user failed: %v", err)
@@ -130,7 +130,7 @@ func (uc *UserUsecase) UpdateUser(ctx context.Context, user *entity.User) (*enti
 
 	if user.Name != "" && user.Name != origUser.Name {
 		userWithSameName, err := uc.authnRepo.GetUserByUserName(ctx, user.Name)
-		if err != nil && !dataent.IsNotFound(err) {
+		if err != nil && !ent.IsNotFound(err) {
 			uc.log.Errorf("check username failed: %v", err)
 			return nil, errors.InternalServer("INTERNAL", "internal error")
 		}
@@ -141,7 +141,7 @@ func (uc *UserUsecase) UpdateUser(ctx context.Context, user *entity.User) (*enti
 
 	if user.Email != "" && user.Email != origUser.Email {
 		userWithSameEmail, err := uc.authnRepo.GetUserByEmail(ctx, user.Email)
-		if err != nil && !dataent.IsNotFound(err) {
+		if err != nil && !ent.IsNotFound(err) {
 			uc.log.Errorf("check email failed: %v", err)
 			return nil, errors.InternalServer("INTERNAL", "internal error")
 		}
@@ -247,7 +247,7 @@ func (uc *UserUsecase) RestoreUser(ctx context.Context, id string) (*entity.User
 
 func (uc *UserUsecase) checkUserExists(ctx context.Context, user *entity.User) error {
 	existingUser, err := uc.authnRepo.GetUserByUserName(ctx, user.Name)
-	if err != nil && !dataent.IsNotFound(err) {
+	if err != nil && !ent.IsNotFound(err) {
 		uc.log.Errorf("check username failed: %v", err)
 		return errors.InternalServer("INTERNAL", "internal error")
 	}
@@ -256,7 +256,7 @@ func (uc *UserUsecase) checkUserExists(ctx context.Context, user *entity.User) e
 	}
 
 	existingEmail, err := uc.authnRepo.GetUserByEmail(ctx, user.Email)
-	if err != nil && !dataent.IsNotFound(err) {
+	if err != nil && !ent.IsNotFound(err) {
 		uc.log.Errorf("check email failed: %v", err)
 		return errors.InternalServer("INTERNAL", "internal error")
 	}

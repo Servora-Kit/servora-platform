@@ -7,7 +7,7 @@ import (
 
 	orgpb "github.com/Servora-Kit/servora/api/gen/go/organization/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
-	dataent "github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
+	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
 	"github.com/Servora-Kit/servora/pkg/actor"
 	"github.com/Servora-Kit/servora/pkg/logger"
 )
@@ -65,7 +65,7 @@ func (uc *OrganizationUsecase) Create(ctx context.Context, org *entity.Organizat
 
 	if _, err := uc.repo.GetBySlug(ctx, org.Slug); err == nil {
 		return nil, orgpb.ErrorOrganizationAlreadyExists("slug '%s' already taken", org.Slug)
-	} else if !dataent.IsNotFound(err) {
+	} else if !ent.IsNotFound(err) {
 		uc.log.Errorf("check slug failed: %v", err)
 		return nil, errors.InternalServer("INTERNAL", "internal error")
 	}
@@ -105,7 +105,8 @@ func (uc *OrganizationUsecase) CreateDefault(ctx context.Context, userID, name, 
 	}
 	created, err := uc.repo.Create(ctx, org)
 	if err != nil {
-		return nil, err
+		uc.log.Errorf("create organization failed: %v", err)
+		return nil, orgpb.ErrorOrganizationCreateFailed("%v", err)
 	}
 
 	if uc.authz != nil {
@@ -130,10 +131,11 @@ func (uc *OrganizationUsecase) CreateDefault(ctx context.Context, userID, name, 
 func (uc *OrganizationUsecase) Get(ctx context.Context, id string) (*entity.Organization, error) {
 	org, err := uc.repo.GetByID(ctx, id)
 	if err != nil {
-		if dataent.IsNotFound(err) {
+		if ent.IsNotFound(err) {
 			return nil, orgpb.ErrorOrganizationNotFound("organization %s not found", id)
 		}
-		return nil, err
+		uc.log.Errorf("get organization failed: %v", err)
+		return nil, errors.InternalServer("INTERNAL", "internal error")
 	}
 	return org, nil
 }
@@ -148,18 +150,33 @@ func (uc *OrganizationUsecase) List(ctx context.Context, page, pageSize int32) (
 		ids, err := uc.authz.CachedListObjects(ctx, DefaultListCacheTTL, a.ID(), "can_view", "organization")
 		if err != nil {
 			uc.log.Warnf("ListObjects fallback to DB: %v", err)
-			return uc.repo.ListByUserID(ctx, a.ID(), page, pageSize)
+			orgs, total, err := uc.repo.ListByUserID(ctx, a.ID(), page, pageSize)
+			if err != nil {
+				uc.log.Errorf("list organizations failed: %v", err)
+				return nil, 0, errors.InternalServer("INTERNAL", "internal error")
+			}
+			return orgs, total, nil
 		}
-		return uc.repo.GetByIDs(ctx, ids, page, pageSize)
+		orgs, total, err := uc.repo.GetByIDs(ctx, ids, page, pageSize)
+		if err != nil {
+			uc.log.Errorf("list organizations by ids failed: %v", err)
+			return nil, 0, errors.InternalServer("INTERNAL", "internal error")
+		}
+		return orgs, total, nil
 	}
 
-	return uc.repo.ListByUserID(ctx, a.ID(), page, pageSize)
+	orgs, total, err := uc.repo.ListByUserID(ctx, a.ID(), page, pageSize)
+	if err != nil {
+		uc.log.Errorf("list organizations failed: %v", err)
+		return nil, 0, errors.InternalServer("INTERNAL", "internal error")
+	}
+	return orgs, total, nil
 }
 
 func (uc *OrganizationUsecase) Update(ctx context.Context, org *entity.Organization) (*entity.Organization, error) {
 	updated, err := uc.repo.Update(ctx, org)
 	if err != nil {
-		if dataent.IsNotFound(err) {
+		if ent.IsNotFound(err) {
 			return nil, orgpb.ErrorOrganizationNotFound("organization %s not found", org.ID)
 		}
 		uc.log.Errorf("update organization failed: %v", err)
@@ -170,7 +187,7 @@ func (uc *OrganizationUsecase) Update(ctx context.Context, org *entity.Organizat
 
 func (uc *OrganizationUsecase) Delete(ctx context.Context, id string) error {
 	if _, err := uc.repo.GetByID(ctx, id); err != nil {
-		if dataent.IsNotFound(err) {
+		if ent.IsNotFound(err) {
 			return orgpb.ErrorOrganizationNotFound("organization %s not found", id)
 		}
 		uc.log.Errorf("get organization failed: %v", err)
@@ -185,7 +202,7 @@ func (uc *OrganizationUsecase) Delete(ctx context.Context, id string) error {
 
 func (uc *OrganizationUsecase) Purge(ctx context.Context, id string) error {
 	if _, err := uc.repo.GetByID(ctx, id); err != nil {
-		if dataent.IsNotFound(err) {
+		if ent.IsNotFound(err) {
 			return orgpb.ErrorOrganizationNotFound("organization %s not found", id)
 		}
 		uc.log.Errorf("get organization failed: %v", err)
@@ -203,12 +220,18 @@ func (uc *OrganizationUsecase) Purge(ctx context.Context, id string) error {
 
 func (uc *OrganizationUsecase) Restore(ctx context.Context, id string) (*entity.Organization, error) {
 	if _, err := uc.repo.GetByIDIncludingDeleted(ctx, id); err != nil {
-		if dataent.IsNotFound(err) {
+		if ent.IsNotFound(err) {
 			return nil, orgpb.ErrorOrganizationNotFound("organization %s not found", id)
 		}
-		return nil, err
+		uc.log.Errorf("get organization failed: %v", err)
+		return nil, errors.InternalServer("INTERNAL", "internal error")
 	}
-	return uc.repo.Restore(ctx, id)
+	org, err := uc.repo.Restore(ctx, id)
+	if err != nil {
+		uc.log.Errorf("restore organization failed: %v", err)
+		return nil, orgpb.ErrorOrganizationUpdateFailed("%v", err)
+	}
+	return org, nil
 }
 
 func (uc *OrganizationUsecase) purgeOrgFGA(ctx context.Context, orgID string) {
@@ -256,7 +279,8 @@ func (uc *OrganizationUsecase) AddMember(ctx context.Context, m *entity.Organiza
 
 	created, err := uc.repo.AddMember(ctx, m)
 	if err != nil {
-		return nil, err
+		uc.log.Errorf("add member failed: %v", err)
+		return nil, orgpb.ErrorOrganizationCreateFailed("%v", err)
 	}
 
 	if uc.authz != nil {
@@ -275,7 +299,8 @@ func (uc *OrganizationUsecase) RemoveMember(ctx context.Context, orgID, userID s
 	}
 
 	if err := uc.repo.RemoveMember(ctx, orgID, userID); err != nil {
-		return err
+		uc.log.Errorf("remove member failed: %v", err)
+		return orgpb.ErrorOrganizationDeleteFailed("%v", err)
 	}
 
 	if uc.authz != nil {
@@ -288,7 +313,12 @@ func (uc *OrganizationUsecase) RemoveMember(ctx context.Context, orgID, userID s
 }
 
 func (uc *OrganizationUsecase) ListMembers(ctx context.Context, orgID string, page, pageSize int32) ([]*entity.OrganizationMember, int64, error) {
-	return uc.repo.ListMembers(ctx, orgID, page, pageSize)
+	members, total, err := uc.repo.ListMembers(ctx, orgID, page, pageSize)
+	if err != nil {
+		uc.log.Errorf("list members failed: %v", err)
+		return nil, 0, errors.InternalServer("INTERNAL", "internal error")
+	}
+	return members, total, nil
 }
 
 func (uc *OrganizationUsecase) UpdateMemberRole(ctx context.Context, orgID, userID, newRole string) (*entity.OrganizationMember, error) {
@@ -303,7 +333,8 @@ func (uc *OrganizationUsecase) UpdateMemberRole(ctx context.Context, orgID, user
 
 	updated, err := uc.repo.UpdateMemberRole(ctx, orgID, userID, newRole)
 	if err != nil {
-		return nil, err
+		uc.log.Errorf("update member role failed: %v", err)
+		return nil, orgpb.ErrorOrganizationUpdateFailed("%v", err)
 	}
 
 	if uc.authz != nil && oldMember.Role != newRole {
