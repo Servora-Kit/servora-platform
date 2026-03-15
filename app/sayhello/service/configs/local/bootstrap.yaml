@@ -1,6 +1,6 @@
 server:
   grpc:
-    addr: "0.0.0.0:8002"
+    addr: "0.0.0.0:8010"
     timeout: 10s
 
 app:
