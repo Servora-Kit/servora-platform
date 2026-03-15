@@ -54,19 +54,19 @@ brew install k6
 ### 4.1 基线接口
 
 ```bash
-k6 run scripts/k6/baseline-test.js
+k6 run manifests/scripts/k6/baseline-test.js
 ```
 
 稳态验证 300 QPS：
 
 ```bash
-MODE=steady RATE=300 DURATION=5m k6 run scripts/k6/baseline-test.js
+MODE=steady RATE=300 DURATION=5m k6 run manifests/scripts/k6/baseline-test.js
 ```
 
 ### 4.2 跨服务链路接口
 
 ```bash
-k6 run scripts/k6/hello-chain-test.js
+k6 run manifests/scripts/k6/hello-chain-test.js
 ```
 
 ### 4.3 鉴权场景
@@ -87,7 +87,7 @@ k6 run scripts/k6/hello-chain-test.js
 ```bash
 LOGIN_EMAIL=admin@example.com \
 LOGIN_PASSWORD=123456 \
-k6 run scripts/k6/auth-scenarios.js
+k6 run manifests/scripts/k6/auth-scenarios.js
 ```
 
 如果你已经手动拿到了 Token，也可以直接传：
@@ -100,7 +100,7 @@ k6 run scripts/k6/auth-scenarios.js
 ```bash
 SCENARIOS=read \
 ACCESS_TOKEN=your-token \
-k6 run scripts/k6/auth-scenarios.js
+k6 run manifests/scripts/k6/auth-scenarios.js
 ```
 
 如果同时具备 access token 和 refresh token，可指定：
@@ -109,7 +109,7 @@ k6 run scripts/k6/auth-scenarios.js
 SCENARIOS=read,refresh \
 ACCESS_TOKEN=your-token \
 REFRESH_TOKEN=your-refresh-token \
-k6 run scripts/k6/auth-scenarios.js
+k6 run manifests/scripts/k6/auth-scenarios.js
 ```
 
 如果要单独压刷新接口，优先建议提供一个 refresh token 池，避免多个 VU 复用同一个 token：
@@ -117,7 +117,7 @@ k6 run scripts/k6/auth-scenarios.js
 ```bash
 SCENARIOS=refresh \
 REFRESH_TOKENS=token-a,token-b,token-c \
-k6 run scripts/k6/auth-scenarios.js
+k6 run manifests/scripts/k6/auth-scenarios.js
 ```
 
 如果没有预生成 token 池，也可以提供登录凭证。脚本会在每次刷新前先登录一次以获取新的 refresh token，这样不会因为复用同一个 refresh token 让结果失真，但这更适合做接口可用性验证，不适合把结果直接当成纯 refresh 接口极限：
@@ -126,7 +126,7 @@ k6 run scripts/k6/auth-scenarios.js
 SCENARIOS=refresh \
 LOGIN_EMAIL=admin@example.com \
 LOGIN_PASSWORD=123456 \
-k6 run scripts/k6/auth-scenarios.js
+k6 run manifests/scripts/k6/auth-scenarios.js
 ```
 
 ## 5. 推荐输出与记录方式
@@ -134,7 +134,7 @@ k6 run scripts/k6/auth-scenarios.js
 建议每次压测都加一个 summary 导出：
 
 ```bash
-k6 run --summary-export tmp/k6-summary.json scripts/k6/baseline-test.js
+k6 run --summary-export tmp/k6-summary.json manifests/scripts/k6/baseline-test.js
 ```
 
 再把结果填入：

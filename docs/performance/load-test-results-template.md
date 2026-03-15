@@ -33,9 +33,9 @@
 
 | 脚本 | 接口 | 模式 | 目标速率 | 持续时间 | 阈值 |
 | --- | --- | --- | --- | --- | --- |
-| `scripts/k6/baseline-test.js` | `POST /v1/test/test` | ramp | 200 RPS | 4m | p95<200ms, p99<500ms, fail<0.1% |
-| `scripts/k6/hello-chain-test.js` | `POST /v1/test/Hello` | ramp | 120 RPS | 4m | p95<200ms, p99<500ms, fail<0.1% |
-| `scripts/k6/auth-scenarios.js` | 鉴权场景 (login/read) | ramp | Login 30 RPS, Read 50 RPS | 4m | p95<200ms (login/read), p99<500ms, fail<0.1% |
+| `manifests/scripts/k6/baseline-test.js` | `POST /v1/test/test` | ramp | 200 RPS | 4m | p95<200ms, p99<500ms, fail<0.1% |
+| `manifests/scripts/k6/hello-chain-test.js` | `POST /v1/test/Hello` | ramp | 120 RPS | 4m | p95<200ms, p99<500ms, fail<0.1% |
+| `manifests/scripts/k6/auth-scenarios.js` | 鉴权场景 (login/read) | ramp | Login 30 RPS, Read 50 RPS | 4m | p95<200ms (login/read), p99<500ms, fail<0.1% |
 
 ## 4. 结果汇总
 
@@ -50,7 +50,7 @@
 
 ### 5.1 基线场景
 
-- 脚本：`scripts/k6/baseline-test.js`
+- 脚本：`manifests/scripts/k6/baseline-test.js`
 - 实际请求速率：200 RPS ramp stages
 - 阈值是否通过：通过（p95 2.42ms）
 - 关键异常：无
@@ -58,7 +58,7 @@
 
 ### 5.2 跨服务链路场景
 
-- 脚本：`scripts/k6/hello-chain-test.js`
+- 脚本：`manifests/scripts/k6/hello-chain-test.js`
 - 实际请求速率：120 RPS ramp stages
 - 阈值是否通过：通过（p95 8.99ms）
 - 关键异常：无
@@ -66,7 +66,7 @@
 
 ### 5.3 鉴权场景
 
-- 脚本：`scripts/k6/auth-scenarios.js`
+- 脚本：`manifests/scripts/k6/auth-scenarios.js`
 - 实际请求速率：Login 30 RPS，Authenticated Read 50 RPS（ramp 4 stages）
 - 阈值是否通过：登录 p95 超过 200ms（未通过），其余通过
 - 关键异常：无错误请求，但登录耗时偏高

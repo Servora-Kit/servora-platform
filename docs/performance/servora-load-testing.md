@@ -163,7 +163,7 @@ Prometheus 已在 `manifests/prometheus/prometheus.yml` 中配置抓取 `servora
 1. 启动基础设施：`make compose.up`
 2. 启动服务：`cd app/servora/service && make run`
 3. 确认 `http://127.0.0.1:8000/healthz` 与 `/metrics` 正常
-4. 运行 `scripts/k6/` 下的 k6 脚本
+4. 运行 `manifests/scripts/k6/` 下的 k6 脚本
 
 ### 8.2 Compose 全链路模式
 

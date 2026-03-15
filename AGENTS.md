@@ -29,7 +29,7 @@ type(scope): description
 - `buf`：Buf 配置与生成链路
 - `cmd`：CLI 工具
 - `pkg`：框架核心代码
-- `scripts`：脚本与自动化任务
+- `manifests/scripts`：脚本与自动化任务（git-hooks、k6、postgres-init 等）
 - `templates`：模板资源
 - `tool-chain`：工具链与构建体系（如 `tool-chain/mk`）
 - `md`：Markdown 文档（建议使用二级域，如 `md/readme`）
@@ -52,7 +52,7 @@ type(scope): description
 - 当现有建议的一级域能够表达语义时，优先在其下使用二级域（如 `md/readme`、`tool-chain/mk`）
 - 优先保持 scope 与改动边界一致，避免为了"套用已有分类"而使用不准确 scope
 - 若新增 scope 会被频繁复用，可将其补充到本节"建议的 scope"中
-- 若判断没有合适的**一级域**，必须先向用户/维护者申请新增域；在获得同意后，再同步更新 `scripts/git-hooks/commit-msg` 与本文件
+- 若判断没有合适的**一级域**，必须先向用户/维护者申请新增域；在获得同意后，再同步更新 `manifests/scripts/git-hooks/commit-msg` 与本文件
 
 ### Git Hooks
 
@@ -62,7 +62,7 @@ type(scope): description
 - **pre-commit hook**：执行 gofmt 格式检查
 - **post-merge hook**：自动同步 git hooks
 
-安装 hooks：`bash scripts/install-hooks.sh`
+安装 hooks：`bash manifests/scripts/install-hooks.sh`
 
 **重要**：不要使用 `--no-verify` 跳过 hooks 验证。
 
@@ -73,7 +73,7 @@ type(scope): description
 - `cmd/svr/`：中心化 CLI，当前提供 `svr gen gorm`
 - `cmd/protoc-gen-servora-authz/`：自定义 protoc 插件，用于生成 AuthZ 规则
 - `pkg/`：共享基础库，现有 `actor`、`bootstrap`、`ent/mixin`、`governance`、`health`、`helpers`、`jwks`、`jwt`、`k8s`、`logger`、`mapper`、`openfga`、`redis`、`transport`
-- `manifests/`：统一部署清单，K8s 在 `manifests/k8s/`；OpenFGA model 在 `manifests/openfga/`
+- `manifests/`：统一部署清单，K8s 在 `manifests/k8s/`；OpenFGA model 在 `manifests/openfga/`；脚本在 `manifests/scripts/`
 - `templates/`：通用部署模板，给使用框架的人作为参考
 - `docs/`：文档目录；当前包含 `design/`、`development/`、`knowledge/`、`reference/`
 - `openspec/`：OpenSpec 变更与归档

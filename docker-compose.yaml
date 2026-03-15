@@ -128,7 +128,7 @@ services:
       - "5432:5432"
     volumes:
       - servora-db-data:/var/lib/postgresql/data
-      - ./scripts/postgres-init:/docker-entrypoint-initdb.d:ro
+      - ./manifests/scripts/postgres-init:/docker-entrypoint-initdb.d:ro
     networks:
       - servora-network
 
