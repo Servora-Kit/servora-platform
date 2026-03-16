@@ -75,7 +75,7 @@ endef
 
 .PHONY: help env init plugin cli dep vendor test cover vet lint.go lint.proto buf-update
 .PHONY: wire ent gen api api-go api-authz api-ts openapi build all clean
-.PHONY: compose.build compose.up compose.rebuild compose.stop compose.down compose.reset compose.ps compose.logs
+.PHONY: compose.build compose.up compose.rebuild compose.stop compose.down compose.reset compose.ps compose.logs compose.init
 .PHONY: compose.dev compose.dev.build compose.dev.up compose.dev.restart compose.dev.ps compose.dev.stop compose.dev.down compose.dev.reset compose.dev.logs
 .PHONY: openfga.init openfga.model.validate openfga.model.test openfga.model.apply
 
@@ -296,10 +296,11 @@ compose.dev.reset:
 OPENFGA_MODEL := manifests/openfga/model/servora.fga
 OPENFGA_TESTS := manifests/openfga/tests/servora.fga.yaml
 OPENFGA_ENV_PREFIX ?= IAM_
+OPENFGA_API_URL ?= http://localhost:18080
 
 # initialize OpenFGA store and upload model (via svr CLI)
 openfga.init:
-	@svr openfga init --model $(OPENFGA_MODEL) --env-prefix $(OPENFGA_ENV_PREFIX)
+	@svr openfga init --model $(OPENFGA_MODEL) --env-prefix $(OPENFGA_ENV_PREFIX) --api-url $(OPENFGA_API_URL)
 
 # validate OpenFGA model syntax (requires fga CLI)
 openfga.model.validate:
@@ -315,7 +316,7 @@ openfga.model.test: openfga.model.validate
 
 # apply new model version: validate → test → upload (via svr CLI)
 openfga.model.apply: openfga.model.test
-	@svr openfga model apply --model $(OPENFGA_MODEL) --env-prefix $(OPENFGA_ENV_PREFIX)
+	@svr openfga model apply --model $(OPENFGA_MODEL) --env-prefix $(OPENFGA_ENV_PREFIX) --api-url $(OPENFGA_API_URL)
 
 # ============================================================================
 # CLEANUP TARGETS
