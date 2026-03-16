@@ -194,13 +194,16 @@ func (uc *UserUsecase) DeleteUser(ctx context.Context, user *entity.User) (bool,
 func (uc *UserUsecase) PurgeUser(ctx context.Context, user *entity.User) (bool, error) {
 	uc.log.Infof("PurgeUser start: user_id=%s", user.ID)
 
+	tuples := uc.collectUserFGATuples(ctx, user.ID)
+	uc.log.Infof("PurgeUser collected %d FGA tuples: user_id=%s", len(tuples), user.ID)
+
 	if err := uc.repo.PurgeCascade(ctx, user.ID); err != nil {
 		uc.log.Errorf("PurgeUser PurgeCascade failed: user_id=%s err=%v", user.ID, err)
 		return false, userpb.ErrorDeleteUserFailed("failed to delete user")
 	}
 	uc.log.Infof("PurgeUser PurgeCascade done: user_id=%s", user.ID)
 
-	uc.purgeUserFGA(ctx, user.ID)
+	uc.deleteUserFGATuples(ctx, user.ID, tuples)
 	uc.log.Infof("PurgeUser FGA cleanup done: user_id=%s", user.ID)
 
 	if err := uc.authnRepo.DeleteUserRefreshTokens(ctx, user.ID); err != nil {
@@ -213,10 +216,9 @@ func (uc *UserUsecase) PurgeUser(ctx context.Context, user *entity.User) (bool, 
 	return true, nil
 }
 
-func (uc *UserUsecase) purgeUserFGA(ctx context.Context, userID string) {
-	if uc.authz == nil {
-		return
-	}
+// collectUserFGATuples builds the FGA tuple list from current DB memberships.
+// Must be called BEFORE PurgeCascade so the membership rows still exist.
+func (uc *UserUsecase) collectUserFGATuples(ctx context.Context, userID string) []Tuple {
 	var tuples []Tuple
 
 	orgMemberships, _ := uc.orgRepo.ListMembershipsByUserID(ctx, userID)
@@ -239,11 +241,75 @@ func (uc *UserUsecase) purgeUserFGA(ctx context.Context, userID string) {
 		)
 	}
 
-	if len(tuples) > 0 {
-		if err := uc.authz.DeleteTuples(ctx, tuples...); err != nil {
-			uc.log.Warnf("purge user %s FGA tuples: %v", userID, err)
+	return tuples
+}
+
+func (uc *UserUsecase) deleteUserFGATuples(ctx context.Context, userID string, tuples []Tuple) {
+	if uc.authz == nil || len(tuples) == 0 {
+		return
+	}
+	if err := uc.authz.DeleteTuples(ctx, tuples...); err != nil {
+		uc.log.Warnf("purge user %s FGA tuples: %v", userID, err)
+	}
+}
+
+// CompensateUserPurge cleans up residual FGA tuples and Redis refresh tokens
+// for a user whose DB records have already been deleted by PurgeCascade.
+// It queries FGA directly (via ListObjects) to discover remaining tuples.
+func (uc *UserUsecase) CompensateUserPurge(ctx context.Context, userID string) error {
+	uc.log.Infof("CompensateUserPurge start: user_id=%s", userID)
+
+	var tuples []Tuple
+
+	if uc.authz != nil {
+		orgRelations := []string{"owner", "admin", "member", "viewer"}
+		projRelations := []string{"admin", "member", "viewer"}
+
+		for _, rel := range orgRelations {
+			objects, err := uc.authz.ListObjects(ctx, userID, rel, "organization")
+			if err != nil {
+				uc.log.Warnf("CompensateUserPurge ListObjects(organization/%s) failed: %v", rel, err)
+				continue
+			}
+			for _, obj := range objects {
+				tuples = append(tuples, Tuple{User: "user:" + userID, Relation: rel, Object: obj})
+			}
+		}
+
+		for _, rel := range projRelations {
+			objects, err := uc.authz.ListObjects(ctx, userID, rel, "project")
+			if err != nil {
+				uc.log.Warnf("CompensateUserPurge ListObjects(project/%s) failed: %v", rel, err)
+				continue
+			}
+			for _, obj := range objects {
+				tuples = append(tuples, Tuple{User: "user:" + userID, Relation: rel, Object: obj})
+			}
+		}
+
+		if uc.tenantID != "" {
+			tuples = append(tuples, Tuple{User: "user:" + userID, Relation: "admin", Object: "tenant:" + uc.tenantID})
+		}
+
+		if len(tuples) > 0 {
+			if err := uc.authz.DeleteTuples(ctx, tuples...); err != nil {
+				uc.log.Errorf("CompensateUserPurge DeleteTuples failed: user_id=%s err=%v", userID, err)
+				return err
+			}
+			uc.log.Infof("CompensateUserPurge deleted %d FGA tuples: user_id=%s", len(tuples), userID)
+		} else {
+			uc.log.Infof("CompensateUserPurge no FGA tuples found: user_id=%s", userID)
 		}
 	}
+
+	if err := uc.authnRepo.DeleteUserRefreshTokens(ctx, userID); err != nil {
+		uc.log.Warnf("CompensateUserPurge Redis cleanup failed: user_id=%s err=%v", userID, err)
+		return err
+	}
+	uc.log.Infof("CompensateUserPurge Redis cleanup done: user_id=%s", userID)
+
+	uc.log.Infof("CompensateUserPurge complete: user_id=%s", userID)
+	return nil
 }
 
 func (uc *UserUsecase) RestoreUser(ctx context.Context, id string) (*entity.User, error) {

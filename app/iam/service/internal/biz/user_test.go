@@ -183,6 +183,8 @@ func (r *fakeProjRepo) DeleteMembershipsByUserID(context.Context, string) (int, 
 type fakeAuthZRepo struct {
 	deleteTuplesCalls [][]Tuple
 	deleteTuplesErr   error
+	listObjectsMap    map[string][]string // key: "relation:objectType"
+	listObjectsErr    error
 }
 
 func (r *fakeAuthZRepo) DeleteTuples(_ context.Context, tuples ...Tuple) error {
@@ -194,7 +196,13 @@ func (r *fakeAuthZRepo) WriteTuples(context.Context, ...Tuple) error { return ni
 func (r *fakeAuthZRepo) Check(context.Context, string, string, string, string) (bool, error) {
 	return false, nil
 }
-func (r *fakeAuthZRepo) ListObjects(context.Context, string, string, string) ([]string, error) {
+func (r *fakeAuthZRepo) ListObjects(_ context.Context, _ string, relation, objectType string) ([]string, error) {
+	if r.listObjectsErr != nil {
+		return nil, r.listObjectsErr
+	}
+	if r.listObjectsMap != nil {
+		return r.listObjectsMap[relation+":"+objectType], nil
+	}
 	return nil, nil
 }
 func (r *fakeAuthZRepo) CachedListObjects(context.Context, time.Duration, string, string, string) ([]string, error) {
@@ -363,4 +371,148 @@ type orderTrackingAuthZRepo struct {
 func (r *orderTrackingAuthZRepo) DeleteTuples(_ context.Context, _ ...Tuple) error {
 	*r.order = append(*r.order, "fga")
 	return nil
+}
+
+// cascadeClearingUserRepo clears orgRepo/projRepo memberships on PurgeCascade,
+// simulating real DB behavior where memberships are gone after cascade.
+type cascadeClearingUserRepo struct {
+	fakeUserRepo
+	orgRepo  *fakeOrgRepo
+	projRepo *fakeProjRepo
+}
+
+func (r *cascadeClearingUserRepo) PurgeCascade(ctx context.Context, id string) error {
+	r.orgRepo.memberships = nil
+	r.projRepo.memberships = nil
+	return r.fakeUserRepo.PurgeCascade(ctx, id)
+}
+
+func TestPurgeUser_CollectsTuplesBeforeCascade(t *testing.T) {
+	or := &fakeOrgRepo{memberships: []*entity.OrganizationMember{
+		{OrganizationID: "org-1", Role: "owner"},
+	}}
+	pr := &fakeProjRepo{memberships: []*entity.ProjectMember{
+		{ProjectID: "proj-1", Role: "admin"},
+	}}
+	ur := &cascadeClearingUserRepo{orgRepo: or, projRepo: pr}
+	ar := &fakeAuthnRepo{}
+	az := &fakeAuthZRepo{}
+
+	uc := NewUserUsecase(ur, log.DefaultLogger, nil, ar, or, pr, az, "tenant-root")
+	ok, err := uc.PurgeUser(context.Background(), &entity.User{ID: "user-1"})
+	if err != nil {
+		t.Fatalf("PurgeUser() unexpected error: %v", err)
+	}
+	if !ok {
+		t.Fatal("PurgeUser() returned false, want true")
+	}
+
+	if len(az.deleteTuplesCalls) != 1 {
+		t.Fatalf("DeleteTuples called %d times, want 1", len(az.deleteTuplesCalls))
+	}
+	tuples := az.deleteTuplesCalls[0]
+	if len(tuples) != 3 {
+		t.Fatalf("expected 3 tuples (org + proj + tenant), got %d: %v", len(tuples), tuples)
+	}
+
+	found := map[string]bool{}
+	for _, tp := range tuples {
+		found[tp.Relation+":"+tp.Object] = true
+	}
+	if !found["owner:organization:org-1"] {
+		t.Error("missing org owner tuple")
+	}
+	if !found["admin:project:proj-1"] {
+		t.Error("missing project admin tuple")
+	}
+	if !found["admin:tenant:tenant-root"] {
+		t.Error("missing tenant admin tuple")
+	}
+}
+
+func TestCompensateUserPurge_HappyPath(t *testing.T) {
+	ar := &fakeAuthnRepo{}
+	az := &fakeAuthZRepo{
+		listObjectsMap: map[string][]string{
+			"owner:organization":  {"organization:org-1"},
+			"member:project":     {"project:proj-1"},
+		},
+	}
+
+	uc := NewUserUsecase(&fakeUserRepo{}, log.DefaultLogger, nil, ar, &fakeOrgRepo{}, &fakeProjRepo{}, az, "tenant-root")
+	err := uc.CompensateUserPurge(context.Background(), "user-1")
+	if err != nil {
+		t.Fatalf("CompensateUserPurge() unexpected error: %v", err)
+	}
+
+	if len(az.deleteTuplesCalls) != 1 {
+		t.Fatalf("DeleteTuples called %d times, want 1", len(az.deleteTuplesCalls))
+	}
+	tuples := az.deleteTuplesCalls[0]
+	if len(tuples) != 3 {
+		t.Fatalf("expected 3 tuples, got %d: %v", len(tuples), tuples)
+	}
+
+	found := map[string]bool{}
+	for _, tp := range tuples {
+		found[tp.Relation+":"+tp.Object] = true
+	}
+	if !found["owner:organization:org-1"] {
+		t.Error("missing org owner tuple")
+	}
+	if !found["member:project:proj-1"] {
+		t.Error("missing project member tuple")
+	}
+	if !found["admin:tenant:tenant-root"] {
+		t.Error("missing tenant admin tuple")
+	}
+
+	if len(ar.deleteTokensCalls) != 1 || ar.deleteTokensCalls[0] != "user-1" {
+		t.Errorf("DeleteUserRefreshTokens calls = %v, want [user-1]", ar.deleteTokensCalls)
+	}
+}
+
+func TestCompensateUserPurge_NoResidual(t *testing.T) {
+	ar := &fakeAuthnRepo{}
+	az := &fakeAuthZRepo{}
+
+	uc := NewUserUsecase(&fakeUserRepo{}, log.DefaultLogger, nil, ar, &fakeOrgRepo{}, &fakeProjRepo{}, az, "")
+	err := uc.CompensateUserPurge(context.Background(), "user-1")
+	if err != nil {
+		t.Fatalf("CompensateUserPurge() unexpected error: %v", err)
+	}
+
+	if len(az.deleteTuplesCalls) != 0 {
+		t.Error("DeleteTuples should not be called when no residual tuples found")
+	}
+	if len(ar.deleteTokensCalls) != 1 {
+		t.Error("Redis cleanup should still be called")
+	}
+}
+
+func TestCompensateUserPurge_FGADeleteFails(t *testing.T) {
+	ar := &fakeAuthnRepo{}
+	az := &fakeAuthZRepo{
+		listObjectsMap: map[string][]string{
+			"owner:organization": {"organization:org-1"},
+		},
+		deleteTuplesErr: errors.New("fga error"),
+	}
+
+	uc := NewUserUsecase(&fakeUserRepo{}, log.DefaultLogger, nil, ar, &fakeOrgRepo{}, &fakeProjRepo{}, az, "tenant-root")
+	err := uc.CompensateUserPurge(context.Background(), "user-1")
+	if err == nil {
+		t.Fatal("CompensateUserPurge() should return error when FGA delete fails")
+	}
+}
+
+func TestCompensateUserPurge_RedisFails(t *testing.T) {
+	ar := &fakeAuthnRepo{deleteTokensErr: errors.New("redis error")}
+	az := &fakeAuthZRepo{}
+
+	uc := NewUserUsecase(&fakeUserRepo{}, log.DefaultLogger, nil, ar, &fakeOrgRepo{}, &fakeProjRepo{}, az, "")
+	err := uc.CompensateUserPurge(context.Background(), "user-1")
+	if err == nil {
+		t.Fatal("CompensateUserPurge() should return error when Redis fails")
+	}
 }
