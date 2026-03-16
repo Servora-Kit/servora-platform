@@ -135,23 +135,25 @@ func (r *fakeProjRepo) ListMembershipsByUserID(_ context.Context, _ string) ([]*
 func (r *fakeProjRepo) Create(context.Context, *entity.Project) (*entity.Project, error) {
 	return nil, nil
 }
-func (r *fakeProjRepo) GetByID(context.Context, string) (*entity.Project, error) { return nil, nil }
-func (r *fakeProjRepo) GetByIDs(context.Context, []string, int32, int32) ([]*entity.Project, int64, error) {
+func (r *fakeProjRepo) GetByID(context.Context, string, string) (*entity.Project, error) {
+	return nil, nil
+}
+func (r *fakeProjRepo) GetByIDs(context.Context, string, []string, int32, int32) ([]*entity.Project, int64, error) {
 	return nil, 0, nil
 }
 func (r *fakeProjRepo) ListByOrgID(context.Context, string, int32, int32) ([]*entity.Project, int64, error) {
 	return nil, 0, nil
 }
-func (r *fakeProjRepo) Update(context.Context, *entity.Project) (*entity.Project, error) {
+func (r *fakeProjRepo) Update(context.Context, string, *entity.Project) (*entity.Project, error) {
 	return nil, nil
 }
-func (r *fakeProjRepo) Delete(context.Context, string) error       { return nil }
-func (r *fakeProjRepo) Purge(context.Context, string) error        { return nil }
-func (r *fakeProjRepo) PurgeCascade(context.Context, string) error { return nil }
-func (r *fakeProjRepo) Restore(context.Context, string) (*entity.Project, error) {
+func (r *fakeProjRepo) Delete(context.Context, string, string) error       { return nil }
+func (r *fakeProjRepo) Purge(context.Context, string, string) error        { return nil }
+func (r *fakeProjRepo) PurgeCascade(context.Context, string) error         { return nil }
+func (r *fakeProjRepo) Restore(context.Context, string, string) (*entity.Project, error) {
 	return nil, nil
 }
-func (r *fakeProjRepo) GetByIDIncludingDeleted(context.Context, string) (*entity.Project, error) {
+func (r *fakeProjRepo) GetByIDIncludingDeleted(context.Context, string, string) (*entity.Project, error) {
 	return nil, nil
 }
 func (r *fakeProjRepo) AddMember(context.Context, *entity.ProjectMember) (*entity.ProjectMember, error) {

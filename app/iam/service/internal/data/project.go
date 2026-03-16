@@ -11,6 +11,7 @@ import (
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
+	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/predicate"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/project"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/projectmember"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/user"
@@ -48,22 +49,25 @@ func (r *projectRepo) Create(ctx context.Context, p *entity.Project) (*entity.Pr
 	return projectMapper.Map(created), nil
 }
 
-func (r *projectRepo) GetByID(ctx context.Context, id string) (*entity.Project, error) {
+func (r *projectRepo) GetByID(ctx context.Context, orgID, id string) (*entity.Project, error) {
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid project ID: %w", err)
 	}
-	p, err := r.data.Ent(ctx).Project.Query().
+	q := r.data.Ent(ctx).Project.Query().
 		Where(project.IDEQ(uid)).
-		Where(project.DeletedAtIsNil()).
-		Only(ctx)
+		Where(project.DeletedAtIsNil())
+	if oid, err := uuid.Parse(orgID); err == nil {
+		q = q.Where(project.OrganizationIDEQ(oid))
+	}
+	p, err := q.Only(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return projectMapper.Map(p), nil
 }
 
-func (r *projectRepo) GetByIDs(ctx context.Context, ids []string, page, pageSize int32) ([]*entity.Project, int64, error) {
+func (r *projectRepo) GetByIDs(ctx context.Context, orgID string, ids []string, page, pageSize int32) ([]*entity.Project, int64, error) {
 	uuids := make([]uuid.UUID, 0, len(ids))
 	for _, id := range ids {
 		if uid, e := uuid.Parse(id); e == nil {
@@ -75,6 +79,9 @@ func (r *projectRepo) GetByIDs(ctx context.Context, ids []string, page, pageSize
 		Where(project.IDIn(uuids...)).
 		Where(project.DeletedAtIsNil()).
 		Order(project.ByCreatedAt(sql.OrderDesc()))
+	if oid, err := uuid.Parse(orgID); err == nil {
+		query = query.Where(project.OrganizationIDEQ(oid))
+	}
 
 	total, err := query.Clone().Count(ctx)
 	if err != nil {
@@ -114,41 +121,79 @@ func (r *projectRepo) ListByOrgID(ctx context.Context, orgID string, page, pageS
 	return projectMapper.MapSlice(projects), int64(total), nil
 }
 
-func (r *projectRepo) Update(ctx context.Context, p *entity.Project) (*entity.Project, error) {
+func (r *projectRepo) Update(ctx context.Context, orgID string, p *entity.Project) (*entity.Project, error) {
 	uid, err := uuid.Parse(p.ID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid project ID: %w", err)
 	}
-	b := r.data.Ent(ctx).Project.UpdateOneID(uid)
+
+	preds := []predicate.Project{project.IDEQ(uid)}
+	if oid, err := uuid.Parse(orgID); err == nil {
+		preds = append(preds, project.OrganizationIDEQ(oid))
+	}
+
+	b := r.data.Ent(ctx).Project.Update().Where(preds...)
 	if p.Name != "" {
 		b.SetName(p.Name)
 	}
 	if p.Description != "" {
 		b.SetDescription(p.Description)
 	}
-	updated, err := b.Save(ctx)
+	affected, err := b.Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("update project: %w", err)
 	}
-	return projectMapper.Map(updated), nil
+	if affected == 0 {
+		return nil, &ent.NotFoundError{}
+	}
+	return r.GetByID(ctx, "", p.ID)
 }
 
-func (r *projectRepo) Delete(ctx context.Context, id string) error {
+func (r *projectRepo) Delete(ctx context.Context, orgID, id string) error {
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		return fmt.Errorf("invalid project ID: %w", err)
 	}
-	return r.data.Ent(ctx).Project.UpdateOneID(uid).
+
+	preds := []predicate.Project{project.IDEQ(uid)}
+	if oid, err := uuid.Parse(orgID); err == nil {
+		preds = append(preds, project.OrganizationIDEQ(oid))
+	}
+
+	affected, err := r.data.Ent(ctx).Project.Update().
+		Where(preds...).
 		SetDeletedAt(time.Now()).
-		Exec(ctx)
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return &ent.NotFoundError{}
+	}
+	return nil
 }
 
-func (r *projectRepo) Purge(ctx context.Context, id string) error {
+func (r *projectRepo) Purge(ctx context.Context, orgID, id string) error {
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		return fmt.Errorf("invalid project ID: %w", err)
 	}
-	return r.data.Ent(ctx).Project.DeleteOneID(uid).Exec(ctx)
+
+	preds := []predicate.Project{project.IDEQ(uid)}
+	if oid, err := uuid.Parse(orgID); err == nil {
+		preds = append(preds, project.OrganizationIDEQ(oid))
+	}
+
+	affected, err := r.data.Ent(ctx).Project.Delete().
+		Where(preds...).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return &ent.NotFoundError{}
+	}
+	return nil
 }
 
 func (r *projectRepo) PurgeCascade(ctx context.Context, id string) error {
@@ -167,28 +212,41 @@ func (r *projectRepo) PurgeCascade(ctx context.Context, id string) error {
 	})
 }
 
-func (r *projectRepo) Restore(ctx context.Context, id string) (*entity.Project, error) {
+func (r *projectRepo) Restore(ctx context.Context, orgID, id string) (*entity.Project, error) {
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid project ID: %w", err)
 	}
-	p, err := r.data.Ent(ctx).Project.UpdateOneID(uid).
+
+	preds := []predicate.Project{project.IDEQ(uid)}
+	if oid, err := uuid.Parse(orgID); err == nil {
+		preds = append(preds, project.OrganizationIDEQ(oid))
+	}
+
+	affected, err := r.data.Ent(ctx).Project.Update().
+		Where(preds...).
 		ClearDeletedAt().
 		Save(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return projectMapper.Map(p), nil
+	if affected == 0 {
+		return nil, &ent.NotFoundError{}
+	}
+	return r.GetByID(ctx, "", id)
 }
 
-func (r *projectRepo) GetByIDIncludingDeleted(ctx context.Context, id string) (*entity.Project, error) {
+func (r *projectRepo) GetByIDIncludingDeleted(ctx context.Context, orgID, id string) (*entity.Project, error) {
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid project ID: %w", err)
 	}
-	p, err := r.data.Ent(ctx).Project.Query().
-		Where(project.IDEQ(uid)).
-		Only(ctx)
+	q := r.data.Ent(ctx).Project.Query().
+		Where(project.IDEQ(uid))
+	if oid, err := uuid.Parse(orgID); err == nil {
+		q = q.Where(project.OrganizationIDEQ(oid))
+	}
+	p, err := q.Only(ctx)
 	if err != nil {
 		return nil, err
 	}

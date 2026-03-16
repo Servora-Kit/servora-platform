@@ -32,7 +32,7 @@ func (r *fakeApplicationRepo) Create(_ context.Context, app *entity.Application)
 	return &out, nil
 }
 
-func (r *fakeApplicationRepo) GetByID(_ context.Context, id string) (*entity.Application, error) {
+func (r *fakeApplicationRepo) GetByID(_ context.Context, _, id string) (*entity.Application, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	a, ok := r.apps[id]
@@ -77,7 +77,7 @@ func (r *fakeApplicationRepo) ListByOrganizationID(_ context.Context, orgID stri
 	return result[start:end], total, nil
 }
 
-func (r *fakeApplicationRepo) Update(_ context.Context, app *entity.Application) (*entity.Application, error) {
+func (r *fakeApplicationRepo) Update(_ context.Context, _ string, app *entity.Application) (*entity.Application, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if _, ok := r.apps[app.ID]; !ok {
@@ -89,7 +89,7 @@ func (r *fakeApplicationRepo) Update(_ context.Context, app *entity.Application)
 	return &out, nil
 }
 
-func (r *fakeApplicationRepo) Delete(_ context.Context, id string) error {
+func (r *fakeApplicationRepo) Delete(_ context.Context, _, id string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if _, ok := r.apps[id]; !ok {
@@ -99,7 +99,7 @@ func (r *fakeApplicationRepo) Delete(_ context.Context, id string) error {
 	return nil
 }
 
-func (r *fakeApplicationRepo) UpdateClientSecretHash(_ context.Context, id string, hash string) error {
+func (r *fakeApplicationRepo) UpdateClientSecretHash(_ context.Context, _, id string, hash string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	a, ok := r.apps[id]

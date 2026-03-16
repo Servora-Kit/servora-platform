@@ -14,15 +14,15 @@ import (
 
 type ProjectRepo interface {
 	Create(ctx context.Context, p *entity.Project) (*entity.Project, error)
-	GetByID(ctx context.Context, id string) (*entity.Project, error)
-	GetByIDs(ctx context.Context, ids []string, page, pageSize int32) ([]*entity.Project, int64, error)
+	GetByID(ctx context.Context, orgID, id string) (*entity.Project, error)
+	GetByIDs(ctx context.Context, orgID string, ids []string, page, pageSize int32) ([]*entity.Project, int64, error)
 	ListByOrgID(ctx context.Context, orgID string, page, pageSize int32) ([]*entity.Project, int64, error)
-	Update(ctx context.Context, p *entity.Project) (*entity.Project, error)
-	Delete(ctx context.Context, id string) error
-	Purge(ctx context.Context, id string) error
+	Update(ctx context.Context, orgID string, p *entity.Project) (*entity.Project, error)
+	Delete(ctx context.Context, orgID, id string) error
+	Purge(ctx context.Context, orgID, id string) error
 	PurgeCascade(ctx context.Context, id string) error
-	Restore(ctx context.Context, id string) (*entity.Project, error)
-	GetByIDIncludingDeleted(ctx context.Context, id string) (*entity.Project, error)
+	Restore(ctx context.Context, orgID, id string) (*entity.Project, error)
+	GetByIDIncludingDeleted(ctx context.Context, orgID, id string) (*entity.Project, error)
 	AddMember(ctx context.Context, m *entity.ProjectMember) (*entity.ProjectMember, error)
 	RemoveMember(ctx context.Context, projID, userID string) error
 	ListMembers(ctx context.Context, projID string, page, pageSize int32) ([]*entity.ProjectMember, int64, error)
@@ -64,19 +64,29 @@ func (uc *ProjectUsecase) Create(ctx context.Context, p *entity.Project) (*entit
 		return nil, projectpb.ErrorProjectCreateFailed("failed to create project")
 	}
 
-	if uc.authz != nil {
-		_ = uc.authz.WriteTuples(ctx,
-			Tuple{User: "organization:" + p.OrganizationID, Relation: "organization", Object: "project:" + created.ID},
-			Tuple{User: "user:" + userID, Relation: "admin", Object: "project:" + created.ID},
-		)
-	}
-
 	if _, err := uc.repo.AddMember(ctx, &entity.ProjectMember{
 		ProjectID: created.ID,
 		UserID:    userID,
 		Role:      "admin",
 	}); err != nil {
-		uc.log.Warnf("auto-add creator as admin failed: %v", err)
+		uc.log.Errorf("add admin member failed, rolling back project: %v", err)
+		if delErr := uc.repo.PurgeCascade(ctx, created.ID); delErr != nil {
+			uc.log.Errorf("rollback purge project failed: %v", delErr)
+		}
+		return nil, projectpb.ErrorProjectCreateFailed("failed to add admin member")
+	}
+
+	if uc.authz != nil {
+		if err := uc.authz.WriteTuples(ctx,
+			Tuple{User: "organization:" + p.OrganizationID, Relation: "organization", Object: "project:" + created.ID},
+			Tuple{User: "user:" + userID, Relation: "admin", Object: "project:" + created.ID},
+		); err != nil {
+			uc.log.Errorf("write FGA tuples failed, rolling back project: %v", err)
+			if delErr := uc.repo.PurgeCascade(ctx, created.ID); delErr != nil {
+				uc.log.Errorf("rollback purge project failed: %v", delErr)
+			}
+			return nil, projectpb.ErrorProjectCreateFailed("failed to write authorization tuples")
+		}
 	}
 
 	return created, nil
@@ -95,26 +105,37 @@ func (uc *ProjectUsecase) CreateDefault(ctx context.Context, userID, orgID, name
 		return nil, projectpb.ErrorProjectCreateFailed("%v", err)
 	}
 
-	if uc.authz != nil {
-		_ = uc.authz.WriteTuples(ctx,
-			Tuple{User: "organization:" + orgID, Relation: "organization", Object: "project:" + created.ID},
-			Tuple{User: "user:" + userID, Relation: "admin", Object: "project:" + created.ID},
-		)
-	}
-
 	if _, err := uc.repo.AddMember(ctx, &entity.ProjectMember{
 		ProjectID: created.ID,
 		UserID:    userID,
 		Role:      "admin",
 	}); err != nil {
-		uc.log.Warnf("auto-add admin failed: %v", err)
+		uc.log.Errorf("add admin member failed, rolling back project: %v", err)
+		if delErr := uc.repo.PurgeCascade(ctx, created.ID); delErr != nil {
+			uc.log.Errorf("rollback purge project failed: %v", delErr)
+		}
+		return nil, projectpb.ErrorProjectCreateFailed("failed to add admin member")
+	}
+
+	if uc.authz != nil {
+		if err := uc.authz.WriteTuples(ctx,
+			Tuple{User: "organization:" + orgID, Relation: "organization", Object: "project:" + created.ID},
+			Tuple{User: "user:" + userID, Relation: "admin", Object: "project:" + created.ID},
+		); err != nil {
+			uc.log.Errorf("write FGA tuples failed, rolling back project: %v", err)
+			if delErr := uc.repo.PurgeCascade(ctx, created.ID); delErr != nil {
+				uc.log.Errorf("rollback purge project failed: %v", delErr)
+			}
+			return nil, projectpb.ErrorProjectCreateFailed("failed to write authorization tuples")
+		}
 	}
 
 	return created, nil
 }
 
 func (uc *ProjectUsecase) Get(ctx context.Context, id string) (*entity.Project, error) {
-	p, err := uc.repo.GetByID(ctx, id)
+	orgID, _ := actor.OrganizationIDFromContext(ctx)
+	p, err := uc.repo.GetByID(ctx, orgID, id)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, projectpb.ErrorProjectNotFound("project %s not found", id)
@@ -142,7 +163,7 @@ func (uc *ProjectUsecase) List(ctx context.Context, orgID string, page, pageSize
 			}
 			return projects, total, nil
 		}
-		projects, total, err := uc.repo.GetByIDs(ctx, ids, page, pageSize)
+		projects, total, err := uc.repo.GetByIDs(ctx, orgID, ids, page, pageSize)
 		if err != nil {
 			uc.log.Errorf("list projects by ids failed: %v", err)
 			return nil, 0, errors.InternalServer("INTERNAL", "internal error")
@@ -159,7 +180,8 @@ func (uc *ProjectUsecase) List(ctx context.Context, orgID string, page, pageSize
 }
 
 func (uc *ProjectUsecase) Update(ctx context.Context, p *entity.Project) (*entity.Project, error) {
-	updated, err := uc.repo.Update(ctx, p)
+	orgID, _ := actor.OrganizationIDFromContext(ctx)
+	updated, err := uc.repo.Update(ctx, orgID, p)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, projectpb.ErrorProjectNotFound("project %s not found", p.ID)
@@ -171,14 +193,15 @@ func (uc *ProjectUsecase) Update(ctx context.Context, p *entity.Project) (*entit
 }
 
 func (uc *ProjectUsecase) Delete(ctx context.Context, id string) error {
-	if _, err := uc.repo.GetByID(ctx, id); err != nil {
+	orgID, _ := actor.OrganizationIDFromContext(ctx)
+	if _, err := uc.repo.GetByID(ctx, orgID, id); err != nil {
 		if ent.IsNotFound(err) {
 			return projectpb.ErrorProjectNotFound("project %s not found", id)
 		}
 		uc.log.Errorf("get project failed: %v", err)
 		return errors.InternalServer("INTERNAL", "internal error")
 	}
-	if err := uc.repo.Delete(ctx, id); err != nil {
+	if err := uc.repo.Delete(ctx, orgID, id); err != nil {
 		uc.log.Errorf("soft delete project failed: %v", err)
 		return projectpb.ErrorProjectDeleteFailed("failed to delete project")
 	}
@@ -186,7 +209,7 @@ func (uc *ProjectUsecase) Delete(ctx context.Context, id string) error {
 }
 
 func (uc *ProjectUsecase) Purge(ctx context.Context, id string) error {
-	proj, err := uc.repo.GetByID(ctx, id)
+	proj, err := uc.repo.GetByID(ctx, "", id)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return projectpb.ErrorProjectNotFound("project %s not found", id)
@@ -224,14 +247,14 @@ func (uc *ProjectUsecase) purgeProjectFGA(ctx context.Context, projID, orgID str
 }
 
 func (uc *ProjectUsecase) Restore(ctx context.Context, id string) (*entity.Project, error) {
-	if _, err := uc.repo.GetByIDIncludingDeleted(ctx, id); err != nil {
+	if _, err := uc.repo.GetByIDIncludingDeleted(ctx, "", id); err != nil {
 		if ent.IsNotFound(err) {
 			return nil, projectpb.ErrorProjectNotFound("project %s not found", id)
 		}
 		uc.log.Errorf("get project failed: %v", err)
 		return nil, errors.InternalServer("INTERNAL", "internal error")
 	}
-	p, err := uc.repo.Restore(ctx, id)
+	p, err := uc.repo.Restore(ctx, "", id)
 	if err != nil {
 		uc.log.Errorf("restore project failed: %v", err)
 		return nil, projectpb.ErrorProjectUpdateFailed("%v", err)
@@ -244,7 +267,8 @@ func (uc *ProjectUsecase) AddMember(ctx context.Context, m *entity.ProjectMember
 		return nil, projectpb.ErrorProjectCreateFailed("%v", err)
 	}
 
-	proj, err := uc.repo.GetByID(ctx, m.ProjectID)
+	orgID, _ := actor.OrganizationIDFromContext(ctx)
+	proj, err := uc.repo.GetByID(ctx, orgID, m.ProjectID)
 	if err != nil {
 		return nil, projectpb.ErrorProjectNotFound("project not found")
 	}
@@ -263,9 +287,15 @@ func (uc *ProjectUsecase) AddMember(ctx context.Context, m *entity.ProjectMember
 	}
 
 	if uc.authz != nil {
-		_ = uc.authz.WriteTuples(ctx,
+		if err := uc.authz.WriteTuples(ctx,
 			Tuple{User: "user:" + m.UserID, Relation: m.Role, Object: "project:" + m.ProjectID},
-		)
+		); err != nil {
+			uc.log.Errorf("write FGA tuple failed, rolling back member: %v", err)
+			if rbErr := uc.repo.RemoveMember(ctx, m.ProjectID, m.UserID); rbErr != nil {
+				uc.log.Errorf("rollback remove member failed: %v", rbErr)
+			}
+			return nil, projectpb.ErrorProjectCreateFailed("failed to write authorization tuple")
+		}
 	}
 	return created, nil
 }
@@ -282,9 +312,19 @@ func (uc *ProjectUsecase) RemoveMember(ctx context.Context, projID, userID strin
 	}
 
 	if uc.authz != nil {
-		_ = uc.authz.DeleteTuples(ctx,
+		if err := uc.authz.DeleteTuples(ctx,
 			Tuple{User: "user:" + userID, Relation: member.Role, Object: "project:" + projID},
-		)
+		); err != nil {
+			uc.log.Errorf("delete FGA tuple failed, rolling back member removal: %v", err)
+			if _, rbErr := uc.repo.AddMember(ctx, &entity.ProjectMember{
+				ProjectID: projID,
+				UserID:    userID,
+				Role:      member.Role,
+			}); rbErr != nil {
+				uc.log.Errorf("rollback re-add member failed: %v", rbErr)
+			}
+			return projectpb.ErrorProjectDeleteFailed("failed to delete authorization tuple")
+		}
 	}
 	return nil
 }
@@ -315,12 +355,27 @@ func (uc *ProjectUsecase) UpdateMemberRole(ctx context.Context, projID, userID, 
 	}
 
 	if uc.authz != nil && oldMember.Role != newRole {
-		_ = uc.authz.DeleteTuples(ctx,
+		if err := uc.authz.DeleteTuples(ctx,
 			Tuple{User: "user:" + userID, Relation: oldMember.Role, Object: "project:" + projID},
-		)
-		_ = uc.authz.WriteTuples(ctx,
+		); err != nil {
+			uc.log.Errorf("delete old FGA tuple failed, rolling back role: %v", err)
+			if _, rbErr := uc.repo.UpdateMemberRole(ctx, projID, userID, oldMember.Role); rbErr != nil {
+				uc.log.Errorf("rollback role update failed: %v", rbErr)
+			}
+			return nil, projectpb.ErrorProjectUpdateFailed("failed to update authorization")
+		}
+		if err := uc.authz.WriteTuples(ctx,
 			Tuple{User: "user:" + userID, Relation: newRole, Object: "project:" + projID},
-		)
+		); err != nil {
+			uc.log.Errorf("write new FGA tuple failed, rolling back role: %v", err)
+			_ = uc.authz.WriteTuples(ctx,
+				Tuple{User: "user:" + userID, Relation: oldMember.Role, Object: "project:" + projID},
+			)
+			if _, rbErr := uc.repo.UpdateMemberRole(ctx, projID, userID, oldMember.Role); rbErr != nil {
+				uc.log.Errorf("rollback role update failed: %v", rbErr)
+			}
+			return nil, projectpb.ErrorProjectUpdateFailed("failed to update authorization")
+		}
 	}
 	return updated, nil
 }

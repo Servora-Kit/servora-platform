@@ -11,6 +11,7 @@ import (
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/application"
+	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/predicate"
 	"github.com/Servora-Kit/servora/pkg/logger"
 )
 
@@ -49,14 +50,17 @@ func (r *applicationRepo) Create(ctx context.Context, app *entity.Application) (
 	return applicationMapper.Map(created), nil
 }
 
-func (r *applicationRepo) GetByID(ctx context.Context, id string) (*entity.Application, error) {
+func (r *applicationRepo) GetByID(ctx context.Context, orgID, id string) (*entity.Application, error) {
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid application id: %w", err)
 	}
-	a, err := r.data.Ent(ctx).Application.Query().
-		Where(application.IDEQ(uid), application.DeletedAtIsNil()).
-		Only(ctx)
+	query := r.data.Ent(ctx).Application.Query().
+		Where(application.IDEQ(uid), application.DeletedAtIsNil())
+	if oid, err := uuid.Parse(orgID); err == nil {
+		query = query.Where(application.OrganizationIDEQ(oid))
+	}
+	a, err := query.Only(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -97,12 +101,17 @@ func (r *applicationRepo) ListByOrganizationID(ctx context.Context, orgID string
 	return applicationMapper.MapSlice(apps), int64(total), nil
 }
 
-func (r *applicationRepo) Update(ctx context.Context, app *entity.Application) (*entity.Application, error) {
+func (r *applicationRepo) Update(ctx context.Context, orgID string, app *entity.Application) (*entity.Application, error) {
 	uid, err := uuid.Parse(app.ID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid application id: %w", err)
 	}
-	updated, err := r.data.Ent(ctx).Application.UpdateOneID(uid).
+	predicates := []predicate.Application{application.IDEQ(uid), application.DeletedAtIsNil()}
+	if oid, err := uuid.Parse(orgID); err == nil {
+		predicates = append(predicates, application.OrganizationIDEQ(oid))
+	}
+	n, err := r.data.Ent(ctx).Application.Update().
+		Where(predicates...).
 		SetName(app.Name).
 		SetRedirectUris(app.RedirectURIs).
 		SetScopes(app.Scopes).
@@ -112,25 +121,52 @@ func (r *applicationRepo) Update(ctx context.Context, app *entity.Application) (
 	if err != nil {
 		return nil, err
 	}
-	return applicationMapper.Map(updated), nil
+	if n == 0 {
+		return nil, fmt.Errorf("application not found")
+	}
+	return r.GetByID(ctx, orgID, app.ID)
 }
 
-func (r *applicationRepo) Delete(ctx context.Context, id string) error {
+func (r *applicationRepo) Delete(ctx context.Context, orgID, id string) error {
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		return fmt.Errorf("invalid application id: %w", err)
 	}
-	return r.data.Ent(ctx).Application.UpdateOneID(uid).
+	predicates := []predicate.Application{application.IDEQ(uid), application.DeletedAtIsNil()}
+	if oid, err := uuid.Parse(orgID); err == nil {
+		predicates = append(predicates, application.OrganizationIDEQ(oid))
+	}
+	n, err := r.data.Ent(ctx).Application.Update().
+		Where(predicates...).
 		SetDeletedAt(time.Now()).
-		Exec(ctx)
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("application not found")
+	}
+	return nil
 }
 
-func (r *applicationRepo) UpdateClientSecretHash(ctx context.Context, id string, hash string) error {
+func (r *applicationRepo) UpdateClientSecretHash(ctx context.Context, orgID, id string, hash string) error {
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		return fmt.Errorf("invalid application id: %w", err)
 	}
-	return r.data.Ent(ctx).Application.UpdateOneID(uid).
+	predicates := []predicate.Application{application.IDEQ(uid), application.DeletedAtIsNil()}
+	if oid, err := uuid.Parse(orgID); err == nil {
+		predicates = append(predicates, application.OrganizationIDEQ(oid))
+	}
+	n, err := r.data.Ent(ctx).Application.Update().
+		Where(predicates...).
 		SetClientSecretHash(hash).
-		Exec(ctx)
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("application not found")
+	}
+	return nil
 }

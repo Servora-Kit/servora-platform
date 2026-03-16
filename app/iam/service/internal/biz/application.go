@@ -13,12 +13,12 @@ import (
 
 type ApplicationRepo interface {
 	Create(ctx context.Context, app *entity.Application) (*entity.Application, error)
-	GetByID(ctx context.Context, id string) (*entity.Application, error)
+	GetByID(ctx context.Context, orgID, id string) (*entity.Application, error)
 	GetByClientID(ctx context.Context, clientID string) (*entity.Application, error)
 	ListByOrganizationID(ctx context.Context, orgID string, page, pageSize int32) ([]*entity.Application, int64, error)
-	Update(ctx context.Context, app *entity.Application) (*entity.Application, error)
-	Delete(ctx context.Context, id string) error
-	UpdateClientSecretHash(ctx context.Context, id string, hash string) error
+	Update(ctx context.Context, orgID string, app *entity.Application) (*entity.Application, error)
+	Delete(ctx context.Context, orgID, id string) error
+	UpdateClientSecretHash(ctx context.Context, orgID, id string, hash string) error
 }
 
 type ApplicationUsecase struct {
@@ -63,7 +63,7 @@ func (uc *ApplicationUsecase) Create(ctx context.Context, app *entity.Applicatio
 }
 
 func (uc *ApplicationUsecase) Get(ctx context.Context, id string) (*entity.Application, error) {
-	return uc.repo.GetByID(ctx, id)
+	return uc.repo.GetByID(ctx, "", id)
 }
 
 func (uc *ApplicationUsecase) GetByClientID(ctx context.Context, clientID string) (*entity.Application, error) {
@@ -75,11 +75,11 @@ func (uc *ApplicationUsecase) List(ctx context.Context, orgID string, page, page
 }
 
 func (uc *ApplicationUsecase) Update(ctx context.Context, app *entity.Application) (*entity.Application, error) {
-	return uc.repo.Update(ctx, app)
+	return uc.repo.Update(ctx, "", app)
 }
 
 func (uc *ApplicationUsecase) Delete(ctx context.Context, id string) error {
-	return uc.repo.Delete(ctx, id)
+	return uc.repo.Delete(ctx, "", id)
 }
 
 func (uc *ApplicationUsecase) RegenerateClientSecret(ctx context.Context, id string) (string, error) {
@@ -95,7 +95,7 @@ func (uc *ApplicationUsecase) RegenerateClientSecret(ctx context.Context, id str
 		return "", apppb.ErrorApplicationCreateFailed("failed to regenerate client secret")
 	}
 
-	if err := uc.repo.UpdateClientSecretHash(ctx, id, hash); err != nil {
+	if err := uc.repo.UpdateClientSecretHash(ctx, "", id, hash); err != nil {
 		uc.log.Errorf("update client secret hash failed: %v", err)
 		return "", apppb.ErrorApplicationCreateFailed("%v", err)
 	}

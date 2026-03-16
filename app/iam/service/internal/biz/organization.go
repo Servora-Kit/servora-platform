@@ -77,19 +77,30 @@ func (uc *OrganizationUsecase) Create(ctx context.Context, org *entity.Organizat
 		return nil, orgpb.ErrorOrganizationCreateFailed("failed to create organization")
 	}
 
-	if uc.authz != nil {
-		_ = uc.authz.WriteTuples(ctx,
-			Tuple{User: "tenant:" + uc.tenantID, Relation: "tenant", Object: "organization:" + created.ID},
-			Tuple{User: "user:" + userID, Relation: "owner", Object: "organization:" + created.ID},
-		)
-	}
-
 	if _, err := uc.repo.AddMember(ctx, &entity.OrganizationMember{
 		OrganizationID: created.ID,
 		UserID:         userID,
 		Role:           "owner",
 	}); err != nil {
-		uc.log.Warnf("auto-add creator as owner failed: %v", err)
+		uc.log.Errorf("add owner member failed, rolling back org: %v", err)
+		if delErr := uc.repo.Purge(ctx, created.ID); delErr != nil {
+			uc.log.Errorf("rollback purge org failed: %v", delErr)
+		}
+		return nil, orgpb.ErrorOrganizationCreateFailed("failed to add owner member")
+	}
+
+	if uc.authz != nil {
+		if err := uc.authz.WriteTuples(ctx,
+			Tuple{User: "tenant:" + uc.tenantID, Relation: "tenant", Object: "organization:" + created.ID},
+			Tuple{User: "user:" + userID, Relation: "owner", Object: "organization:" + created.ID},
+		); err != nil {
+			uc.log.Errorf("write FGA tuples failed, rolling back org: %v", err)
+			_ = uc.repo.RemoveMember(ctx, created.ID, userID)
+			if delErr := uc.repo.Purge(ctx, created.ID); delErr != nil {
+				uc.log.Errorf("rollback purge org failed: %v", delErr)
+			}
+			return nil, orgpb.ErrorOrganizationCreateFailed("failed to write authorization tuples")
+		}
 	}
 
 	return created, nil
@@ -108,19 +119,30 @@ func (uc *OrganizationUsecase) CreateDefault(ctx context.Context, userID, name, 
 		return nil, orgpb.ErrorOrganizationCreateFailed("%v", err)
 	}
 
-	if uc.authz != nil {
-		_ = uc.authz.WriteTuples(ctx,
-			Tuple{User: "tenant:" + uc.tenantID, Relation: "tenant", Object: "organization:" + created.ID},
-			Tuple{User: "user:" + userID, Relation: "owner", Object: "organization:" + created.ID},
-		)
-	}
-
 	if _, err := uc.repo.AddMember(ctx, &entity.OrganizationMember{
 		OrganizationID: created.ID,
 		UserID:         userID,
 		Role:           "owner",
 	}); err != nil {
-		uc.log.Warnf("auto-add owner failed: %v", err)
+		uc.log.Errorf("add owner member failed, rolling back org: %v", err)
+		if delErr := uc.repo.Purge(ctx, created.ID); delErr != nil {
+			uc.log.Errorf("rollback purge org failed: %v", delErr)
+		}
+		return nil, orgpb.ErrorOrganizationCreateFailed("failed to add owner member")
+	}
+
+	if uc.authz != nil {
+		if err := uc.authz.WriteTuples(ctx,
+			Tuple{User: "tenant:" + uc.tenantID, Relation: "tenant", Object: "organization:" + created.ID},
+			Tuple{User: "user:" + userID, Relation: "owner", Object: "organization:" + created.ID},
+		); err != nil {
+			uc.log.Errorf("write FGA tuples failed, rolling back org: %v", err)
+			_ = uc.repo.RemoveMember(ctx, created.ID, userID)
+			if delErr := uc.repo.Purge(ctx, created.ID); delErr != nil {
+				uc.log.Errorf("rollback purge org failed: %v", delErr)
+			}
+			return nil, orgpb.ErrorOrganizationCreateFailed("failed to write authorization tuples")
+		}
 	}
 
 	return created, nil
@@ -282,9 +304,15 @@ func (uc *OrganizationUsecase) AddMember(ctx context.Context, m *entity.Organiza
 	}
 
 	if uc.authz != nil {
-		_ = uc.authz.WriteTuples(ctx,
+		if err := uc.authz.WriteTuples(ctx,
 			Tuple{User: "user:" + m.UserID, Relation: m.Role, Object: "organization:" + m.OrganizationID},
-		)
+		); err != nil {
+			uc.log.Errorf("write FGA tuple failed, rolling back member: %v", err)
+			if rbErr := uc.repo.RemoveMember(ctx, m.OrganizationID, m.UserID); rbErr != nil {
+				uc.log.Errorf("rollback remove member failed: %v", rbErr)
+			}
+			return nil, orgpb.ErrorOrganizationCreateFailed("failed to write authorization tuple")
+		}
 	}
 	return created, nil
 }
@@ -301,9 +329,19 @@ func (uc *OrganizationUsecase) RemoveMember(ctx context.Context, orgID, userID s
 	}
 
 	if uc.authz != nil {
-		_ = uc.authz.DeleteTuples(ctx,
+		if err := uc.authz.DeleteTuples(ctx,
 			Tuple{User: "user:" + userID, Relation: member.Role, Object: "organization:" + orgID},
-		)
+		); err != nil {
+			uc.log.Errorf("delete FGA tuple failed, rolling back member removal: %v", err)
+			if _, rbErr := uc.repo.AddMember(ctx, &entity.OrganizationMember{
+				OrganizationID: orgID,
+				UserID:         userID,
+				Role:           member.Role,
+			}); rbErr != nil {
+				uc.log.Errorf("rollback re-add member failed: %v", rbErr)
+			}
+			return orgpb.ErrorOrganizationDeleteFailed("failed to delete authorization tuple")
+		}
 	}
 	return nil
 }
@@ -334,12 +372,27 @@ func (uc *OrganizationUsecase) UpdateMemberRole(ctx context.Context, orgID, user
 	}
 
 	if uc.authz != nil && oldMember.Role != newRole {
-		_ = uc.authz.DeleteTuples(ctx,
+		if err := uc.authz.DeleteTuples(ctx,
 			Tuple{User: "user:" + userID, Relation: oldMember.Role, Object: "organization:" + orgID},
-		)
-		_ = uc.authz.WriteTuples(ctx,
+		); err != nil {
+			uc.log.Errorf("delete old FGA tuple failed, rolling back role: %v", err)
+			if _, rbErr := uc.repo.UpdateMemberRole(ctx, orgID, userID, oldMember.Role); rbErr != nil {
+				uc.log.Errorf("rollback role update failed: %v", rbErr)
+			}
+			return nil, orgpb.ErrorOrganizationUpdateFailed("failed to update authorization")
+		}
+		if err := uc.authz.WriteTuples(ctx,
 			Tuple{User: "user:" + userID, Relation: newRole, Object: "organization:" + orgID},
-		)
+		); err != nil {
+			uc.log.Errorf("write new FGA tuple failed, rolling back role: %v", err)
+			_ = uc.authz.WriteTuples(ctx,
+				Tuple{User: "user:" + userID, Relation: oldMember.Role, Object: "organization:" + orgID},
+			)
+			if _, rbErr := uc.repo.UpdateMemberRole(ctx, orgID, userID, oldMember.Role); rbErr != nil {
+				uc.log.Errorf("rollback role update failed: %v", rbErr)
+			}
+			return nil, orgpb.ErrorOrganizationUpdateFailed("failed to update authorization")
+		}
 	}
 	return updated, nil
 }
