@@ -5,9 +5,10 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"time"
 
-	"github.com/go-kratos/kratos/v2/errors"
+	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/golang-jwt/jwt/v5"
 
 	authnpb "github.com/Servora-Kit/servora/api/gen/go/authn/service/v1"
@@ -96,7 +97,7 @@ func (uc *AuthnUsecase) SignupByEmail(ctx context.Context, user *entity.User) (*
 	existingUser, err := uc.repo.GetUserByUserName(ctx, user.Name)
 	if err != nil && !ent.IsNotFound(err) {
 		uc.log.Errorf("check username failed: %v", err)
-		return nil, errors.InternalServer("INTERNAL", "internal error")
+		return nil, kerrors.InternalServer("INTERNAL", "internal error")
 	}
 	if existingUser != nil {
 		return nil, authnpb.ErrorUserAlreadyExists("username already exists")
@@ -105,7 +106,7 @@ func (uc *AuthnUsecase) SignupByEmail(ctx context.Context, user *entity.User) (*
 	existingEmail, err := uc.repo.GetUserByEmail(ctx, user.Email)
 	if err != nil && !ent.IsNotFound(err) {
 		uc.log.Errorf("check email failed: %v", err)
-		return nil, errors.InternalServer("INTERNAL", "internal error")
+		return nil, kerrors.InternalServer("INTERNAL", "internal error")
 	}
 	if existingEmail != nil {
 		return nil, authnpb.ErrorUserAlreadyExists("email already exists")
@@ -149,7 +150,7 @@ func (uc *AuthnUsecase) LoginByEmailPassword(ctx context.Context, user *entity.U
 			return nil, authnpb.ErrorUserNotFound("invalid email or password")
 		}
 		uc.log.Errorf("get user by email failed: %v", err)
-		return nil, errors.InternalServer("INTERNAL", "internal error")
+		return nil, kerrors.InternalServer("INTERNAL", "internal error")
 	}
 	if foundUser == nil {
 		return nil, authnpb.ErrorUserNotFound("invalid email or password")
@@ -161,7 +162,7 @@ func (uc *AuthnUsecase) LoginByEmailPassword(ctx context.Context, user *entity.U
 	nonce, err := uc.generateOpaqueToken()
 	if err != nil {
 		uc.log.Errorf("generate nonce failed: %v", err)
-		return nil, errors.InternalServer("INTERNAL", "internal error")
+		return nil, kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	accessClaims := &UserClaims{
@@ -181,19 +182,19 @@ func (uc *AuthnUsecase) LoginByEmailPassword(ctx context.Context, user *entity.U
 	accessToken, err := uc.generateAccessToken(accessClaims)
 	if err != nil {
 		uc.log.Errorf("generate access token failed: %v", err)
-		return nil, errors.InternalServer("INTERNAL", "internal error")
+		return nil, kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	refreshToken, err := uc.generateOpaqueToken()
 	if err != nil {
 		uc.log.Errorf("generate refresh token failed: %v", err)
-		return nil, errors.InternalServer("INTERNAL", "internal error")
+		return nil, kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	refreshExpirationTime := time.Duration(uc.cfg.Jwt.RefreshExpire) * time.Second
 	if err := uc.repo.SaveRefreshToken(ctx, foundUser.ID, refreshToken, refreshExpirationTime); err != nil {
 		uc.log.Errorf("save refresh token failed: %v", err)
-		return nil, errors.InternalServer("INTERNAL", "internal error")
+		return nil, kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	return &TokenPair{
@@ -213,14 +214,14 @@ func (uc *AuthnUsecase) RefreshToken(ctx context.Context, refreshToken string) (
 	user, err := uc.repo.GetUserByID(ctx, userID)
 	if err != nil {
 		uc.log.Errorf("get user by ID failed: %v", err)
-		return nil, errors.InternalServer("INTERNAL", "internal error")
+		return nil, kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	accessExpirationTime := time.Duration(uc.cfg.Jwt.AccessExpire) * time.Second
 	nonce, err := uc.generateOpaqueToken()
 	if err != nil {
 		uc.log.Errorf("generate nonce failed: %v", err)
-		return nil, errors.InternalServer("INTERNAL", "internal error")
+		return nil, kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	accessClaims := &UserClaims{
@@ -240,13 +241,13 @@ func (uc *AuthnUsecase) RefreshToken(ctx context.Context, refreshToken string) (
 	accessToken, err := uc.generateAccessToken(accessClaims)
 	if err != nil {
 		uc.log.Errorf("generate access token failed: %v", err)
-		return nil, errors.InternalServer("INTERNAL", "internal error")
+		return nil, kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	newRefreshToken, err := uc.generateOpaqueToken()
 	if err != nil {
 		uc.log.Errorf("generate refresh token failed: %v", err)
-		return nil, errors.InternalServer("INTERNAL", "internal error")
+		return nil, kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	if err := uc.repo.DeleteRefreshToken(ctx, refreshToken); err != nil {
@@ -256,7 +257,7 @@ func (uc *AuthnUsecase) RefreshToken(ctx context.Context, refreshToken string) (
 	refreshExpirationTime := time.Duration(uc.cfg.Jwt.RefreshExpire) * time.Second
 	if err := uc.repo.SaveRefreshToken(ctx, user.ID, newRefreshToken, refreshExpirationTime); err != nil {
 		uc.log.Errorf("save refresh token failed: %v", err)
-		return nil, errors.InternalServer("INTERNAL", "internal error")
+		return nil, kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	return &TokenPair{
@@ -277,7 +278,7 @@ func (uc *AuthnUsecase) ChangePassword(ctx context.Context, userID, currentPassw
 	user, err := uc.repo.GetUserByID(ctx, userID)
 	if err != nil {
 		uc.log.Errorf("get user for change password failed: %v", err)
-		return errors.InternalServer("INTERNAL", "internal error")
+		return kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	if !helpers.BcryptCheck(currentPassword, user.Password) {
@@ -287,12 +288,12 @@ func (uc *AuthnUsecase) ChangePassword(ctx context.Context, userID, currentPassw
 	hashed, err := helpers.BcryptHash(newPassword)
 	if err != nil {
 		uc.log.Errorf("hash new password failed: %v", err)
-		return errors.InternalServer("INTERNAL", "internal error")
+		return kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	if err := uc.repo.UpdatePassword(ctx, userID, hashed); err != nil {
 		uc.log.Errorf("save new password failed: %v", err)
-		return errors.InternalServer("INTERNAL", "internal error")
+		return kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	if err := uc.repo.DeleteUserRefreshTokens(ctx, userID); err != nil {
@@ -305,7 +306,7 @@ func (uc *AuthnUsecase) ChangePassword(ctx context.Context, userID, currentPassw
 func (uc *AuthnUsecase) LogoutAllDevices(ctx context.Context, userID string) error {
 	if err := uc.repo.DeleteUserRefreshTokens(ctx, userID); err != nil {
 		uc.log.Errorf("delete all refresh tokens failed: %v", err)
-		return errors.InternalServer("INTERNAL", "internal error")
+		return kerrors.InternalServer("INTERNAL", "internal error")
 	}
 	return nil
 }
@@ -336,19 +337,19 @@ func (uc *AuthnUsecase) RequestEmailVerification(ctx context.Context, email stri
 	raw, err := uc.generateOpaqueToken()
 	if err != nil {
 		uc.log.Errorf("generate verify token failed: %v", err)
-		return errors.InternalServer("INTERNAL", "internal error")
+		return kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	if err := uc.tokenStore.SetToken(ctx, purposeVerifyEmail, tokenHash(raw), user.ID, verifyEmailTTL); err != nil {
 		uc.log.Errorf("save verify token failed: %v", err)
-		return errors.InternalServer("INTERNAL", "internal error")
+		return kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	link := uc.buildTokenLink(mailPathVerifyEmail, raw)
 	subject, html, err := RenderVerifyEmail(uc.mailCfg, link)
 	if err != nil {
 		uc.log.Errorf("render verify email template failed: %v", err)
-		return errors.InternalServer("INTERNAL", "internal error")
+		return kerrors.InternalServer("INTERNAL", "internal error")
 	}
 	if err := uc.mailer.Send(ctx, mail.Email{
 		From:    mail.DefaultFrom(uc.mailCfg),
@@ -357,7 +358,7 @@ func (uc *AuthnUsecase) RequestEmailVerification(ctx context.Context, email stri
 		HTML:    html,
 	}); err != nil {
 		uc.log.Errorf("send verify email failed: %v", err)
-		return errors.InternalServer("INTERNAL", "failed to send email")
+		return kerrors.InternalServer("INTERNAL", "failed to send email")
 	}
 	return nil
 }
@@ -369,7 +370,7 @@ func (uc *AuthnUsecase) VerifyEmail(ctx context.Context, token string) error {
 	}
 	if err := uc.repo.UpdateEmailVerified(ctx, userID, true); err != nil {
 		uc.log.Errorf("update email_verified failed: %v", err)
-		return errors.InternalServer("INTERNAL", "internal error")
+		return kerrors.InternalServer("INTERNAL", "internal error")
 	}
 	return nil
 }
@@ -383,19 +384,19 @@ func (uc *AuthnUsecase) RequestPasswordReset(ctx context.Context, email string) 
 	raw, err := uc.generateOpaqueToken()
 	if err != nil {
 		uc.log.Errorf("generate reset token failed: %v", err)
-		return errors.InternalServer("INTERNAL", "internal error")
+		return kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	if err := uc.tokenStore.SetToken(ctx, purposeResetPassword, tokenHash(raw), user.ID, resetPasswordTTL); err != nil {
 		uc.log.Errorf("save reset token failed: %v", err)
-		return errors.InternalServer("INTERNAL", "internal error")
+		return kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	link := uc.buildTokenLink(mailPathResetPassword, raw)
 	subject, html, err := RenderResetPassword(uc.mailCfg, link)
 	if err != nil {
 		uc.log.Errorf("render reset password template failed: %v", err)
-		return errors.InternalServer("INTERNAL", "internal error")
+		return kerrors.InternalServer("INTERNAL", "internal error")
 	}
 	if err := uc.mailer.Send(ctx, mail.Email{
 		From:    mail.DefaultFrom(uc.mailCfg),
@@ -404,7 +405,7 @@ func (uc *AuthnUsecase) RequestPasswordReset(ctx context.Context, email string) 
 		HTML:    html,
 	}); err != nil {
 		uc.log.Errorf("send reset email failed: %v", err)
-		return errors.InternalServer("INTERNAL", "failed to send email")
+		return kerrors.InternalServer("INTERNAL", "failed to send email")
 	}
 	return nil
 }
@@ -418,12 +419,12 @@ func (uc *AuthnUsecase) ResetPassword(ctx context.Context, token, newPassword st
 	hashed, err := helpers.BcryptHash(newPassword)
 	if err != nil {
 		uc.log.Errorf("hash new password failed: %v", err)
-		return errors.InternalServer("INTERNAL", "internal error")
+		return kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	if err := uc.repo.UpdatePassword(ctx, userID, hashed); err != nil {
 		uc.log.Errorf("reset password update failed: %v", err)
-		return errors.InternalServer("INTERNAL", "internal error")
+		return kerrors.InternalServer("INTERNAL", "internal error")
 	}
 
 	if err := uc.repo.DeleteUserRefreshTokens(ctx, userID); err != nil {
@@ -434,4 +435,21 @@ func (uc *AuthnUsecase) ResetPassword(ctx context.Context, token, newPassword st
 
 func (uc *AuthnUsecase) buildTokenLink(path, token string) string {
 	return uc.mailCfg.GetBaseUrl() + path + "?token=" + token
+}
+
+// VerifyAccessToken 校验 access token（JWT），成功返回用户 ID（sub claim）。
+// 供网关 ForwardAuth 的 /v1/auth/verify 端点使用，与 authn 中间件共用同一套 Verifier。
+func (uc *AuthnUsecase) VerifyAccessToken(tokenString string) (string, error) {
+	claims := jwt.MapClaims{}
+	if err := uc.keyManager.Verifier().Verify(tokenString, claims); err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return "", authnpb.ErrorTokenExpired("token expired")
+		}
+		return "", authnpb.ErrorInvalidCredentials("invalid token")
+	}
+	sub, _ := claims.GetSubject()
+	if sub == "" {
+		return "", authnpb.ErrorInvalidCredentials("token missing subject")
+	}
+	return sub, nil
 }

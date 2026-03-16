@@ -1,6 +1,8 @@
 package server
 
 import (
+	nethttp "net/http"
+
 	entsql "entgo.io/ent/dialect/sql"
 
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -118,6 +120,7 @@ func NewHTTPServer(
 		http.WithHealthCheck(h),
 		http.WithSwagger(assets.OpenAPIData, swagger.WithTitle("IAM API")),
 		http.WithServices(
+			forwardAuthVerify(authn),
 			func(s *khttp.Server) { iamv1.RegisterAuthnServiceHTTPServer(s, authn) },
 			func(s *khttp.Server) { iamv1.RegisterUserServiceHTTPServer(s, user) },
 			func(s *khttp.Server) { iamv1.RegisterTestServiceHTTPServer(s, test) },
@@ -133,4 +136,24 @@ func NewHTTPServer(
 	}
 
 	return http.NewServer(opts...)
+}
+
+// forwardAuthVerify 注册 GET/HEAD /v1/auth/verify，供 Traefik 等网关 ForwardAuth 调用。
+// 校验 Authorization Bearer token，成功 204 + X-User-ID，失败 401。
+func forwardAuthVerify(authSvc *service.AuthnService) func(s *khttp.Server) {
+	return func(s *khttp.Server) {
+		s.Handle("/v1/auth/verify", nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
+			if r.Method != nethttp.MethodGet && r.Method != nethttp.MethodHead {
+				w.WriteHeader(nethttp.StatusMethodNotAllowed)
+				return
+			}
+			userID, err := authSvc.VerifyAuthorizationHeader(r.Header.Get("Authorization"))
+			if err != nil {
+				w.WriteHeader(nethttp.StatusUnauthorized)
+				return
+			}
+			w.Header().Set("X-User-ID", userID)
+			w.WriteHeader(nethttp.StatusNoContent)
+		}))
+	}
 }

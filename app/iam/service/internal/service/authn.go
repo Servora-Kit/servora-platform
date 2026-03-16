@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 
 	"github.com/go-kratos/kratos/v2/errors"
 
@@ -135,4 +136,20 @@ func (s *AuthnService) ResetPassword(ctx context.Context, req *authnpb.ResetPass
 		return nil, err
 	}
 	return &authnpb.ResetPasswordResponse{Success: true}, nil
+}
+
+// VerifyAuthorizationHeader 校验 Bearer access token 并返回 user ID，供网关 ForwardAuth 使用。
+func (s *AuthnService) VerifyAuthorizationHeader(authHeader string) (string, error) {
+	parts := strings.SplitN(strings.TrimSpace(authHeader), " ", 2)
+	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+		return "", authnpb.ErrorMissingToken("invalid authorization header format")
+	}
+	userID, err := s.uc.VerifyAccessToken(parts[1])
+	if err != nil {
+		return "", err
+	}
+	if userID == "" {
+		return "", authnpb.ErrorInvalidCredentials("missing user id in token")
+	}
+	return userID, nil
 }

@@ -66,13 +66,26 @@ registry:
     datacenter: "dc1"
     tags:
       - "traefik.enable=true"
+      # 公开认证入口（登录、注册、刷新、ForwardAuth 校验端点），不挂 ForwardAuth
+      - "traefik.http.routers.iam-auth-public.rule=Path(`/v1/auth/login/email-password`) || Path(`/v1/auth/signup/using-email`) || Path(`/v1/auth/refresh-token`) || Path(`/v1/auth/verify`)"
+      - "traefik.http.routers.iam-auth-public.entrypoints=web"
+      - "traefik.http.routers.iam-auth-public.priority=300"
+      - "traefik.http.routers.iam-auth-public.service=iam-http"
+      # 需鉴权的 /v1 业务路由，网关先调 IAM /v1/auth/verify 再转发并注入 X-User-ID
       - "traefik.http.routers.iam-api.rule=PathPrefix(`/v1`)"
       - "traefik.http.routers.iam-api.entrypoints=web"
+      - "traefik.http.routers.iam-api.priority=100"
+      - "traefik.http.routers.iam-api.middlewares=iam-forwardauth"
       - "traefik.http.routers.iam-api.service=iam-http"
       - "traefik.http.routers.iam-healthz.rule=Path(`/healthz`)"
       - "traefik.http.routers.iam-healthz.entrypoints=web"
       - "traefik.http.routers.iam-healthz.service=iam-http"
       - "traefik.http.services.iam-http.loadbalancer.server.port=8000"
+      # ForwardAuth 中间件：调 IAM GET /v1/auth/verify，成功则透传 X-User-ID 到上游
+      - "traefik.http.middlewares.iam-forwardauth.forwardauth.address=http://iam:8000/v1/auth/verify"
+      - "traefik.http.middlewares.iam-forwardauth.forwardauth.trustForwardHeader=false"
+      - "traefik.http.middlewares.iam-forwardauth.forwardauth.authRequestHeaders=Authorization"
+      - "traefik.http.middlewares.iam-forwardauth.forwardauth.authResponseHeaders=X-User-ID"
 
 discovery:
   consul:
