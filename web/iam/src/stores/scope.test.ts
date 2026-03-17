@@ -1,19 +1,21 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
+import type { Store } from '@tanstack/store'
+import type { ScopeState } from './scope'
 
 // Dynamic import to ensure jsdom localStorage is available before module init
-let scopeStore: typeof import('./scope')['scopeStore']
-let setCurrentOrganizationId: typeof import('./scope')['setCurrentOrganizationId']
-let setCurrentProjectId: typeof import('./scope')['setCurrentProjectId']
-let clearScope: typeof import('./scope')['clearScope']
-let orgIdFromPath: typeof import('./scope')['orgIdFromPath']
+let scopeStore: Store<ScopeState>
+let setCurrentOrganizationId: (id: string | null) => void
+let setCurrentProjectId: (id: string | null) => void
+let clearScope: () => void
+let orgIdFromPath: (pathname: string) => string | null
 
 const ORG_ID_KEY = 'iam.current_organization_id'
 const PROJECT_ID_KEY = 'iam.current_project_id'
 
 beforeEach(async () => {
   // Ensure jsdom localStorage is set up
-  if (typeof window.localStorage?.getItem !== 'function') {
+  if (typeof window.localStorage.getItem !== 'function') {
     const store: Record<string, string> = {}
     Object.defineProperty(window, 'localStorage', {
       value: {

@@ -4,7 +4,7 @@ const ORG_ID_KEY = 'iam.current_organization_id'
 const PROJECT_ID_KEY = 'iam.current_project_id'
 
 function hasStorage(): boolean {
-  return typeof window !== 'undefined' && typeof window.localStorage?.getItem === 'function'
+  return typeof window !== 'undefined' && typeof window.localStorage.getItem === 'function'
 }
 
 function readStorage(key: string): string | null {
@@ -62,6 +62,6 @@ export function clearScope(): void {
 export function orgIdFromPath(pathname: string): string | null {
   const match = pathname.match(/^\/org\/([^/]+)(?:\/|$)/)
   if (!match) return null
-  const segment = decodeURIComponent(match[1] ?? '').trim()
+  const segment = decodeURIComponent(match[1]).trim()
   return segment || null
 }

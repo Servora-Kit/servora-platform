@@ -1,4 +1,5 @@
-import { ofetch, type FetchOptions } from 'ofetch'
+import { ofetch } from 'ofetch'
+import type { FetchOptions } from 'ofetch'
 
 export type RequestType = {
   path: string
@@ -17,10 +18,10 @@ export type RequestHandler = (
 ) => Promise<unknown>
 
 export interface TokenStore {
-  getAccessToken(): string | null
-  getRefreshToken(): string | null
-  setTokens(accessToken: string, refreshToken: string): void
-  clear(): void
+  getAccessToken: () => string | null
+  getRefreshToken: () => string | null
+  setTokens: (accessToken: string, refreshToken: string) => void
+  clear: () => void
 }
 
 export interface RequestHandlerOptions {
