@@ -1,7 +1,7 @@
 import { Store } from '@tanstack/store'
 
+const TENANT_ID_KEY = 'iam.current_tenant_id'
 const ORG_ID_KEY = 'iam.current_organization_id'
-const PROJECT_ID_KEY = 'iam.current_project_id'
 
 function hasStorage(): boolean {
   return typeof window !== 'undefined' && typeof window.localStorage.getItem === 'function'
@@ -23,14 +23,21 @@ function writeStorage(key: string, value: string | null): void {
 }
 
 export interface ScopeState {
+  currentTenantId: string | null
   currentOrganizationId: string | null
-  currentProjectId: string | null
 }
 
 export const scopeStore = new Store<ScopeState>({
+  currentTenantId: readStorage(TENANT_ID_KEY),
   currentOrganizationId: readStorage(ORG_ID_KEY),
-  currentProjectId: readStorage(PROJECT_ID_KEY),
 })
+
+export function setCurrentTenantId(id: string | null): void {
+  const trimmed = id?.trim() || null
+  if (scopeStore.state.currentTenantId === trimmed) return
+  scopeStore.setState((prev) => ({ ...prev, currentTenantId: trimmed }))
+  writeStorage(TENANT_ID_KEY, trimmed)
+}
 
 export function setCurrentOrganizationId(id: string | null): void {
   const trimmed = id?.trim() || null
@@ -39,20 +46,13 @@ export function setCurrentOrganizationId(id: string | null): void {
   writeStorage(ORG_ID_KEY, trimmed)
 }
 
-export function setCurrentProjectId(id: string | null): void {
-  const trimmed = id?.trim() || null
-  if (scopeStore.state.currentProjectId === trimmed) return
-  scopeStore.setState((prev) => ({ ...prev, currentProjectId: trimmed }))
-  writeStorage(PROJECT_ID_KEY, trimmed)
-}
-
 export function clearScope(): void {
   scopeStore.setState(() => ({
+    currentTenantId: null,
     currentOrganizationId: null,
-    currentProjectId: null,
   }))
+  writeStorage(TENANT_ID_KEY, null)
   writeStorage(ORG_ID_KEY, null)
-  writeStorage(PROJECT_ID_KEY, null)
 }
 
 /**

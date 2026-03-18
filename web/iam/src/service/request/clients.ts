@@ -5,14 +5,14 @@ import {
   createApplicationServiceClient,
   createAuthnServiceClient,
   createOrganizationServiceClient,
-  createProjectServiceClient,
+  createTenantServiceClient,
   createUserServiceClient,
 } from '@servora/api-client/iam/service/v1/index'
 import type {
   ApplicationService,
   AuthnService,
   OrganizationService,
-  ProjectService,
+  TenantService,
   UserService,
 } from '@servora/api-client/iam/service/v1/index'
 
@@ -20,8 +20,8 @@ export interface IamClients {
   authn: AuthnService
   user: UserService
   organization: OrganizationService
-  project: ProjectService
   application: ApplicationService
+  tenant: TenantService
 }
 
 export function createIamClients(
@@ -33,8 +33,8 @@ export function createIamClients(
     authn: createAuthnServiceClient(handler),
     user: createUserServiceClient(handler),
     organization: createOrganizationServiceClient(handler),
-    project: createProjectServiceClient(handler),
     application: createApplicationServiceClient(handler),
+    tenant: createTenantServiceClient(handler),
   }
 }
 

@@ -66,6 +66,7 @@ function ensureLeadingSlash(path: string): string {
 }
 
 const REFRESH_PATH = '/v1/auth/refresh-token'
+const AUTH_PATH_PREFIX = '/v1/auth/'
 
 export function createRequestHandler(
   options: RequestHandlerOptions = {},
@@ -115,6 +116,7 @@ export function createRequestHandler(
   async function doRequest(
     request: RequestType,
     meta: RequestMeta,
+    isRetry = false,
   ): Promise<unknown> {
     const headers: Record<string, string> = {
       Accept: 'application/json',
@@ -168,14 +170,16 @@ export function createRequestHandler(
           cause: err,
         })
 
+        const normalizedPath = ensureLeadingSlash(request.path)
         if (
           autoRefreshToken &&
           status === 401 &&
-          ensureLeadingSlash(request.path) !== REFRESH_PATH
+          !isRetry &&
+          !normalizedPath.startsWith(AUTH_PATH_PREFIX)
         ) {
           const refreshed = await tryRefreshToken()
           if (refreshed) {
-            return doRequest(request, meta)
+            return doRequest(request, meta, true)
           }
         }
 

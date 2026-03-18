@@ -6,12 +6,10 @@ import type { ScopeState } from './scope'
 // Dynamic import to ensure jsdom localStorage is available before module init
 let scopeStore: Store<ScopeState>
 let setCurrentOrganizationId: (id: string | null) => void
-let setCurrentProjectId: (id: string | null) => void
 let clearScope: () => void
 let orgIdFromPath: (pathname: string) => string | null
 
 const ORG_ID_KEY = 'iam.current_organization_id'
-const PROJECT_ID_KEY = 'iam.current_project_id'
 
 beforeEach(async () => {
   // Ensure jsdom localStorage is set up
@@ -37,7 +35,6 @@ beforeEach(async () => {
   const mod = await import('./scope')
   scopeStore = mod.scopeStore
   setCurrentOrganizationId = mod.setCurrentOrganizationId
-  setCurrentProjectId = mod.setCurrentProjectId
   clearScope = mod.clearScope
   orgIdFromPath = mod.orgIdFromPath
 
@@ -46,7 +43,7 @@ beforeEach(async () => {
 
 describe('orgIdFromPath', () => {
   it('extracts org ID from /org/{id}/...', () => {
-    expect(orgIdFromPath('/org/abc-123/projects')).toBe('abc-123')
+    expect(orgIdFromPath('/org/abc-123/dashboard')).toBe('abc-123')
   })
 
   it('extracts org ID from /org/{id} (no trailing slash)', () => {
@@ -62,7 +59,7 @@ describe('orgIdFromPath', () => {
   })
 
   it('returns null for non-matching paths', () => {
-    expect(orgIdFromPath('/projects')).toBeNull()
+    expect(orgIdFromPath('/applications')).toBeNull()
     expect(orgIdFromPath('/settings/org/123')).toBeNull()
     expect(orgIdFromPath('/')).toBeNull()
   })
@@ -109,28 +106,11 @@ describe('setCurrentOrganizationId', () => {
   })
 })
 
-describe('setCurrentProjectId', () => {
-  it('sets project ID in store and localStorage', () => {
-    setCurrentProjectId('proj-1')
-    expect(scopeStore.state.currentProjectId).toBe('proj-1')
-    expect(localStorage.getItem(PROJECT_ID_KEY)).toBe('proj-1')
-  })
-
-  it('clears on null', () => {
-    setCurrentProjectId('proj-1')
-    setCurrentProjectId(null)
-    expect(scopeStore.state.currentProjectId).toBeNull()
-  })
-})
-
 describe('clearScope', () => {
-  it('clears both org and project', () => {
+  it('clears org ID', () => {
     setCurrentOrganizationId('org-1')
-    setCurrentProjectId('proj-1')
     clearScope()
     expect(scopeStore.state.currentOrganizationId).toBeNull()
-    expect(scopeStore.state.currentProjectId).toBeNull()
     expect(localStorage.getItem(ORG_ID_KEY)).toBeNull()
-    expect(localStorage.getItem(PROJECT_ID_KEY)).toBeNull()
   })
 })

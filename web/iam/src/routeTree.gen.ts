@@ -9,18 +9,37 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AboutRouteImport } from './routes/about'
+import { Route as PlatformRouteRouteImport } from './routes/_platform/route'
+import { Route as AuthRouteRouteImport } from './routes/_auth/route'
+import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
-import { Route as DemoTableRouteImport } from './routes/demo/table'
-import { Route as DemoStoreRouteImport } from './routes/demo/store'
-import { Route as DemoSentryTestingRouteImport } from './routes/demo/sentry.testing'
-import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
-import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
+import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as AuthCallbackRouteImport } from './routes/_auth/callback'
+import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as PlatformTenantsIndexRouteImport } from './routes/_platform/tenants/index'
+import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
+import { Route as AppOrganizationsIndexRouteImport } from './routes/_app/organizations/index'
+import { Route as AppApplicationsIndexRouteImport } from './routes/_app/applications/index'
+import { Route as AppUsersUserIdRouteImport } from './routes/_app/users/$userId'
+import { Route as AppSettingsSecurityRouteImport } from './routes/_app/settings/security'
+import { Route as AppSettingsProfileRouteImport } from './routes/_app/settings/profile'
+import { Route as AppApplicationsAppIdRouteImport } from './routes/_app/applications/$appId'
+import { Route as PlatformTenantsTenantIdIndexRouteImport } from './routes/_platform/tenants/$tenantId/index'
+import { Route as AppOrganizationsOrgIdIndexRouteImport } from './routes/_app/organizations/$orgId/index'
+import { Route as PlatformTenantsTenantIdMembersRouteImport } from './routes/_platform/tenants/$tenantId/members'
+import { Route as AppOrganizationsOrgIdSettingsRouteImport } from './routes/_app/organizations/$orgId/settings'
+import { Route as AppOrganizationsOrgIdMembersRouteImport } from './routes/_app/organizations/$orgId/members'
 
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
+const PlatformRouteRoute = PlatformRouteRouteImport.update({
+  id: '/_platform',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRouteRoute = AuthRouteRouteImport.update({
+  id: '/_auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRouteRoute = AppRouteRouteImport.update({
+  id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -28,119 +47,244 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
-  id: '/demo/tanstack-query',
-  path: '/demo/tanstack-query',
-  getParentRoute: () => rootRouteImport,
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRouteRoute,
 } as any)
-const DemoTableRoute = DemoTableRouteImport.update({
-  id: '/demo/table',
-  path: '/demo/table',
-  getParentRoute: () => rootRouteImport,
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRouteRoute,
 } as any)
-const DemoStoreRoute = DemoStoreRouteImport.update({
-  id: '/demo/store',
-  path: '/demo/store',
-  getParentRoute: () => rootRouteImport,
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRouteRoute,
 } as any)
-const DemoSentryTestingRoute = DemoSentryTestingRouteImport.update({
-  id: '/demo/sentry/testing',
-  path: '/demo/sentry/testing',
-  getParentRoute: () => rootRouteImport,
+const PlatformTenantsIndexRoute = PlatformTenantsIndexRouteImport.update({
+  id: '/tenants/',
+  path: '/tenants/',
+  getParentRoute: () => PlatformRouteRoute,
 } as any)
-const DemoFormSimpleRoute = DemoFormSimpleRouteImport.update({
-  id: '/demo/form/simple',
-  path: '/demo/form/simple',
-  getParentRoute: () => rootRouteImport,
+const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => AppRouteRoute,
 } as any)
-const DemoFormAddressRoute = DemoFormAddressRouteImport.update({
-  id: '/demo/form/address',
-  path: '/demo/form/address',
-  getParentRoute: () => rootRouteImport,
+const AppOrganizationsIndexRoute = AppOrganizationsIndexRouteImport.update({
+  id: '/organizations/',
+  path: '/organizations/',
+  getParentRoute: () => AppRouteRoute,
 } as any)
+const AppApplicationsIndexRoute = AppApplicationsIndexRouteImport.update({
+  id: '/applications/',
+  path: '/applications/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppUsersUserIdRoute = AppUsersUserIdRouteImport.update({
+  id: '/users/$userId',
+  path: '/users/$userId',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppSettingsSecurityRoute = AppSettingsSecurityRouteImport.update({
+  id: '/settings/security',
+  path: '/settings/security',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppSettingsProfileRoute = AppSettingsProfileRouteImport.update({
+  id: '/settings/profile',
+  path: '/settings/profile',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppApplicationsAppIdRoute = AppApplicationsAppIdRouteImport.update({
+  id: '/applications/$appId',
+  path: '/applications/$appId',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const PlatformTenantsTenantIdIndexRoute =
+  PlatformTenantsTenantIdIndexRouteImport.update({
+    id: '/tenants/$tenantId/',
+    path: '/tenants/$tenantId/',
+    getParentRoute: () => PlatformRouteRoute,
+  } as any)
+const AppOrganizationsOrgIdIndexRoute =
+  AppOrganizationsOrgIdIndexRouteImport.update({
+    id: '/organizations/$orgId/',
+    path: '/organizations/$orgId/',
+    getParentRoute: () => AppRouteRoute,
+  } as any)
+const PlatformTenantsTenantIdMembersRoute =
+  PlatformTenantsTenantIdMembersRouteImport.update({
+    id: '/tenants/$tenantId/members',
+    path: '/tenants/$tenantId/members',
+    getParentRoute: () => PlatformRouteRoute,
+  } as any)
+const AppOrganizationsOrgIdSettingsRoute =
+  AppOrganizationsOrgIdSettingsRouteImport.update({
+    id: '/organizations/$orgId/settings',
+    path: '/organizations/$orgId/settings',
+    getParentRoute: () => AppRouteRoute,
+  } as any)
+const AppOrganizationsOrgIdMembersRoute =
+  AppOrganizationsOrgIdMembersRouteImport.update({
+    id: '/organizations/$orgId/members',
+    path: '/organizations/$orgId/members',
+    getParentRoute: () => AppRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/demo/store': typeof DemoStoreRoute
-  '/demo/table': typeof DemoTableRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
-  '/demo/form/address': typeof DemoFormAddressRoute
-  '/demo/form/simple': typeof DemoFormSimpleRoute
-  '/demo/sentry/testing': typeof DemoSentryTestingRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/callback': typeof AuthCallbackRoute
+  '/login': typeof AuthLoginRoute
+  '/applications/$appId': typeof AppApplicationsAppIdRoute
+  '/settings/profile': typeof AppSettingsProfileRoute
+  '/settings/security': typeof AppSettingsSecurityRoute
+  '/users/$userId': typeof AppUsersUserIdRoute
+  '/applications/': typeof AppApplicationsIndexRoute
+  '/organizations/': typeof AppOrganizationsIndexRoute
+  '/users/': typeof AppUsersIndexRoute
+  '/tenants/': typeof PlatformTenantsIndexRoute
+  '/organizations/$orgId/members': typeof AppOrganizationsOrgIdMembersRoute
+  '/organizations/$orgId/settings': typeof AppOrganizationsOrgIdSettingsRoute
+  '/tenants/$tenantId/members': typeof PlatformTenantsTenantIdMembersRoute
+  '/organizations/$orgId/': typeof AppOrganizationsOrgIdIndexRoute
+  '/tenants/$tenantId/': typeof PlatformTenantsTenantIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/demo/store': typeof DemoStoreRoute
-  '/demo/table': typeof DemoTableRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
-  '/demo/form/address': typeof DemoFormAddressRoute
-  '/demo/form/simple': typeof DemoFormSimpleRoute
-  '/demo/sentry/testing': typeof DemoSentryTestingRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/callback': typeof AuthCallbackRoute
+  '/login': typeof AuthLoginRoute
+  '/applications/$appId': typeof AppApplicationsAppIdRoute
+  '/settings/profile': typeof AppSettingsProfileRoute
+  '/settings/security': typeof AppSettingsSecurityRoute
+  '/users/$userId': typeof AppUsersUserIdRoute
+  '/applications': typeof AppApplicationsIndexRoute
+  '/organizations': typeof AppOrganizationsIndexRoute
+  '/users': typeof AppUsersIndexRoute
+  '/tenants': typeof PlatformTenantsIndexRoute
+  '/organizations/$orgId/members': typeof AppOrganizationsOrgIdMembersRoute
+  '/organizations/$orgId/settings': typeof AppOrganizationsOrgIdSettingsRoute
+  '/tenants/$tenantId/members': typeof PlatformTenantsTenantIdMembersRoute
+  '/organizations/$orgId': typeof AppOrganizationsOrgIdIndexRoute
+  '/tenants/$tenantId': typeof PlatformTenantsTenantIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/demo/store': typeof DemoStoreRoute
-  '/demo/table': typeof DemoTableRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
-  '/demo/form/address': typeof DemoFormAddressRoute
-  '/demo/form/simple': typeof DemoFormSimpleRoute
-  '/demo/sentry/testing': typeof DemoSentryTestingRoute
+  '/_app': typeof AppRouteRouteWithChildren
+  '/_auth': typeof AuthRouteRouteWithChildren
+  '/_platform': typeof PlatformRouteRouteWithChildren
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_auth/callback': typeof AuthCallbackRoute
+  '/_auth/login': typeof AuthLoginRoute
+  '/_app/applications/$appId': typeof AppApplicationsAppIdRoute
+  '/_app/settings/profile': typeof AppSettingsProfileRoute
+  '/_app/settings/security': typeof AppSettingsSecurityRoute
+  '/_app/users/$userId': typeof AppUsersUserIdRoute
+  '/_app/applications/': typeof AppApplicationsIndexRoute
+  '/_app/organizations/': typeof AppOrganizationsIndexRoute
+  '/_app/users/': typeof AppUsersIndexRoute
+  '/_platform/tenants/': typeof PlatformTenantsIndexRoute
+  '/_app/organizations/$orgId/members': typeof AppOrganizationsOrgIdMembersRoute
+  '/_app/organizations/$orgId/settings': typeof AppOrganizationsOrgIdSettingsRoute
+  '/_platform/tenants/$tenantId/members': typeof PlatformTenantsTenantIdMembersRoute
+  '/_app/organizations/$orgId/': typeof AppOrganizationsOrgIdIndexRoute
+  '/_platform/tenants/$tenantId/': typeof PlatformTenantsTenantIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/about'
-    | '/demo/store'
-    | '/demo/table'
-    | '/demo/tanstack-query'
-    | '/demo/form/address'
-    | '/demo/form/simple'
-    | '/demo/sentry/testing'
+    | '/dashboard'
+    | '/callback'
+    | '/login'
+    | '/applications/$appId'
+    | '/settings/profile'
+    | '/settings/security'
+    | '/users/$userId'
+    | '/applications/'
+    | '/organizations/'
+    | '/users/'
+    | '/tenants/'
+    | '/organizations/$orgId/members'
+    | '/organizations/$orgId/settings'
+    | '/tenants/$tenantId/members'
+    | '/organizations/$orgId/'
+    | '/tenants/$tenantId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/about'
-    | '/demo/store'
-    | '/demo/table'
-    | '/demo/tanstack-query'
-    | '/demo/form/address'
-    | '/demo/form/simple'
-    | '/demo/sentry/testing'
+    | '/dashboard'
+    | '/callback'
+    | '/login'
+    | '/applications/$appId'
+    | '/settings/profile'
+    | '/settings/security'
+    | '/users/$userId'
+    | '/applications'
+    | '/organizations'
+    | '/users'
+    | '/tenants'
+    | '/organizations/$orgId/members'
+    | '/organizations/$orgId/settings'
+    | '/tenants/$tenantId/members'
+    | '/organizations/$orgId'
+    | '/tenants/$tenantId'
   id:
     | '__root__'
     | '/'
-    | '/about'
-    | '/demo/store'
-    | '/demo/table'
-    | '/demo/tanstack-query'
-    | '/demo/form/address'
-    | '/demo/form/simple'
-    | '/demo/sentry/testing'
+    | '/_app'
+    | '/_auth'
+    | '/_platform'
+    | '/_app/dashboard'
+    | '/_auth/callback'
+    | '/_auth/login'
+    | '/_app/applications/$appId'
+    | '/_app/settings/profile'
+    | '/_app/settings/security'
+    | '/_app/users/$userId'
+    | '/_app/applications/'
+    | '/_app/organizations/'
+    | '/_app/users/'
+    | '/_platform/tenants/'
+    | '/_app/organizations/$orgId/members'
+    | '/_app/organizations/$orgId/settings'
+    | '/_platform/tenants/$tenantId/members'
+    | '/_app/organizations/$orgId/'
+    | '/_platform/tenants/$tenantId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
-  DemoStoreRoute: typeof DemoStoreRoute
-  DemoTableRoute: typeof DemoTableRoute
-  DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
-  DemoFormAddressRoute: typeof DemoFormAddressRoute
-  DemoFormSimpleRoute: typeof DemoFormSimpleRoute
-  DemoSentryTestingRoute: typeof DemoSentryTestingRoute
+  AppRouteRoute: typeof AppRouteRouteWithChildren
+  AuthRouteRoute: typeof AuthRouteRouteWithChildren
+  PlatformRouteRoute: typeof PlatformRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
+    '/_platform': {
+      id: '/_platform'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PlatformRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -150,60 +294,188 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demo/tanstack-query': {
-      id: '/demo/tanstack-query'
-      path: '/demo/tanstack-query'
-      fullPath: '/demo/tanstack-query'
-      preLoaderRoute: typeof DemoTanstackQueryRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_auth/login': {
+      id: '/_auth/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRouteRoute
     }
-    '/demo/table': {
-      id: '/demo/table'
-      path: '/demo/table'
-      fullPath: '/demo/table'
-      preLoaderRoute: typeof DemoTableRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_auth/callback': {
+      id: '/_auth/callback'
+      path: '/callback'
+      fullPath: '/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRouteRoute
     }
-    '/demo/store': {
-      id: '/demo/store'
-      path: '/demo/store'
-      fullPath: '/demo/store'
-      preLoaderRoute: typeof DemoStoreRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRouteRoute
     }
-    '/demo/sentry/testing': {
-      id: '/demo/sentry/testing'
-      path: '/demo/sentry/testing'
-      fullPath: '/demo/sentry/testing'
-      preLoaderRoute: typeof DemoSentryTestingRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_platform/tenants/': {
+      id: '/_platform/tenants/'
+      path: '/tenants'
+      fullPath: '/tenants/'
+      preLoaderRoute: typeof PlatformTenantsIndexRouteImport
+      parentRoute: typeof PlatformRouteRoute
     }
-    '/demo/form/simple': {
-      id: '/demo/form/simple'
-      path: '/demo/form/simple'
-      fullPath: '/demo/form/simple'
-      preLoaderRoute: typeof DemoFormSimpleRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_app/users/': {
+      id: '/_app/users/'
+      path: '/users'
+      fullPath: '/users/'
+      preLoaderRoute: typeof AppUsersIndexRouteImport
+      parentRoute: typeof AppRouteRoute
     }
-    '/demo/form/address': {
-      id: '/demo/form/address'
-      path: '/demo/form/address'
-      fullPath: '/demo/form/address'
-      preLoaderRoute: typeof DemoFormAddressRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_app/organizations/': {
+      id: '/_app/organizations/'
+      path: '/organizations'
+      fullPath: '/organizations/'
+      preLoaderRoute: typeof AppOrganizationsIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/applications/': {
+      id: '/_app/applications/'
+      path: '/applications'
+      fullPath: '/applications/'
+      preLoaderRoute: typeof AppApplicationsIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/users/$userId': {
+      id: '/_app/users/$userId'
+      path: '/users/$userId'
+      fullPath: '/users/$userId'
+      preLoaderRoute: typeof AppUsersUserIdRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/settings/security': {
+      id: '/_app/settings/security'
+      path: '/settings/security'
+      fullPath: '/settings/security'
+      preLoaderRoute: typeof AppSettingsSecurityRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/settings/profile': {
+      id: '/_app/settings/profile'
+      path: '/settings/profile'
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof AppSettingsProfileRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/applications/$appId': {
+      id: '/_app/applications/$appId'
+      path: '/applications/$appId'
+      fullPath: '/applications/$appId'
+      preLoaderRoute: typeof AppApplicationsAppIdRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_platform/tenants/$tenantId/': {
+      id: '/_platform/tenants/$tenantId/'
+      path: '/tenants/$tenantId'
+      fullPath: '/tenants/$tenantId/'
+      preLoaderRoute: typeof PlatformTenantsTenantIdIndexRouteImport
+      parentRoute: typeof PlatformRouteRoute
+    }
+    '/_app/organizations/$orgId/': {
+      id: '/_app/organizations/$orgId/'
+      path: '/organizations/$orgId'
+      fullPath: '/organizations/$orgId/'
+      preLoaderRoute: typeof AppOrganizationsOrgIdIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_platform/tenants/$tenantId/members': {
+      id: '/_platform/tenants/$tenantId/members'
+      path: '/tenants/$tenantId/members'
+      fullPath: '/tenants/$tenantId/members'
+      preLoaderRoute: typeof PlatformTenantsTenantIdMembersRouteImport
+      parentRoute: typeof PlatformRouteRoute
+    }
+    '/_app/organizations/$orgId/settings': {
+      id: '/_app/organizations/$orgId/settings'
+      path: '/organizations/$orgId/settings'
+      fullPath: '/organizations/$orgId/settings'
+      preLoaderRoute: typeof AppOrganizationsOrgIdSettingsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/organizations/$orgId/members': {
+      id: '/_app/organizations/$orgId/members'
+      path: '/organizations/$orgId/members'
+      fullPath: '/organizations/$orgId/members'
+      preLoaderRoute: typeof AppOrganizationsOrgIdMembersRouteImport
+      parentRoute: typeof AppRouteRoute
     }
   }
 }
 
+interface AppRouteRouteChildren {
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppApplicationsAppIdRoute: typeof AppApplicationsAppIdRoute
+  AppSettingsProfileRoute: typeof AppSettingsProfileRoute
+  AppSettingsSecurityRoute: typeof AppSettingsSecurityRoute
+  AppUsersUserIdRoute: typeof AppUsersUserIdRoute
+  AppApplicationsIndexRoute: typeof AppApplicationsIndexRoute
+  AppOrganizationsIndexRoute: typeof AppOrganizationsIndexRoute
+  AppUsersIndexRoute: typeof AppUsersIndexRoute
+  AppOrganizationsOrgIdMembersRoute: typeof AppOrganizationsOrgIdMembersRoute
+  AppOrganizationsOrgIdSettingsRoute: typeof AppOrganizationsOrgIdSettingsRoute
+  AppOrganizationsOrgIdIndexRoute: typeof AppOrganizationsOrgIdIndexRoute
+}
+
+const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppDashboardRoute: AppDashboardRoute,
+  AppApplicationsAppIdRoute: AppApplicationsAppIdRoute,
+  AppSettingsProfileRoute: AppSettingsProfileRoute,
+  AppSettingsSecurityRoute: AppSettingsSecurityRoute,
+  AppUsersUserIdRoute: AppUsersUserIdRoute,
+  AppApplicationsIndexRoute: AppApplicationsIndexRoute,
+  AppOrganizationsIndexRoute: AppOrganizationsIndexRoute,
+  AppUsersIndexRoute: AppUsersIndexRoute,
+  AppOrganizationsOrgIdMembersRoute: AppOrganizationsOrgIdMembersRoute,
+  AppOrganizationsOrgIdSettingsRoute: AppOrganizationsOrgIdSettingsRoute,
+  AppOrganizationsOrgIdIndexRoute: AppOrganizationsOrgIdIndexRoute,
+}
+
+const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
+  AppRouteRouteChildren,
+)
+
+interface AuthRouteRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+}
+
+const AuthRouteRouteChildren: AuthRouteRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
+  AuthLoginRoute: AuthLoginRoute,
+}
+
+const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
+  AuthRouteRouteChildren,
+)
+
+interface PlatformRouteRouteChildren {
+  PlatformTenantsIndexRoute: typeof PlatformTenantsIndexRoute
+  PlatformTenantsTenantIdMembersRoute: typeof PlatformTenantsTenantIdMembersRoute
+  PlatformTenantsTenantIdIndexRoute: typeof PlatformTenantsTenantIdIndexRoute
+}
+
+const PlatformRouteRouteChildren: PlatformRouteRouteChildren = {
+  PlatformTenantsIndexRoute: PlatformTenantsIndexRoute,
+  PlatformTenantsTenantIdMembersRoute: PlatformTenantsTenantIdMembersRoute,
+  PlatformTenantsTenantIdIndexRoute: PlatformTenantsTenantIdIndexRoute,
+}
+
+const PlatformRouteRouteWithChildren = PlatformRouteRoute._addFileChildren(
+  PlatformRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
-  DemoStoreRoute: DemoStoreRoute,
-  DemoTableRoute: DemoTableRoute,
-  DemoTanstackQueryRoute: DemoTanstackQueryRoute,
-  DemoFormAddressRoute: DemoFormAddressRoute,
-  DemoFormSimpleRoute: DemoFormSimpleRoute,
-  DemoSentryTestingRoute: DemoSentryTestingRoute,
+  AppRouteRoute: AppRouteRouteWithChildren,
+  AuthRouteRoute: AuthRouteRouteWithChildren,
+  PlatformRouteRoute: PlatformRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
