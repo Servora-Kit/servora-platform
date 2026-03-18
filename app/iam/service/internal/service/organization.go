@@ -6,7 +6,6 @@ import (
 	orgpb "github.com/Servora-Kit/servora/api/gen/go/organization/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
-	"github.com/Servora-Kit/servora/pkg/actor"
 	"github.com/Servora-Kit/servora/pkg/pagination"
 )
 
@@ -21,8 +20,11 @@ func NewOrganizationService(uc *biz.OrganizationUsecase) *OrganizationService {
 }
 
 func (s *OrganizationService) CreateOrganization(ctx context.Context, req *orgpb.CreateOrganizationRequest) (*orgpb.CreateOrganizationResponse, error) {
-	tenantID, _ := actor.TenantIDFromContext(ctx)
-	org, err := s.uc.Create(ctx, &entity.Organization{
+	callerID, tenantID, err := requireTenantScope(ctx)
+	if err != nil {
+		return nil, err
+	}
+	org, err := s.uc.Create(ctx, callerID, &entity.Organization{
 		Name:        req.Name,
 		Slug:        req.Slug,
 		DisplayName: req.DisplayName,
@@ -43,8 +45,13 @@ func (s *OrganizationService) GetOrganization(ctx context.Context, req *orgpb.Ge
 }
 
 func (s *OrganizationService) ListOrganizations(ctx context.Context, req *orgpb.ListOrganizationsRequest) (*orgpb.ListOrganizationsResponse, error) {
+	callerID, err := requireAuthenticatedUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tenantID, _ := requireTenantScopeOptional(ctx)
 	page, pageSize := pagination.ExtractPage(req.Pagination)
-	orgs, total, err := s.uc.List(ctx, page, pageSize)
+	orgs, total, err := s.uc.List(ctx, callerID, tenantID, page, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -128,4 +135,15 @@ func (s *OrganizationService) UpdateMemberRole(ctx context.Context, req *orgpb.U
 		return nil, err
 	}
 	return &orgpb.UpdateMemberRoleResponse{Member: orgMemberInfoMapper.Map(m)}, nil
+}
+
+func (s *OrganizationService) TransferOwnership(ctx context.Context, req *orgpb.TransferOrganizationOwnershipRequest) (*orgpb.TransferOrganizationOwnershipResponse, error) {
+	callerID, err := requireAuthenticatedUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.uc.TransferOwnership(ctx, req.OrganizationId, callerID, req.NewOwnerUserId); err != nil {
+		return nil, err
+	}
+	return &orgpb.TransferOrganizationOwnershipResponse{Success: true}, nil
 }

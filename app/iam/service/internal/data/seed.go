@@ -2,26 +2,19 @@ package data
 
 import (
 	"context"
-	"time"
-
-	"github.com/google/uuid"
 
 	iamconf "github.com/Servora-Kit/servora/api/gen/go/iam/conf/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
-	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
-	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/tenant"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/tenantmember"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/user"
 	"github.com/Servora-Kit/servora/pkg/helpers"
 	"github.com/Servora-Kit/servora/pkg/logger"
 	"github.com/Servora-Kit/servora/pkg/openfga"
+	"github.com/google/uuid"
 )
 
-const (
-	defaultBusinessTenantSlug = "default"
-	platformObjectID          = "default"
-)
+const platformObjectID = "default"
 
 // Seeder performs one-time data initialization for the IAM service.
 // It runs as a Kratos BeforeStart hook, after all Wire DI is complete,
@@ -56,10 +49,6 @@ func (s *Seeder) Run(ctx context.Context) error {
 		return err
 	}
 	userID := adminUser.ID.String()
-
-	if err := s.ensureBusinessTenant(ctx, userID); err != nil {
-		s.log.Warnf("ensure business tenant: %v", err)
-	}
 
 	if _, err := s.tenantUC.EnsurePersonalTenant(ctx, userID, adminUser.Name); err != nil {
 		s.log.Warnf("ensure personal tenant: %v", err)
@@ -102,82 +91,9 @@ func (s *Seeder) ensureAdminUser(ctx context.Context) (*ent.User, error) {
 	return created, nil
 }
 
-// ensureBusinessTenant creates the default business tenant (with default org
-// and project) via TenantUsecase, or ensures the admin is a member if it
-// already exists.
-func (s *Seeder) ensureBusinessTenant(ctx context.Context, adminUserID string) error {
-	existing, err := s.ec.Tenant.Query().
-		Where(tenant.Slug(defaultBusinessTenantSlug)).
-		Only(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return err
-	}
-
-	if ent.IsNotFound(err) {
-		if _, err := s.tenantUC.CreateWithDefaults(ctx, &entity.Tenant{
-			Slug:   defaultBusinessTenantSlug,
-			Name:   "Default Tenant",
-			Kind:   "business",
-			Status: "active",
-		}, adminUserID); err != nil {
-			return err
-		}
-		s.log.Info("seeded default business tenant with defaults")
-		return nil
-	}
-
-	tenantID := existing.ID.String()
-	if err := s.ensureTenantMembership(ctx, tenantID, adminUserID); err != nil {
-		return err
-	}
-	return nil
-}
-
-// ensureTenantMembership ensures the admin user is a member of the given
-// tenant, creating the TenantMember record and FGA tuple if missing.
-func (s *Seeder) ensureTenantMembership(ctx context.Context, tenantID, userID string) error {
-	tid, _ := uuid.Parse(tenantID)
-	uid, _ := uuid.Parse(userID)
-
-	exists, err := s.ec.TenantMember.Query().
-		Where(tenantmember.TenantIDEQ(tid), tenantmember.UserIDEQ(uid)).
-		Exist(ctx)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		now := time.Now()
-		if _, err := s.ec.TenantMember.Create().
-			SetTenantID(tid).
-			SetUserID(uid).
-			SetRole(tenantmember.RoleOwner).
-			SetStatus(tenantmember.StatusActive).
-			SetJoinedAt(now).
-			Save(ctx); err != nil {
-			return err
-		}
-		s.log.Infof("seeded tenant member: user %s → tenant %s", userID, tenantID)
-	}
-
-	if s.fga != nil {
-		allowed, err := s.fga.Check(ctx, userID, "owner", "tenant", tenantID)
-		if err != nil {
-			s.log.Warnf("FGA check tenant owner: %v", err)
-		}
-		if !allowed {
-			if err := s.fga.WriteTuples(ctx, openfga.Tuple{
-				User:     "user:" + userID,
-				Relation: "owner",
-				Object:   "tenant:" + tenantID,
-			}); err != nil {
-				s.log.Warnf("FGA write tenant owner tuple: %v", err)
-			}
-		}
-	}
-	return nil
-}
-
 // ensurePlatformAdmin writes the platform admin FGA tuple if not already present.
+// It also ensures all tenants owned by this user have the platform:default → tenant
+// inheritance tuple, so platform admins transitively inherit tenant admin rights.
 func (s *Seeder) ensurePlatformAdmin(ctx context.Context, userID string) {
 	if s.fga == nil {
 		return
@@ -198,4 +114,30 @@ func (s *Seeder) ensurePlatformAdmin(ctx context.Context, userID string) {
 			s.log.Infof("seeded platform admin FGA tuple for user %s", userID)
 		}
 	}
+
+	// Ensure every tenant this user belongs to has the platform:default → tenant tuple,
+	// enabling the platform admin → tenant admin inheritance chain.
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		s.log.Warnf("invalid userID for platform-tenant tuple: %v", err)
+		return
+	}
+	memberships, err := s.ec.TenantMember.Query().
+		Where(tenantmember.UserIDEQ(uid)).
+		All(ctx)
+	if err != nil {
+		s.log.Warnf("list tenant memberships for platform admin setup: %v", err)
+		return
+	}
+	for _, m := range memberships {
+		tid := m.TenantID.String()
+		if err := s.fga.WriteTuples(ctx, openfga.Tuple{
+			User:     "platform:" + platformObjectID,
+			Relation: "platform",
+			Object:   "tenant:" + tid,
+		}); err != nil {
+			s.log.Warnf("FGA write platform-tenant tuple for tenant %s: %v", tid, err)
+		}
+	}
 }
+

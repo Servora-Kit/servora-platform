@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/application"
-	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/organization"
+	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/tenant"
 	"github.com/google/uuid"
 )
 
@@ -38,8 +38,8 @@ type Application struct {
 	ApplicationType string `json:"application_type,omitempty"`
 	// AccessTokenType holds the value of the "access_token_type" field.
 	AccessTokenType string `json:"access_token_type,omitempty"`
-	// OrganizationID holds the value of the "organization_id" field.
-	OrganizationID uuid.UUID `json:"organization_id,omitempty"`
+	// TenantID holds the value of the "tenant_id" field.
+	TenantID uuid.UUID `json:"tenant_id,omitempty"`
 	// IDTokenLifetime holds the value of the "id_token_lifetime" field.
 	IDTokenLifetime int `json:"id_token_lifetime,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -54,22 +54,22 @@ type Application struct {
 
 // ApplicationEdges holds the relations/edges for other nodes in the graph.
 type ApplicationEdges struct {
-	// Organization holds the value of the organization edge.
-	Organization *Organization `json:"organization,omitempty"`
+	// Tenant holds the value of the tenant edge.
+	Tenant *Tenant `json:"tenant,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 }
 
-// OrganizationOrErr returns the Organization value or an error if the edge
+// TenantOrErr returns the Tenant value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ApplicationEdges) OrganizationOrErr() (*Organization, error) {
-	if e.Organization != nil {
-		return e.Organization, nil
+func (e ApplicationEdges) TenantOrErr() (*Tenant, error) {
+	if e.Tenant != nil {
+		return e.Tenant, nil
 	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: organization.Label}
+		return nil, &NotFoundError{label: tenant.Label}
 	}
-	return nil, &NotLoadedError{edge: "organization"}
+	return nil, &NotLoadedError{edge: "tenant"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -85,7 +85,7 @@ func (*Application) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case application.FieldDeletedAt, application.FieldCreatedAt, application.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case application.FieldID, application.FieldOrganizationID:
+		case application.FieldID, application.FieldTenantID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -169,11 +169,11 @@ func (_m *Application) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.AccessTokenType = value.String
 			}
-		case application.FieldOrganizationID:
+		case application.FieldTenantID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
+				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
 			} else if value != nil {
-				_m.OrganizationID = *value
+				_m.TenantID = *value
 			}
 		case application.FieldIDTokenLifetime:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -206,9 +206,9 @@ func (_m *Application) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
-// QueryOrganization queries the "organization" edge of the Application entity.
-func (_m *Application) QueryOrganization() *OrganizationQuery {
-	return NewApplicationClient(_m.config).QueryOrganization(_m)
+// QueryTenant queries the "tenant" edge of the Application entity.
+func (_m *Application) QueryTenant() *TenantQuery {
+	return NewApplicationClient(_m.config).QueryTenant(_m)
 }
 
 // Update returns a builder for updating this Application.
@@ -263,8 +263,8 @@ func (_m *Application) String() string {
 	builder.WriteString("access_token_type=")
 	builder.WriteString(_m.AccessTokenType)
 	builder.WriteString(", ")
-	builder.WriteString("organization_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.OrganizationID))
+	builder.WriteString("tenant_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.TenantID))
 	builder.WriteString(", ")
 	builder.WriteString("id_token_lifetime=")
 	builder.WriteString(fmt.Sprintf("%v", _m.IDTokenLifetime))

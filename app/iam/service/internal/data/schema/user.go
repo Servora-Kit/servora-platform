@@ -16,11 +16,6 @@ type User struct {
 	ent.Schema
 }
 
-func newUUIDv7() uuid.UUID {
-	id, _ := uuid.NewV7()
-	return id
-}
-
 func (User) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(newUUIDv7),
@@ -45,7 +40,6 @@ func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("tenant_members", TenantMember.Type),
 		edge.To("org_memberships", OrganizationMember.Type),
-		edge.To("project_memberships", ProjectMember.Type),
 	}
 }
 

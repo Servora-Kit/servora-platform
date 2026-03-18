@@ -21,7 +21,7 @@ func NewApplicationService(uc *biz.ApplicationUsecase) *ApplicationService {
 }
 
 func (s *ApplicationService) CreateApplication(ctx context.Context, req *apppb.CreateApplicationRequest) (*apppb.CreateApplicationResponse, error) {
-	_, orgID, err := requireOrgScope(ctx)
+	_, tenantID, err := requireTenantScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (s *ApplicationService) CreateApplication(ctx context.Context, req *apppb.C
 		GrantTypes:      req.GrantTypes,
 		ApplicationType: appType,
 		AccessTokenType: tokenType,
-		OrganizationID:  orgID,
+		TenantID:        tenantID,
 		IDTokenLifetime: lifetime,
 	})
 	if err != nil {
@@ -67,12 +67,12 @@ func (s *ApplicationService) GetApplication(ctx context.Context, req *apppb.GetA
 }
 
 func (s *ApplicationService) ListApplications(ctx context.Context, req *apppb.ListApplicationsRequest) (*apppb.ListApplicationsResponse, error) {
-	_, orgID, err := requireOrgScope(ctx)
+	_, tenantID, err := requireTenantScope(ctx)
 	if err != nil {
 		return nil, err
 	}
 	page, pageSize := pagination.ExtractPage(req.Pagination)
-	apps, total, err := s.uc.List(ctx, orgID, page, pageSize)
+	apps, total, err := s.uc.List(ctx, tenantID, page, pageSize)
 	if err != nil {
 		return nil, err
 	}

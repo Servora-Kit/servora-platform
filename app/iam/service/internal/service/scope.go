@@ -8,6 +8,15 @@ import (
 	"github.com/Servora-Kit/servora/pkg/actor"
 )
 
+// requireAuthenticatedUser extracts the authenticated user ID from context.
+func requireAuthenticatedUser(ctx context.Context) (userID string, err error) {
+	a, ok := actor.FromContext(ctx)
+	if !ok || a.Type() != actor.TypeUser {
+		return "", errors.Unauthorized("UNAUTHORIZED", "unauthorized")
+	}
+	return a.ID(), nil
+}
+
 // requireOrgScope extracts the authenticated user ID and organization scope
 // from context. The organization ID is injected by the ScopeFromHeaders
 // middleware from the X-Organization-ID header.
@@ -25,4 +34,26 @@ func requireOrgScope(ctx context.Context) (userID, orgID string, err error) {
 			"missing X-Organization-ID header")
 	}
 	return ua.ID(), ua.OrganizationID(), nil
+}
+
+// requireTenantScope extracts the authenticated user ID and tenant scope
+// from context. The tenant ID is injected by the ScopeFromHeaders
+// middleware from the X-Tenant-ID header.
+func requireTenantScope(ctx context.Context) (userID, tenantID string, err error) {
+	a, ok := actor.FromContext(ctx)
+	if !ok || a.Type() != actor.TypeUser {
+		return "", "", errors.Unauthorized("UNAUTHORIZED", "unauthorized")
+	}
+	tenantID, hasTenant := actor.TenantIDFromContext(ctx)
+	if !hasTenant || tenantID == "" {
+		return "", "", errors.BadRequest("MISSING_TENANT_SCOPE",
+			"missing X-Tenant-ID header")
+	}
+	return a.ID(), tenantID, nil
+}
+
+// requireTenantScopeOptional returns the tenant ID from context if present,
+// or empty string if not set. Does not return an error for missing tenant.
+func requireTenantScopeOptional(ctx context.Context) (tenantID string, ok bool) {
+	return actor.TenantIDFromContext(ctx)
 }

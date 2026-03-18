@@ -51,7 +51,6 @@ func WithAuthzCache(rdb *redis.Client, ttl time.Duration) AuthzOption {
 // Behavior:
 //   - AUTHZ_MODE_NONE: skip authorization
 //   - AUTHZ_MODE_ORGANIZATION: check relation on organization:{id}
-//   - AUTHZ_MODE_PROJECT: check relation on project:{id}
 //   - AUTHZ_MODE_OBJECT: check relation on {object_type}:{id}
 //   - No rule found (fail-closed): deny
 //   - OpenFGA unavailable (fail-closed): 503
@@ -124,13 +123,6 @@ func resolveObject(rule iamv1.AuthzRuleEntry, req any, a actor.Actor) (objectTyp
 		} else {
 			objectID, err = extractProtoField(req, rule.IDField)
 		}
-	case authzpb.AuthzMode_AUTHZ_MODE_PROJECT:
-		objectType = "project"
-		if rule.IDField == "" {
-			objectID, err = scopeFromActor(a, "ProjectID")
-		} else {
-			objectID, err = extractProtoField(req, rule.IDField)
-		}
 	case authzpb.AuthzMode_AUTHZ_MODE_OBJECT:
 		objectType = objectTypeToFGA(rule.ObjectType)
 		if objectType == "tenant" && rule.IDField == "" {
@@ -160,11 +152,6 @@ func scopeFromActor(a actor.Actor, field string) (string, error) {
 			return id, nil
 		}
 		return "", fmt.Errorf("missing X-Organization-ID header")
-	case "ProjectID":
-		if id := ua.ProjectID(); id != "" {
-			return id, nil
-		}
-		return "", fmt.Errorf("missing X-Project-ID header")
 	default:
 		return "", fmt.Errorf("unknown scope field: %s", field)
 	}

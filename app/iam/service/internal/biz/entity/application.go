@@ -12,7 +12,7 @@ type Application struct {
 	GrantTypes       []string
 	ApplicationType  string
 	AccessTokenType  string
-	OrganizationID   string
+	TenantID         string
 	IDTokenLifetime  time.Duration
 	CreatedAt        time.Time
 	UpdatedAt        time.Time

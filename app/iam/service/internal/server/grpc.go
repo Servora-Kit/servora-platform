@@ -11,7 +11,6 @@ import (
 	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
 	iamv1 "github.com/Servora-Kit/servora/api/gen/go/iam/service/v1"
 	orgpb "github.com/Servora-Kit/servora/api/gen/go/organization/service/v1"
-	projectpb "github.com/Servora-Kit/servora/api/gen/go/project/service/v1"
 	tenantpb "github.com/Servora-Kit/servora/api/gen/go/tenant/service/v1"
 	testpb "github.com/Servora-Kit/servora/api/gen/go/test/service/v1"
 	userpb "github.com/Servora-Kit/servora/api/gen/go/user/service/v1"
@@ -112,7 +111,6 @@ func NewGRPCServer(
 	user *service.UserService,
 	test *service.TestService,
 	org *service.OrganizationService,
-	proj *service.ProjectService,
 	tenant *service.TenantService,
 ) *kgrpc.Server {
 	glog := logger.With(l, logger.WithModule("grpc/server/iam-service"))
@@ -131,7 +129,6 @@ func NewGRPCServer(
 	userpb.RegisterUserServiceServer(srv, user)
 	testpb.RegisterTestServiceServer(srv, test)
 	orgpb.RegisterOrganizationServiceServer(srv, org)
-	projectpb.RegisterProjectServiceServer(srv, proj)
 	tenantpb.RegisterTenantServiceServer(srv, tenant)
 
 	return srv

@@ -13,12 +13,12 @@ import (
 
 type ApplicationRepo interface {
 	Create(ctx context.Context, app *entity.Application) (*entity.Application, error)
-	GetByID(ctx context.Context, orgID, id string) (*entity.Application, error)
+	GetByID(ctx context.Context, tenantID, id string) (*entity.Application, error)
 	GetByClientID(ctx context.Context, clientID string) (*entity.Application, error)
-	ListByOrganizationID(ctx context.Context, orgID string, page, pageSize int32) ([]*entity.Application, int64, error)
-	Update(ctx context.Context, orgID string, app *entity.Application) (*entity.Application, error)
-	Delete(ctx context.Context, orgID, id string) error
-	UpdateClientSecretHash(ctx context.Context, orgID, id string, hash string) error
+	ListByTenantID(ctx context.Context, tenantID string, page, pageSize int32) ([]*entity.Application, int64, error)
+	Update(ctx context.Context, tenantID string, app *entity.Application) (*entity.Application, error)
+	Delete(ctx context.Context, tenantID, id string) error
+	UpdateClientSecretHash(ctx context.Context, tenantID, id string, hash string) error
 }
 
 type ApplicationUsecase struct {
@@ -70,8 +70,8 @@ func (uc *ApplicationUsecase) GetByClientID(ctx context.Context, clientID string
 	return uc.repo.GetByClientID(ctx, clientID)
 }
 
-func (uc *ApplicationUsecase) List(ctx context.Context, orgID string, page, pageSize int32) ([]*entity.Application, int64, error) {
-	return uc.repo.ListByOrganizationID(ctx, orgID, page, pageSize)
+func (uc *ApplicationUsecase) List(ctx context.Context, tenantID string, page, pageSize int32) ([]*entity.Application, int64, error) {
+	return uc.repo.ListByTenantID(ctx, tenantID, page, pageSize)
 }
 
 func (uc *ApplicationUsecase) Update(ctx context.Context, app *entity.Application) (*entity.Application, error) {

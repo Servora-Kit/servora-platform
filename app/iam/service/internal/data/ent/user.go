@@ -48,11 +48,9 @@ type UserEdges struct {
 	TenantMembers []*TenantMember `json:"tenant_members,omitempty"`
 	// OrgMemberships holds the value of the org_memberships edge.
 	OrgMemberships []*OrganizationMember `json:"org_memberships,omitempty"`
-	// ProjectMemberships holds the value of the project_memberships edge.
-	ProjectMemberships []*ProjectMember `json:"project_memberships,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [2]bool
 }
 
 // TenantMembersOrErr returns the TenantMembers value or an error if the edge
@@ -71,15 +69,6 @@ func (e UserEdges) OrgMembershipsOrErr() ([]*OrganizationMember, error) {
 		return e.OrgMemberships, nil
 	}
 	return nil, &NotLoadedError{edge: "org_memberships"}
-}
-
-// ProjectMembershipsOrErr returns the ProjectMemberships value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) ProjectMembershipsOrErr() ([]*ProjectMember, error) {
-	if e.loadedTypes[2] {
-		return e.ProjectMemberships, nil
-	}
-	return nil, &NotLoadedError{edge: "project_memberships"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -193,11 +182,6 @@ func (_m *User) QueryTenantMembers() *TenantMemberQuery {
 // QueryOrgMemberships queries the "org_memberships" edge of the User entity.
 func (_m *User) QueryOrgMemberships() *OrganizationMemberQuery {
 	return NewUserClient(_m.config).QueryOrgMemberships(_m)
-}
-
-// QueryProjectMemberships queries the "project_memberships" edge of the User entity.
-func (_m *User) QueryProjectMemberships() *ProjectMemberQuery {
-	return NewUserClient(_m.config).QueryProjectMemberships(_m)
 }
 
 // Update returns a builder for updating this User.

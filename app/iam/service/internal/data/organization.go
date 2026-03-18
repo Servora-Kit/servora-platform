@@ -332,6 +332,22 @@ func (r *organizationRepo) GetMember(ctx context.Context, orgID, userID string) 
 	return r.enrichMember(ctx, m)
 }
 
+func (r *organizationRepo) GetOwnerMember(ctx context.Context, orgID string) (*entity.OrganizationMember, error) {
+	oid, err := uuid.Parse(orgID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid organization ID: %w", err)
+	}
+	m, err := r.data.Ent(ctx).OrganizationMember.Query().
+		Where(
+			organizationmember.OrganizationIDEQ(oid),
+			organizationmember.RoleEQ("owner"),
+		).Only(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.enrichMember(ctx, m)
+}
+
 func (r *organizationRepo) UpdateMemberRole(ctx context.Context, orgID, userID, role string) (*entity.OrganizationMember, error) {
 	oid, err := uuid.Parse(orgID)
 	if err != nil {

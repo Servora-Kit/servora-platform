@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/application"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/organization"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/tenant"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/tenantmember"
@@ -46,6 +47,20 @@ func (_c *TenantCreate) SetSlug(v string) *TenantCreate {
 // SetName sets the "name" field.
 func (_c *TenantCreate) SetName(v string) *TenantCreate {
 	_c.mutation.SetName(v)
+	return _c
+}
+
+// SetDisplayName sets the "display_name" field.
+func (_c *TenantCreate) SetDisplayName(v string) *TenantCreate {
+	_c.mutation.SetDisplayName(v)
+	return _c
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (_c *TenantCreate) SetNillableDisplayName(v *string) *TenantCreate {
+	if v != nil {
+		_c.SetDisplayName(*v)
+	}
 	return _c
 }
 
@@ -163,6 +178,21 @@ func (_c *TenantCreate) AddMembers(v ...*TenantMember) *TenantCreate {
 	return _c.AddMemberIDs(ids...)
 }
 
+// AddApplicationIDs adds the "applications" edge to the Application entity by IDs.
+func (_c *TenantCreate) AddApplicationIDs(ids ...uuid.UUID) *TenantCreate {
+	_c.mutation.AddApplicationIDs(ids...)
+	return _c
+}
+
+// AddApplications adds the "applications" edges to the Application entity.
+func (_c *TenantCreate) AddApplications(v ...*Application) *TenantCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddApplicationIDs(ids...)
+}
+
 // Mutation returns the TenantMutation object of the builder.
 func (_c *TenantCreate) Mutation() *TenantMutation {
 	return _c.mutation
@@ -236,6 +266,11 @@ func (_c *TenantCreate) check() error {
 	if v, ok := _c.mutation.Name(); ok {
 		if err := tenant.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Tenant.name": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.DisplayName(); ok {
+		if err := tenant.DisplayNameValidator(v); err != nil {
+			return &ValidationError{Name: "display_name", err: fmt.Errorf(`ent: validator failed for field "Tenant.display_name": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Kind(); !ok {
@@ -312,6 +347,10 @@ func (_c *TenantCreate) createSpec() (*Tenant, *sqlgraph.CreateSpec) {
 		_spec.SetField(tenant.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
+	if value, ok := _c.mutation.DisplayName(); ok {
+		_spec.SetField(tenant.FieldDisplayName, field.TypeString, value)
+		_node.DisplayName = &value
+	}
 	if value, ok := _c.mutation.Kind(); ok {
 		_spec.SetField(tenant.FieldKind, field.TypeEnum, value)
 		_node.Kind = value
@@ -357,6 +396,22 @@ func (_c *TenantCreate) createSpec() (*Tenant, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tenantmember.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ApplicationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenant.ApplicationsTable,
+			Columns: []string{tenant.ApplicationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

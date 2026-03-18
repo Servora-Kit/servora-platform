@@ -24,7 +24,7 @@ var (
 		{Name: "id_token_lifetime", Type: field.TypeInt, Default: 3600},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "organization_id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID},
 	}
 	// ApplicationsTable holds the schema information for the "applications" table.
 	ApplicationsTable = &schema.Table{
@@ -33,9 +33,9 @@ var (
 		PrimaryKey: []*schema.Column{ApplicationsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "applications_organizations_applications",
+				Symbol:     "applications_tenants_applications",
 				Columns:    []*schema.Column{ApplicationsColumns[13]},
-				RefColumns: []*schema.Column{OrganizationsColumns[0]},
+				RefColumns: []*schema.Column{TenantsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
@@ -112,81 +112,13 @@ var (
 			},
 		},
 	}
-	// ProjectsColumns holds the columns for the "projects" table.
-	ProjectsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "name", Type: field.TypeString, Size: 128},
-		{Name: "slug", Type: field.TypeString, Size: 128},
-		{Name: "description", Type: field.TypeString, Nullable: true, Size: 512},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "organization_id", Type: field.TypeUUID},
-	}
-	// ProjectsTable holds the schema information for the "projects" table.
-	ProjectsTable = &schema.Table{
-		Name:       "projects",
-		Columns:    ProjectsColumns,
-		PrimaryKey: []*schema.Column{ProjectsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "projects_organizations_projects",
-				Columns:    []*schema.Column{ProjectsColumns[7]},
-				RefColumns: []*schema.Column{OrganizationsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "project_organization_id_slug",
-				Unique:  true,
-				Columns: []*schema.Column{ProjectsColumns[7], ProjectsColumns[3]},
-			},
-		},
-	}
-	// ProjectMembersColumns holds the columns for the "project_members" table.
-	ProjectMembersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "role", Type: field.TypeString, Size: 32, Default: "viewer"},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "invited"}, Default: "active"},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "project_id", Type: field.TypeUUID},
-		{Name: "user_id", Type: field.TypeUUID},
-	}
-	// ProjectMembersTable holds the schema information for the "project_members" table.
-	ProjectMembersTable = &schema.Table{
-		Name:       "project_members",
-		Columns:    ProjectMembersColumns,
-		PrimaryKey: []*schema.Column{ProjectMembersColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "project_members_projects_members",
-				Columns:    []*schema.Column{ProjectMembersColumns[5]},
-				RefColumns: []*schema.Column{ProjectsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "project_members_users_project_memberships",
-				Columns:    []*schema.Column{ProjectMembersColumns[6]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "projectmember_project_id_user_id",
-				Unique:  true,
-				Columns: []*schema.Column{ProjectMembersColumns[5], ProjectMembersColumns[6]},
-			},
-		},
-	}
 	// TenantsColumns holds the columns for the "tenants" table.
 	TenantsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "slug", Type: field.TypeString, Unique: true, Size: 64},
 		{Name: "name", Type: field.TypeString, Size: 128},
+		{Name: "display_name", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "kind", Type: field.TypeEnum, Enums: []string{"business", "personal"}, Default: "business"},
 		{Name: "domain", Type: field.TypeString, Unique: true, Nullable: true, Size: 128},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "disabled"}, Default: "active"},
@@ -261,8 +193,6 @@ var (
 		ApplicationsTable,
 		OrganizationsTable,
 		OrganizationMembersTable,
-		ProjectsTable,
-		ProjectMembersTable,
 		TenantsTable,
 		TenantMembersTable,
 		UsersTable,
@@ -270,7 +200,7 @@ var (
 )
 
 func init() {
-	ApplicationsTable.ForeignKeys[0].RefTable = OrganizationsTable
+	ApplicationsTable.ForeignKeys[0].RefTable = TenantsTable
 	ApplicationsTable.Annotation = &entsql.Annotation{
 		Table: "applications",
 	}
@@ -282,15 +212,6 @@ func init() {
 	OrganizationMembersTable.ForeignKeys[1].RefTable = UsersTable
 	OrganizationMembersTable.Annotation = &entsql.Annotation{
 		Table: "organization_members",
-	}
-	ProjectsTable.ForeignKeys[0].RefTable = OrganizationsTable
-	ProjectsTable.Annotation = &entsql.Annotation{
-		Table: "projects",
-	}
-	ProjectMembersTable.ForeignKeys[0].RefTable = ProjectsTable
-	ProjectMembersTable.ForeignKeys[1].RefTable = UsersTable
-	ProjectMembersTable.Annotation = &entsql.Annotation{
-		Table: "project_members",
 	}
 	TenantsTable.Annotation = &entsql.Annotation{
 		Table: "tenants",

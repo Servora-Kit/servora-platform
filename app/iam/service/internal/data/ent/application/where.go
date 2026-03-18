@@ -86,9 +86,9 @@ func AccessTokenType(v string) predicate.Application {
 	return predicate.Application(sql.FieldEQ(FieldAccessTokenType, v))
 }
 
-// OrganizationID applies equality check predicate on the "organization_id" field. It's identical to OrganizationIDEQ.
-func OrganizationID(v uuid.UUID) predicate.Application {
-	return predicate.Application(sql.FieldEQ(FieldOrganizationID, v))
+// TenantID applies equality check predicate on the "tenant_id" field. It's identical to TenantIDEQ.
+func TenantID(v uuid.UUID) predicate.Application {
+	return predicate.Application(sql.FieldEQ(FieldTenantID, v))
 }
 
 // IDTokenLifetime applies equality check predicate on the "id_token_lifetime" field. It's identical to IDTokenLifetimeEQ.
@@ -481,24 +481,24 @@ func AccessTokenTypeContainsFold(v string) predicate.Application {
 	return predicate.Application(sql.FieldContainsFold(FieldAccessTokenType, v))
 }
 
-// OrganizationIDEQ applies the EQ predicate on the "organization_id" field.
-func OrganizationIDEQ(v uuid.UUID) predicate.Application {
-	return predicate.Application(sql.FieldEQ(FieldOrganizationID, v))
+// TenantIDEQ applies the EQ predicate on the "tenant_id" field.
+func TenantIDEQ(v uuid.UUID) predicate.Application {
+	return predicate.Application(sql.FieldEQ(FieldTenantID, v))
 }
 
-// OrganizationIDNEQ applies the NEQ predicate on the "organization_id" field.
-func OrganizationIDNEQ(v uuid.UUID) predicate.Application {
-	return predicate.Application(sql.FieldNEQ(FieldOrganizationID, v))
+// TenantIDNEQ applies the NEQ predicate on the "tenant_id" field.
+func TenantIDNEQ(v uuid.UUID) predicate.Application {
+	return predicate.Application(sql.FieldNEQ(FieldTenantID, v))
 }
 
-// OrganizationIDIn applies the In predicate on the "organization_id" field.
-func OrganizationIDIn(vs ...uuid.UUID) predicate.Application {
-	return predicate.Application(sql.FieldIn(FieldOrganizationID, vs...))
+// TenantIDIn applies the In predicate on the "tenant_id" field.
+func TenantIDIn(vs ...uuid.UUID) predicate.Application {
+	return predicate.Application(sql.FieldIn(FieldTenantID, vs...))
 }
 
-// OrganizationIDNotIn applies the NotIn predicate on the "organization_id" field.
-func OrganizationIDNotIn(vs ...uuid.UUID) predicate.Application {
-	return predicate.Application(sql.FieldNotIn(FieldOrganizationID, vs...))
+// TenantIDNotIn applies the NotIn predicate on the "tenant_id" field.
+func TenantIDNotIn(vs ...uuid.UUID) predicate.Application {
+	return predicate.Application(sql.FieldNotIn(FieldTenantID, vs...))
 }
 
 // IDTokenLifetimeEQ applies the EQ predicate on the "id_token_lifetime" field.
@@ -621,21 +621,21 @@ func UpdatedAtLTE(v time.Time) predicate.Application {
 	return predicate.Application(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
-// HasOrganization applies the HasEdge predicate on the "organization" edge.
-func HasOrganization() predicate.Application {
+// HasTenant applies the HasEdge predicate on the "tenant" edge.
+func HasTenant() predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, OrganizationTable, OrganizationColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, TenantTable, TenantColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasOrganizationWith applies the HasEdge predicate on the "organization" edge with a given conditions (other predicates).
-func HasOrganizationWith(preds ...predicate.Organization) predicate.Application {
+// HasTenantWith applies the HasEdge predicate on the "tenant" edge with a given conditions (other predicates).
+func HasTenantWith(preds ...predicate.Tenant) predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {
-		step := newOrganizationStep()
+		step := newTenantStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

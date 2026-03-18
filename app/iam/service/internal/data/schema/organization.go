@@ -43,8 +43,6 @@ func (Organization) Edges() []ent.Edge {
 			Unique().
 			Required(),
 		edge.To("members", OrganizationMember.Type),
-		edge.To("projects", Project.Type),
-		edge.To("applications", Application.Type),
 	}
 }
 

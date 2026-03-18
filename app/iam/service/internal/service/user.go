@@ -21,7 +21,11 @@ func NewUserService(uc *biz.UserUsecase) *UserService {
 }
 
 func (s *UserService) CurrentUserInfo(ctx context.Context, req *userpb.CurrentUserInfoRequest) (*userpb.CurrentUserInfoResponse, error) {
-	user, err := s.uc.CurrentUserInfo(ctx)
+	callerID, err := requireAuthenticatedUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	user, err := s.uc.CurrentUserInfo(ctx, callerID)
 	if err != nil {
 		return nil, err
 	}
@@ -42,27 +46,32 @@ func (s *UserService) GetUser(ctx context.Context, req *userpb.GetUserRequest) (
 }
 
 func (s *UserService) ListUsers(ctx context.Context, req *userpb.ListUsersRequest) (*userpb.ListUsersResponse, error) {
+	_, tenantID, err := requireTenantScope(ctx)
+	if err != nil {
+		return nil, err
+	}
 	page, pageSize := pagination.ExtractPage(req.GetPagination())
-	users, total, err := s.uc.ListUsers(ctx, page, pageSize)
+	users, total, err := s.uc.ListUsers(ctx, tenantID, page, pageSize)
 	if err != nil {
 		return nil, err
 	}
 
-	respUsers := userInfoMapper.MapSlice(users)
-
 	return &userpb.ListUsersResponse{
-		Users:      respUsers,
+		Users:      userInfoMapper.MapSlice(users),
 		Pagination: pagination.BuildPageResponse(total, page, pageSize),
 	}, nil
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, req *userpb.UpdateUserRequest) (*userpb.UpdateUserResponse, error) {
-	updated, err := s.uc.UpdateUser(ctx, &entity.User{
+	callerID, err := requireAuthenticatedUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	updated, err := s.uc.UpdateUser(ctx, callerID, &entity.User{
 		ID:       req.Id,
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: req.Password,
-		Role:     req.Role,
 	})
 	if err != nil {
 		return nil, err
@@ -72,18 +81,20 @@ func (s *UserService) UpdateUser(ctx context.Context, req *userpb.UpdateUserRequ
 	}, nil
 }
 
-func (s *UserService) SaveUser(ctx context.Context, req *userpb.SaveUserRequest) (*userpb.SaveUserResponse, error) {
-	user := &entity.User{
-		Name:     req.Name,
-		Email:    req.Email,
-		Password: req.Password,
-		Role:     req.Role,
-	}
-	user, err := s.uc.SaveUser(ctx, user)
+func (s *UserService) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) (*userpb.CreateUserResponse, error) {
+	_, tenantID, err := requireTenantScope(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &userpb.SaveUserResponse{Id: user.ID}, nil
+	user, err := s.uc.CreateUser(ctx, tenantID, req.OrganizationId, &entity.User{
+		Name:     req.Name,
+		Email:    req.Email,
+		Password: req.Password,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &userpb.CreateUserResponse{Id: user.ID}, nil
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, req *userpb.DeleteUserRequest) (*userpb.DeleteUserResponse, error) {

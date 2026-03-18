@@ -2,12 +2,13 @@ package biz
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	authnpb "github.com/Servora-Kit/servora/api/gen/go/authn/service/v1"
 	tenantpb "github.com/Servora-Kit/servora/api/gen/go/tenant/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
+	"github.com/Servora-Kit/servora/pkg/helpers"
 	"github.com/Servora-Kit/servora/pkg/logger"
 )
 
@@ -27,29 +28,35 @@ type TenantRepo interface {
 	ListMembers(ctx context.Context, tenantID string, page, pageSize int32) ([]*entity.TenantMember, int64, error)
 	UpdateMemberRole(ctx context.Context, tenantID, userID, role string) (*entity.TenantMember, error)
 	UpdateMemberStatus(ctx context.Context, tenantID, userID, status string) (*entity.TenantMember, error)
+	GetOwnerMember(ctx context.Context, tenantID string) (*entity.TenantMember, error)
 	ListMembershipsByUserID(ctx context.Context, userID string) ([]*entity.TenantMember, error)
 	GetPersonalTenantByUserID(ctx context.Context, userID string) (*entity.Tenant, error)
 }
 
 type TenantUsecase struct {
-	repo    TenantRepo
-	orgUC   *OrganizationUsecase
-	projUC  *ProjectUsecase
-	authz   AuthZRepo
-	log     *logger.Helper
+	repo  TenantRepo
+	orgUC *OrganizationUsecase
+	authz AuthZRepo
+	log   *logger.Helper
 }
 
-func NewTenantUsecase(repo TenantRepo, orgUC *OrganizationUsecase, projUC *ProjectUsecase, authz AuthZRepo, l logger.Logger) *TenantUsecase {
+func NewTenantUsecase(repo TenantRepo, orgUC *OrganizationUsecase, authz AuthZRepo, l logger.Logger) *TenantUsecase {
 	return &TenantUsecase{
-		repo:   repo,
-		orgUC:  orgUC,
-		projUC: projUC,
-		authz:  authz,
-		log:    logger.NewHelper(l, logger.WithModule("tenant/biz/iam-service")),
+		repo:  repo,
+		orgUC: orgUC,
+		authz: authz,
+		log:   logger.NewHelper(l, logger.WithModule("tenant/biz/iam-service")),
 	}
 }
 
 func (uc *TenantUsecase) Create(ctx context.Context, t *entity.Tenant, creatorUserID string) (*entity.Tenant, error) {
+	if t.Slug == "" {
+		t.Slug = helpers.Slugify(t.Name)
+	}
+	if t.DisplayName == "" {
+		t.DisplayName = t.Name
+	}
+
 	if _, err := uc.repo.GetBySlug(ctx, t.Slug); err == nil {
 		return nil, tenantpb.ErrorTenantAlreadyExists("slug '%s' already taken", t.Slug)
 	} else if !ent.IsNotFound(err) {
@@ -73,7 +80,7 @@ func (uc *TenantUsecase) Create(ctx context.Context, t *entity.Tenant, creatorUs
 	member, err := uc.repo.AddMember(ctx, &entity.TenantMember{
 		TenantID: created.ID,
 		UserID:   creatorUserID,
-		Role:     "owner",
+		Role:     string(RoleOwner),
 		Status:   "active",
 	})
 	if err != nil {
@@ -86,7 +93,8 @@ func (uc *TenantUsecase) Create(ctx context.Context, t *entity.Tenant, creatorUs
 
 	if uc.authz != nil {
 		if err := uc.authz.WriteTuples(ctx,
-			Tuple{User: "user:" + creatorUserID, Relation: "owner", Object: "tenant:" + created.ID},
+			Tuple{User: "user:" + creatorUserID, Relation: string(RoleOwner), Object: "tenant:" + created.ID},
+			Tuple{User: "platform:default", Relation: "platform", Object: "tenant:" + created.ID},
 		); err != nil {
 			uc.log.Errorf("write FGA tuples failed, rolling back: %v", err)
 			_ = uc.repo.RemoveMember(ctx, created.ID, creatorUserID)
@@ -101,28 +109,30 @@ func (uc *TenantUsecase) Create(ctx context.Context, t *entity.Tenant, creatorUs
 	return created, nil
 }
 
-func (uc *TenantUsecase) CreateWithDefaults(ctx context.Context, t *entity.Tenant, creatorUserID string) (*entity.Tenant, error) {
+// CreateWithDefaults creates a tenant and its default organization. The optional
+// orgDisplayName argument overrides the computed default org display name; callers
+// that do not pass it get "{{tenantDisplayName}} 默认组织".
+func (uc *TenantUsecase) CreateWithDefaults(ctx context.Context, t *entity.Tenant, creatorUserID string, orgDisplayName ...string) (*entity.Tenant, error) {
 	created, err := uc.Create(ctx, t, creatorUserID)
 	if err != nil {
 		return nil, err
 	}
 
-	defaultOrgSlug := t.Slug + "-default"
-	defaultOrgName := t.Name + " Default"
-	org, err := uc.orgUC.CreateDefault(ctx, creatorUserID, defaultOrgName, defaultOrgSlug, created.ID)
-	if err != nil {
+	defaultOrgSlug := created.Slug + "-default"
+	defaultOrgName := created.Slug + "-default"
+	defaultOrgDisplayName := created.DisplayName
+	if defaultOrgDisplayName == "" {
+		defaultOrgDisplayName = created.Name
+	}
+	defaultOrgDisplayName += " 默认组织"
+	if len(orgDisplayName) > 0 && orgDisplayName[0] != "" {
+		defaultOrgDisplayName = orgDisplayName[0]
+	}
+
+	if _, err := uc.orgUC.CreateDefault(ctx, creatorUserID, defaultOrgName, defaultOrgSlug, defaultOrgDisplayName, created.ID); err != nil {
 		uc.log.Errorf("create default org failed, rolling back tenant: %v", err)
 		uc.rollbackTenantCreate(ctx, created.ID, creatorUserID)
 		return nil, tenantpb.ErrorTenantCreateFailed("failed to create default organization")
-	}
-
-	defaultProjSlug := defaultOrgSlug + "-default"
-	defaultProjName := "Default Project"
-	if _, err := uc.projUC.CreateDefault(ctx, creatorUserID, org.ID, defaultProjName, defaultProjSlug); err != nil {
-		uc.log.Errorf("create default project failed, rolling back: %v", err)
-		_ = uc.orgUC.Purge(ctx, org.ID)
-		uc.rollbackTenantCreate(ctx, created.ID, creatorUserID)
-		return nil, tenantpb.ErrorTenantCreateFailed("failed to create default project")
 	}
 
 	return created, nil
@@ -151,15 +161,29 @@ func (uc *TenantUsecase) EnsurePersonalTenant(ctx context.Context, userID, userN
 		return nil, tenantpb.ErrorTenantCreateFailed("internal error")
 	}
 
-	slug := fmt.Sprintf("personal-%s", userID)
-	name := fmt.Sprintf("%s's Space", userName)
-	t := &entity.Tenant{
-		Slug:   slug,
-		Name:   name,
-		Kind:   "personal",
-		Status: "active",
+	// Build a URL-safe slug from the user name. If a slug collision occurs
+	// (rare but possible when two names Slugify to the same string), fall back to
+	// appending the first 8 characters of the userID.
+	baseSlug := "personal-" + helpers.Slugify(userName)
+	slug := baseSlug
+	if _, err := uc.repo.GetBySlug(ctx, slug); err == nil {
+		// Slug already taken — append a short userID suffix to make it unique.
+		suffix := userID
+		if len(suffix) > 8 {
+			suffix = suffix[:8]
+		}
+		slug = baseSlug + "-" + suffix
 	}
-	return uc.CreateWithDefaults(ctx, t, userID)
+
+	displayName := userName + "的空间"
+	t := &entity.Tenant{
+		Slug:        slug,
+		Name:        slug,
+		DisplayName: displayName,
+		Kind:        "personal",
+		Status:      "active",
+	}
+	return uc.CreateWithDefaults(ctx, t, userID, userName+"的组织")
 }
 
 func (uc *TenantUsecase) Get(ctx context.Context, id string) (*entity.Tenant, error) {
@@ -187,6 +211,9 @@ func (uc *TenantUsecase) GetBySlug(ctx context.Context, slug string) (*entity.Te
 }
 
 func (uc *TenantUsecase) List(ctx context.Context, userID string, page, pageSize int32) ([]*entity.Tenant, int64, error) {
+	if userID == "" {
+		return nil, 0, authnpb.ErrorUnauthorized("user not authenticated")
+	}
 	tenants, total, err := uc.repo.List(ctx, userID, page, pageSize)
 	if err != nil {
 		uc.log.Errorf("list tenants failed: %v", err)
@@ -268,6 +295,10 @@ func (uc *TenantUsecase) RemoveMember(ctx context.Context, tenantID, userID stri
 		return tenantpb.ErrorTenantMemberNotFound("member not found")
 	}
 
+	if Role(member.Role).IsOwner() {
+		return tenantpb.ErrorTenantDeleteFailed("owner cannot be removed; transfer ownership first")
+	}
+
 	if err := uc.repo.RemoveMember(ctx, tenantID, userID); err != nil {
 		uc.log.Errorf("remove member failed: %v", err)
 		return tenantpb.ErrorTenantDeleteFailed("failed to remove member")
@@ -300,6 +331,10 @@ func (uc *TenantUsecase) UpdateMemberRole(ctx context.Context, tenantID, userID,
 	oldMember, err := uc.repo.GetMember(ctx, tenantID, userID)
 	if err != nil {
 		return nil, tenantpb.ErrorTenantMemberNotFound("member not found")
+	}
+
+	if Role(oldMember.Role).IsOwner() {
+		return nil, tenantpb.ErrorTenantUpdateFailed("cannot change owner's role; use TransferOwnership instead")
 	}
 
 	updated, err := uc.repo.UpdateMemberRole(ctx, tenantID, userID, newRole)
@@ -438,4 +473,61 @@ func (uc *TenantUsecase) ListMembers(ctx context.Context, tenantID string, page,
 		return nil, 0, tenantpb.ErrorTenantCreateFailed("internal error")
 	}
 	return members, total, nil
+}
+
+// TransferOwnership atomically transfers tenant ownership to a target user who must
+// currently be an admin. The caller must hold can_transfer_ownership (verified by
+// the authz middleware); this method only enforces business rules.
+func (uc *TenantUsecase) TransferOwnership(ctx context.Context, tenantID, callerID, newOwnerUserID string) error {
+	if callerID == newOwnerUserID {
+		return tenantpb.ErrorTenantUpdateFailed("new owner must be a different user")
+	}
+
+	// Find and validate the transfer target (must be an existing admin member).
+	newOwnerMember, err := uc.repo.GetMember(ctx, tenantID, newOwnerUserID)
+	if err != nil {
+		return tenantpb.ErrorTenantMemberNotFound("target user is not a tenant member")
+	}
+	if Role(newOwnerMember.Role) != RoleAdmin {
+		return tenantpb.ErrorTenantUpdateFailed("target user must currently be an admin")
+	}
+
+	// Find the current owner (they may differ from the caller when a platform admin forces transfer).
+	currentOwner, err := uc.repo.GetOwnerMember(ctx, tenantID)
+	if err != nil {
+		uc.log.Errorf("find current owner failed: %v", err)
+		return tenantpb.ErrorTenantUpdateFailed("could not locate current owner")
+	}
+
+	// Demote current owner → admin, then promote target → owner.
+	if _, err := uc.repo.UpdateMemberRole(ctx, tenantID, currentOwner.UserID, string(RoleAdmin)); err != nil {
+		uc.log.Errorf("demote old owner failed: %v", err)
+		return tenantpb.ErrorTenantUpdateFailed("failed to transfer ownership")
+	}
+
+	if _, err := uc.repo.UpdateMemberRole(ctx, tenantID, newOwnerUserID, string(RoleOwner)); err != nil {
+		uc.log.Errorf("promote new owner failed, rolling back: %v", err)
+		if _, rbErr := uc.repo.UpdateMemberRole(ctx, tenantID, currentOwner.UserID, string(RoleOwner)); rbErr != nil {
+			uc.log.Errorf("rollback old owner failed: %v", rbErr)
+		}
+		return tenantpb.ErrorTenantUpdateFailed("failed to transfer ownership")
+	}
+
+	if uc.authz != nil {
+		if err := uc.authz.DeleteTuples(ctx,
+			Tuple{User: "user:" + currentOwner.UserID, Relation: string(RoleOwner), Object: "tenant:" + tenantID},
+			Tuple{User: "user:" + newOwnerUserID, Relation: string(RoleAdmin), Object: "tenant:" + tenantID},
+		); err != nil {
+			uc.log.Warnf("delete old FGA tuples failed during transfer: %v", err)
+		}
+		if err := uc.authz.WriteTuples(ctx,
+			Tuple{User: "user:" + currentOwner.UserID, Relation: string(RoleAdmin), Object: "tenant:" + tenantID},
+			Tuple{User: "user:" + newOwnerUserID, Relation: string(RoleOwner), Object: "tenant:" + tenantID},
+		); err != nil {
+			uc.log.Errorf("write new FGA tuples failed during transfer: %v", err)
+			return tenantpb.ErrorTenantUpdateFailed("failed to update authorization tuples")
+		}
+	}
+
+	return nil
 }

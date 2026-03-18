@@ -12,19 +12,19 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/application"
-	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/organization"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/predicate"
+	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/tenant"
 	"github.com/google/uuid"
 )
 
 // ApplicationQuery is the builder for querying Application entities.
 type ApplicationQuery struct {
 	config
-	ctx              *QueryContext
-	order            []application.OrderOption
-	inters           []Interceptor
-	predicates       []predicate.Application
-	withOrganization *OrganizationQuery
+	ctx        *QueryContext
+	order      []application.OrderOption
+	inters     []Interceptor
+	predicates []predicate.Application
+	withTenant *TenantQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -61,9 +61,9 @@ func (_q *ApplicationQuery) Order(o ...application.OrderOption) *ApplicationQuer
 	return _q
 }
 
-// QueryOrganization chains the current query on the "organization" edge.
-func (_q *ApplicationQuery) QueryOrganization() *OrganizationQuery {
-	query := (&OrganizationClient{config: _q.config}).Query()
+// QueryTenant chains the current query on the "tenant" edge.
+func (_q *ApplicationQuery) QueryTenant() *TenantQuery {
+	query := (&TenantClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -74,8 +74,8 @@ func (_q *ApplicationQuery) QueryOrganization() *OrganizationQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(application.Table, application.FieldID, selector),
-			sqlgraph.To(organization.Table, organization.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, application.OrganizationTable, application.OrganizationColumn),
+			sqlgraph.To(tenant.Table, tenant.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, application.TenantTable, application.TenantColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -270,26 +270,26 @@ func (_q *ApplicationQuery) Clone() *ApplicationQuery {
 		return nil
 	}
 	return &ApplicationQuery{
-		config:           _q.config,
-		ctx:              _q.ctx.Clone(),
-		order:            append([]application.OrderOption{}, _q.order...),
-		inters:           append([]Interceptor{}, _q.inters...),
-		predicates:       append([]predicate.Application{}, _q.predicates...),
-		withOrganization: _q.withOrganization.Clone(),
+		config:     _q.config,
+		ctx:        _q.ctx.Clone(),
+		order:      append([]application.OrderOption{}, _q.order...),
+		inters:     append([]Interceptor{}, _q.inters...),
+		predicates: append([]predicate.Application{}, _q.predicates...),
+		withTenant: _q.withTenant.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
 }
 
-// WithOrganization tells the query-builder to eager-load the nodes that are connected to
-// the "organization" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ApplicationQuery) WithOrganization(opts ...func(*OrganizationQuery)) *ApplicationQuery {
-	query := (&OrganizationClient{config: _q.config}).Query()
+// WithTenant tells the query-builder to eager-load the nodes that are connected to
+// the "tenant" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApplicationQuery) WithTenant(opts ...func(*TenantQuery)) *ApplicationQuery {
+	query := (&TenantClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withOrganization = query
+	_q.withTenant = query
 	return _q
 }
 
@@ -372,7 +372,7 @@ func (_q *ApplicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		nodes       = []*Application{}
 		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
-			_q.withOrganization != nil,
+			_q.withTenant != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -393,20 +393,20 @@ func (_q *ApplicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := _q.withOrganization; query != nil {
-		if err := _q.loadOrganization(ctx, query, nodes, nil,
-			func(n *Application, e *Organization) { n.Edges.Organization = e }); err != nil {
+	if query := _q.withTenant; query != nil {
+		if err := _q.loadTenant(ctx, query, nodes, nil,
+			func(n *Application, e *Tenant) { n.Edges.Tenant = e }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (_q *ApplicationQuery) loadOrganization(ctx context.Context, query *OrganizationQuery, nodes []*Application, init func(*Application), assign func(*Application, *Organization)) error {
+func (_q *ApplicationQuery) loadTenant(ctx context.Context, query *TenantQuery, nodes []*Application, init func(*Application), assign func(*Application, *Tenant)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Application)
 	for i := range nodes {
-		fk := nodes[i].OrganizationID
+		fk := nodes[i].TenantID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -415,7 +415,7 @@ func (_q *ApplicationQuery) loadOrganization(ctx context.Context, query *Organiz
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(organization.IDIn(ids...))
+	query.Where(tenant.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
@@ -423,7 +423,7 @@ func (_q *ApplicationQuery) loadOrganization(ctx context.Context, query *Organiz
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "organization_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "tenant_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -457,8 +457,8 @@ func (_q *ApplicationQuery) querySpec() *sqlgraph.QuerySpec {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
-		if _q.withOrganization != nil {
-			_spec.Node.AddColumnOnce(application.FieldOrganizationID)
+		if _q.withTenant != nil {
+			_spec.Node.AddColumnOnce(application.FieldTenantID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

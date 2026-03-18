@@ -11,7 +11,7 @@ import (
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/organizationmember"
-	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/projectmember"
+	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/tenantmember"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/user"
 	"github.com/Servora-Kit/servora/pkg/helpers"
 	"github.com/Servora-Kit/servora/pkg/logger"
@@ -126,11 +126,6 @@ func (r *userRepo) PurgeCascade(ctx context.Context, id string) error {
 			Exec(txCtx); err != nil {
 			return err
 		}
-		if _, err := c.ProjectMember.Delete().
-			Where(projectmember.UserIDEQ(uid)).
-			Exec(txCtx); err != nil {
-			return err
-		}
 		return c.User.DeleteOneID(uid).Exec(txCtx)
 	})
 }
@@ -190,6 +185,35 @@ func (r *userRepo) ListUsers(ctx context.Context, page int32, pageSize int32) ([
 	limit := int(pageSize)
 
 	query := r.data.Ent(ctx).User.Query().Where(user.DeletedAtIsNil()).Order(user.ByID(sql.OrderDesc()))
+	total, err := query.Clone().Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	entUsers, err := query.Offset(offset).Limit(limit).All(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return userMapper.MapSlice(entUsers), int64(total), nil
+}
+
+func (r *userRepo) ListByTenantID(ctx context.Context, tenantID string, page int32, pageSize int32) ([]*entity.User, int64, error) {
+	tid, err := uuid.Parse(tenantID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("invalid tenant ID: %w", err)
+	}
+
+	offset := int((page - 1) * pageSize)
+	limit := int(pageSize)
+
+	query := r.data.Ent(ctx).User.Query().
+		Where(
+			user.DeletedAtIsNil(),
+			user.HasTenantMembersWith(tenantmember.TenantIDEQ(tid)),
+		).
+		Order(user.ByID(sql.OrderDesc()))
+
 	total, err := query.Clone().Count(ctx)
 	if err != nil {
 		return nil, 0, err

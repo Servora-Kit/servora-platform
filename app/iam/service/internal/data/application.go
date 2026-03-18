@@ -29,9 +29,9 @@ func NewApplicationRepo(data *Data, l logger.Logger) biz.ApplicationRepo {
 }
 
 func (r *applicationRepo) Create(ctx context.Context, app *entity.Application) (*entity.Application, error) {
-	orgID, err := uuid.Parse(app.OrganizationID)
+	tenantID, err := uuid.Parse(app.TenantID)
 	if err != nil {
-		return nil, fmt.Errorf("invalid organization_id: %w", err)
+		return nil, fmt.Errorf("invalid tenant_id: %w", err)
 	}
 	created, err := r.data.Ent(ctx).Application.Create().
 		SetClientID(app.ClientID).
@@ -42,7 +42,7 @@ func (r *applicationRepo) Create(ctx context.Context, app *entity.Application) (
 		SetGrantTypes(app.GrantTypes).
 		SetApplicationType(app.ApplicationType).
 		SetAccessTokenType(app.AccessTokenType).
-		SetOrganizationID(orgID).
+		SetTenantID(tenantID).
 		SetIDTokenLifetime(int(app.IDTokenLifetime.Seconds())).
 		Save(ctx)
 	if err != nil {
@@ -51,14 +51,14 @@ func (r *applicationRepo) Create(ctx context.Context, app *entity.Application) (
 	return applicationMapper.Map(created), nil
 }
 
-func (r *applicationRepo) GetByID(ctx context.Context, orgID, id string) (*entity.Application, error) {
+func (r *applicationRepo) GetByID(ctx context.Context, tenantID, id string) (*entity.Application, error) {
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid application id: %w", err)
 	}
 	query := r.data.Ent(ctx).Application.Query().
 		Where(application.IDEQ(uid), application.DeletedAtIsNil()).
-		Where(scope.ByUUID(orgID, application.OrganizationIDEQ)...)
+		Where(scope.ByUUID(tenantID, application.TenantIDEQ)...)
 	a, err := query.Only(ctx)
 	if err != nil {
 		return nil, err
@@ -76,16 +76,16 @@ func (r *applicationRepo) GetByClientID(ctx context.Context, clientID string) (*
 	return applicationMapper.Map(a), nil
 }
 
-func (r *applicationRepo) ListByOrganizationID(ctx context.Context, orgID string, page, pageSize int32) ([]*entity.Application, int64, error) {
-	uid, err := uuid.Parse(orgID)
+func (r *applicationRepo) ListByTenantID(ctx context.Context, tenantID string, page, pageSize int32) ([]*entity.Application, int64, error) {
+	uid, err := uuid.Parse(tenantID)
 	if err != nil {
-		return nil, 0, fmt.Errorf("invalid organization_id: %w", err)
+		return nil, 0, fmt.Errorf("invalid tenant_id: %w", err)
 	}
 	offset := int((page - 1) * pageSize)
 	limit := int(pageSize)
 
 	query := r.data.Ent(ctx).Application.Query().
-		Where(application.OrganizationIDEQ(uid), application.DeletedAtIsNil()).
+		Where(application.TenantIDEQ(uid), application.DeletedAtIsNil()).
 		Order(application.ByCreatedAt(sql.OrderDesc()))
 
 	total, err := query.Clone().Count(ctx)
@@ -100,14 +100,14 @@ func (r *applicationRepo) ListByOrganizationID(ctx context.Context, orgID string
 	return applicationMapper.MapSlice(apps), int64(total), nil
 }
 
-func (r *applicationRepo) Update(ctx context.Context, orgID string, app *entity.Application) (*entity.Application, error) {
+func (r *applicationRepo) Update(ctx context.Context, tenantID string, app *entity.Application) (*entity.Application, error) {
 	uid, err := uuid.Parse(app.ID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid application id: %w", err)
 	}
 	predicates := append(
 		[]predicate.Application{application.IDEQ(uid), application.DeletedAtIsNil()},
-		scope.ByUUID(orgID, application.OrganizationIDEQ)...,
+		scope.ByUUID(tenantID, application.TenantIDEQ)...,
 	)
 	n, err := r.data.Ent(ctx).Application.Update().
 		Where(predicates...).
@@ -123,17 +123,17 @@ func (r *applicationRepo) Update(ctx context.Context, orgID string, app *entity.
 	if n == 0 {
 		return nil, fmt.Errorf("application not found")
 	}
-	return r.GetByID(ctx, orgID, app.ID)
+	return r.GetByID(ctx, tenantID, app.ID)
 }
 
-func (r *applicationRepo) Delete(ctx context.Context, orgID, id string) error {
+func (r *applicationRepo) Delete(ctx context.Context, tenantID, id string) error {
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		return fmt.Errorf("invalid application id: %w", err)
 	}
 	predicates := append(
 		[]predicate.Application{application.IDEQ(uid), application.DeletedAtIsNil()},
-		scope.ByUUID(orgID, application.OrganizationIDEQ)...,
+		scope.ByUUID(tenantID, application.TenantIDEQ)...,
 	)
 	n, err := r.data.Ent(ctx).Application.Update().
 		Where(predicates...).
@@ -148,14 +148,14 @@ func (r *applicationRepo) Delete(ctx context.Context, orgID, id string) error {
 	return nil
 }
 
-func (r *applicationRepo) UpdateClientSecretHash(ctx context.Context, orgID, id string, hash string) error {
+func (r *applicationRepo) UpdateClientSecretHash(ctx context.Context, tenantID, id string, hash string) error {
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		return fmt.Errorf("invalid application id: %w", err)
 	}
 	predicates := append(
 		[]predicate.Application{application.IDEQ(uid), application.DeletedAtIsNil()},
-		scope.ByUUID(orgID, application.OrganizationIDEQ)...,
+		scope.ByUUID(tenantID, application.TenantIDEQ)...,
 	)
 	n, err := r.data.Ent(ctx).Application.Update().
 		Where(predicates...).

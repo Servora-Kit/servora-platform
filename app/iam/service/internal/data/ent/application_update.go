@@ -13,8 +13,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/application"
-	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/organization"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/predicate"
+	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/tenant"
 	"github.com/google/uuid"
 )
 
@@ -157,16 +157,16 @@ func (_u *ApplicationUpdate) SetNillableAccessTokenType(v *string) *ApplicationU
 	return _u
 }
 
-// SetOrganizationID sets the "organization_id" field.
-func (_u *ApplicationUpdate) SetOrganizationID(v uuid.UUID) *ApplicationUpdate {
-	_u.mutation.SetOrganizationID(v)
+// SetTenantID sets the "tenant_id" field.
+func (_u *ApplicationUpdate) SetTenantID(v uuid.UUID) *ApplicationUpdate {
+	_u.mutation.SetTenantID(v)
 	return _u
 }
 
-// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
-func (_u *ApplicationUpdate) SetNillableOrganizationID(v *uuid.UUID) *ApplicationUpdate {
+// SetNillableTenantID sets the "tenant_id" field if the given value is not nil.
+func (_u *ApplicationUpdate) SetNillableTenantID(v *uuid.UUID) *ApplicationUpdate {
 	if v != nil {
-		_u.SetOrganizationID(*v)
+		_u.SetTenantID(*v)
 	}
 	return _u
 }
@@ -198,9 +198,9 @@ func (_u *ApplicationUpdate) SetUpdatedAt(v time.Time) *ApplicationUpdate {
 	return _u
 }
 
-// SetOrganization sets the "organization" edge to the Organization entity.
-func (_u *ApplicationUpdate) SetOrganization(v *Organization) *ApplicationUpdate {
-	return _u.SetOrganizationID(v.ID)
+// SetTenant sets the "tenant" edge to the Tenant entity.
+func (_u *ApplicationUpdate) SetTenant(v *Tenant) *ApplicationUpdate {
+	return _u.SetTenantID(v.ID)
 }
 
 // Mutation returns the ApplicationMutation object of the builder.
@@ -208,9 +208,9 @@ func (_u *ApplicationUpdate) Mutation() *ApplicationMutation {
 	return _u.mutation
 }
 
-// ClearOrganization clears the "organization" edge to the Organization entity.
-func (_u *ApplicationUpdate) ClearOrganization() *ApplicationUpdate {
-	_u.mutation.ClearOrganization()
+// ClearTenant clears the "tenant" edge to the Tenant entity.
+func (_u *ApplicationUpdate) ClearTenant() *ApplicationUpdate {
+	_u.mutation.ClearTenant()
 	return _u
 }
 
@@ -277,8 +277,8 @@ func (_u *ApplicationUpdate) check() error {
 			return &ValidationError{Name: "access_token_type", err: fmt.Errorf(`ent: validator failed for field "Application.access_token_type": %w`, err)}
 		}
 	}
-	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Application.organization"`)
+	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Application.tenant"`)
 	}
 	return nil
 }
@@ -349,28 +349,28 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(application.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if _u.mutation.OrganizationCleared() {
+	if _u.mutation.TenantCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   application.OrganizationTable,
-			Columns: []string{application.OrganizationColumn},
+			Table:   application.TenantTable,
+			Columns: []string{application.TenantColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(tenant.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.TenantIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   application.OrganizationTable,
-			Columns: []string{application.OrganizationColumn},
+			Table:   application.TenantTable,
+			Columns: []string{application.TenantColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(tenant.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -524,16 +524,16 @@ func (_u *ApplicationUpdateOne) SetNillableAccessTokenType(v *string) *Applicati
 	return _u
 }
 
-// SetOrganizationID sets the "organization_id" field.
-func (_u *ApplicationUpdateOne) SetOrganizationID(v uuid.UUID) *ApplicationUpdateOne {
-	_u.mutation.SetOrganizationID(v)
+// SetTenantID sets the "tenant_id" field.
+func (_u *ApplicationUpdateOne) SetTenantID(v uuid.UUID) *ApplicationUpdateOne {
+	_u.mutation.SetTenantID(v)
 	return _u
 }
 
-// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
-func (_u *ApplicationUpdateOne) SetNillableOrganizationID(v *uuid.UUID) *ApplicationUpdateOne {
+// SetNillableTenantID sets the "tenant_id" field if the given value is not nil.
+func (_u *ApplicationUpdateOne) SetNillableTenantID(v *uuid.UUID) *ApplicationUpdateOne {
 	if v != nil {
-		_u.SetOrganizationID(*v)
+		_u.SetTenantID(*v)
 	}
 	return _u
 }
@@ -565,9 +565,9 @@ func (_u *ApplicationUpdateOne) SetUpdatedAt(v time.Time) *ApplicationUpdateOne 
 	return _u
 }
 
-// SetOrganization sets the "organization" edge to the Organization entity.
-func (_u *ApplicationUpdateOne) SetOrganization(v *Organization) *ApplicationUpdateOne {
-	return _u.SetOrganizationID(v.ID)
+// SetTenant sets the "tenant" edge to the Tenant entity.
+func (_u *ApplicationUpdateOne) SetTenant(v *Tenant) *ApplicationUpdateOne {
+	return _u.SetTenantID(v.ID)
 }
 
 // Mutation returns the ApplicationMutation object of the builder.
@@ -575,9 +575,9 @@ func (_u *ApplicationUpdateOne) Mutation() *ApplicationMutation {
 	return _u.mutation
 }
 
-// ClearOrganization clears the "organization" edge to the Organization entity.
-func (_u *ApplicationUpdateOne) ClearOrganization() *ApplicationUpdateOne {
-	_u.mutation.ClearOrganization()
+// ClearTenant clears the "tenant" edge to the Tenant entity.
+func (_u *ApplicationUpdateOne) ClearTenant() *ApplicationUpdateOne {
+	_u.mutation.ClearTenant()
 	return _u
 }
 
@@ -657,8 +657,8 @@ func (_u *ApplicationUpdateOne) check() error {
 			return &ValidationError{Name: "access_token_type", err: fmt.Errorf(`ent: validator failed for field "Application.access_token_type": %w`, err)}
 		}
 	}
-	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Application.organization"`)
+	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Application.tenant"`)
 	}
 	return nil
 }
@@ -746,28 +746,28 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(application.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if _u.mutation.OrganizationCleared() {
+	if _u.mutation.TenantCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   application.OrganizationTable,
-			Columns: []string{application.OrganizationColumn},
+			Table:   application.TenantTable,
+			Columns: []string{application.TenantColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(tenant.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.OrganizationIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.TenantIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   application.OrganizationTable,
-			Columns: []string{application.OrganizationColumn},
+			Table:   application.TenantTable,
+			Columns: []string{application.TenantColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(tenant.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

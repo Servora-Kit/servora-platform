@@ -585,267 +585,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/UpdateMemberRoleResponse'
-    /v1/projects:
-        get:
-            tags:
-                - ProjectService
-            operationId: ProjectService_ListProjects
-            parameters:
-                - name: pagination.page.page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pagination.page.pageSize
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pagination.cursor.cursor
-                  in: query
-                  schema:
-                    type: string
-                - name: pagination.cursor.limit
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListProjectsResponse'
-        post:
-            tags:
-                - ProjectService
-            operationId: ProjectService_CreateProject
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/CreateProjectRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/CreateProjectResponse'
-    /v1/projects/{id}:
-        get:
-            tags:
-                - ProjectService
-            operationId: ProjectService_GetProject
-            parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GetProjectResponse'
-        put:
-            tags:
-                - ProjectService
-            operationId: ProjectService_UpdateProject
-            parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UpdateProjectRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UpdateProjectResponse'
-        delete:
-            tags:
-                - ProjectService
-            operationId: ProjectService_DeleteProject
-            parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DeleteProjectResponse'
-    /v1/projects/{id}/purge:
-        delete:
-            tags:
-                - ProjectService
-            operationId: ProjectService_PurgeProject
-            parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/PurgeProjectResponse'
-    /v1/projects/{id}/restore:
-        post:
-            tags:
-                - ProjectService
-            operationId: ProjectService_RestoreProject
-            parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/RestoreProjectRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/RestoreProjectResponse'
-    /v1/projects/{projectId}/members:
-        get:
-            tags:
-                - ProjectService
-            operationId: ProjectService_ListMembers
-            parameters:
-                - name: projectId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: pagination.page.page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pagination.page.pageSize
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pagination.cursor.cursor
-                  in: query
-                  schema:
-                    type: string
-                - name: pagination.cursor.limit
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListMembersResponse'
-        post:
-            tags:
-                - ProjectService
-            operationId: ProjectService_AddMember
-            parameters:
-                - name: projectId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/AddMemberRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/AddMemberResponse'
-    /v1/projects/{projectId}/members/{userId}:
-        delete:
-            tags:
-                - ProjectService
-            operationId: ProjectService_RemoveMember
-            parameters:
-                - name: projectId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/RemoveMemberResponse'
-    /v1/projects/{projectId}/members/{userId}/role:
-        put:
-            tags:
-                - ProjectService
-            operationId: ProjectService_UpdateMemberRole
-            parameters:
-                - name: projectId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UpdateMemberRoleRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UpdateMemberRoleResponse'
     /v1/tenants:
         get:
             tags:
@@ -1376,7 +1115,7 @@ components:
                     type: string
                 accessTokenType:
                     type: string
-                organizationId:
+                tenantId:
                     type: string
                 idTokenLifetime:
                     type: integer
@@ -1446,20 +1185,6 @@ components:
             properties:
                 organization:
                     $ref: '#/components/schemas/OrganizationInfo'
-        CreateProjectRequest:
-            type: object
-            properties:
-                name:
-                    type: string
-                slug:
-                    type: string
-                description:
-                    type: string
-        CreateProjectResponse:
-            type: object
-            properties:
-                project:
-                    $ref: '#/components/schemas/ProjectInfo'
         CreateTenantRequest:
             type: object
             properties:
@@ -1504,11 +1229,6 @@ components:
             properties:
                 success:
                     type: boolean
-        DeleteProjectResponse:
-            type: object
-            properties:
-                success:
-                    type: boolean
         DeleteTenantResponse:
             type: object
             properties:
@@ -1529,11 +1249,6 @@ components:
             properties:
                 organization:
                     $ref: '#/components/schemas/OrganizationInfo'
-        GetProjectResponse:
-            type: object
-            properties:
-                project:
-                    $ref: '#/components/schemas/ProjectInfo'
         GetTenantResponse:
             type: object
             properties:
@@ -1610,15 +1325,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/OrganizationInfo'
-                pagination:
-                    $ref: '#/components/schemas/PaginationResponse'
-        ListProjectsResponse:
-            type: object
-            properties:
-                projects:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ProjectInfo'
                 pagination:
                     $ref: '#/components/schemas/PaginationResponse'
         ListTenantMembersResponse:
@@ -1743,31 +1449,7 @@ components:
             properties:
                 message:
                     type: string
-        ProjectInfo:
-            type: object
-            properties:
-                id:
-                    type: string
-                organizationId:
-                    type: string
-                name:
-                    type: string
-                slug:
-                    type: string
-                description:
-                    type: string
-                createdAt:
-                    type: string
-                    format: date-time
-                updatedAt:
-                    type: string
-                    format: date-time
         PurgeOrganizationResponse:
-            type: object
-            properties:
-                success:
-                    type: boolean
-        PurgeProjectResponse:
             type: object
             properties:
                 success:
@@ -1865,16 +1547,6 @@ components:
             properties:
                 organization:
                     $ref: '#/components/schemas/OrganizationInfo'
-        RestoreProjectRequest:
-            type: object
-            properties:
-                id:
-                    type: string
-        RestoreProjectResponse:
-            type: object
-            properties:
-                project:
-                    $ref: '#/components/schemas/ProjectInfo'
         RestoreUserRequest:
             type: object
             properties:
@@ -2030,20 +1702,6 @@ components:
             properties:
                 organization:
                     $ref: '#/components/schemas/OrganizationInfo'
-        UpdateProjectRequest:
-            type: object
-            properties:
-                id:
-                    type: string
-                name:
-                    type: string
-                description:
-                    type: string
-        UpdateProjectResponse:
-            type: object
-            properties:
-                project:
-                    $ref: '#/components/schemas/ProjectInfo'
         UpdateTenantMemberRoleRequest:
             type: object
             properties:
@@ -2126,7 +1784,6 @@ tags:
     - name: ApplicationService
     - name: AuthnService
     - name: OrganizationService
-    - name: ProjectService
     - name: TenantService
     - name: TestService
     - name: UserService

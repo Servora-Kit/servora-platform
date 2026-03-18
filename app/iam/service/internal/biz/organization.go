@@ -8,7 +8,6 @@ import (
 	orgpb "github.com/Servora-Kit/servora/api/gen/go/organization/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
-	"github.com/Servora-Kit/servora/pkg/actor"
 	"github.com/Servora-Kit/servora/pkg/helpers"
 	"github.com/Servora-Kit/servora/pkg/logger"
 )
@@ -30,6 +29,7 @@ type OrganizationRepo interface {
 	ListMembers(ctx context.Context, orgID string, page, pageSize int32) ([]*entity.OrganizationMember, int64, error)
 	GetMember(ctx context.Context, orgID, userID string) (*entity.OrganizationMember, error)
 	UpdateMemberRole(ctx context.Context, orgID, userID, role string) (*entity.OrganizationMember, error)
+	GetOwnerMember(ctx context.Context, orgID string) (*entity.OrganizationMember, error)
 	ListAllMembers(ctx context.Context, orgID string) ([]*entity.OrganizationMember, error)
 	DeleteAllMembers(ctx context.Context, orgID string) (int, error)
 	ListMembershipsByUserID(ctx context.Context, userID string) ([]*entity.OrganizationMember, error)
@@ -37,27 +37,23 @@ type OrganizationRepo interface {
 }
 
 type OrganizationUsecase struct {
-	repo     OrganizationRepo
-	projRepo ProjectRepo
-	authz    AuthZRepo
-	log      *logger.Helper
+	repo  OrganizationRepo
+	authz AuthZRepo
+	log   *logger.Helper
 }
 
-func NewOrganizationUsecase(repo OrganizationRepo, projRepo ProjectRepo, authz AuthZRepo, l logger.Logger) *OrganizationUsecase {
+func NewOrganizationUsecase(repo OrganizationRepo, authz AuthZRepo, l logger.Logger) *OrganizationUsecase {
 	return &OrganizationUsecase{
-		repo:     repo,
-		projRepo: projRepo,
-		authz:    authz,
-		log:      logger.NewHelper(l, logger.WithModule("organization/biz/iam-service")),
+		repo:  repo,
+		authz: authz,
+		log:   logger.NewHelper(l, logger.WithModule("organization/biz/iam-service")),
 	}
 }
 
-func (uc *OrganizationUsecase) Create(ctx context.Context, org *entity.Organization) (*entity.Organization, error) {
-	a, ok := actor.FromContext(ctx)
-	if !ok || a.Type() != actor.TypeUser {
+func (uc *OrganizationUsecase) Create(ctx context.Context, userID string, org *entity.Organization) (*entity.Organization, error) {
+	if userID == "" {
 		return nil, orgpb.ErrorOrganizationCreateFailed("user not authenticated")
 	}
-	userID := a.ID()
 
 	if org.TenantID == "" {
 		return nil, orgpb.ErrorOrganizationCreateFailed("tenant_id is required")
@@ -85,7 +81,7 @@ func (uc *OrganizationUsecase) Create(ctx context.Context, org *entity.Organizat
 	if _, err := uc.repo.AddMember(ctx, &entity.OrganizationMember{
 		OrganizationID: created.ID,
 		UserID:         userID,
-		Role:           "owner",
+		Role:           string(RoleOwner),
 	}); err != nil {
 		uc.log.Errorf("add owner member failed, rolling back org: %v", err)
 		if delErr := uc.repo.Purge(ctx, created.ID); delErr != nil {
@@ -97,7 +93,7 @@ func (uc *OrganizationUsecase) Create(ctx context.Context, org *entity.Organizat
 	if uc.authz != nil {
 		if err := uc.authz.WriteTuples(ctx,
 			Tuple{User: "tenant:" + created.TenantID, Relation: "tenant", Object: "organization:" + created.ID},
-			Tuple{User: "user:" + userID, Relation: "owner", Object: "organization:" + created.ID},
+			Tuple{User: "user:" + userID, Relation: string(RoleOwner), Object: "organization:" + created.ID},
 		); err != nil {
 			uc.log.Errorf("write FGA tuples failed, rolling back org: %v", err)
 			_ = uc.repo.RemoveMember(ctx, created.ID, userID)
@@ -111,12 +107,17 @@ func (uc *OrganizationUsecase) Create(ctx context.Context, org *entity.Organizat
 	return created, nil
 }
 
-func (uc *OrganizationUsecase) CreateDefault(ctx context.Context, userID, name, slug, tenantID string) (*entity.Organization, error) {
+// CreateDefault creates the default organization for a tenant. displayName is the
+// user-facing name; name and slug are used as the internal/URL identifier.
+func (uc *OrganizationUsecase) CreateDefault(ctx context.Context, userID, name, slug, displayName, tenantID string) (*entity.Organization, error) {
+	if displayName == "" {
+		displayName = name
+	}
 	org := &entity.Organization{
 		TenantID:    tenantID,
 		Name:        name,
 		Slug:        slug,
-		DisplayName: name,
+		DisplayName: displayName,
 	}
 	created, err := uc.repo.Create(ctx, org)
 	if err != nil {
@@ -127,7 +128,7 @@ func (uc *OrganizationUsecase) CreateDefault(ctx context.Context, userID, name, 
 	if _, err := uc.repo.AddMember(ctx, &entity.OrganizationMember{
 		OrganizationID: created.ID,
 		UserID:         userID,
-		Role:           "owner",
+		Role:           string(RoleOwner),
 	}); err != nil {
 		uc.log.Errorf("add owner member failed, rolling back org: %v", err)
 		if delErr := uc.repo.Purge(ctx, created.ID); delErr != nil {
@@ -139,7 +140,7 @@ func (uc *OrganizationUsecase) CreateDefault(ctx context.Context, userID, name, 
 	if uc.authz != nil {
 		if err := uc.authz.WriteTuples(ctx,
 			Tuple{User: "tenant:" + tenantID, Relation: "tenant", Object: "organization:" + created.ID},
-			Tuple{User: "user:" + userID, Relation: "owner", Object: "organization:" + created.ID},
+			Tuple{User: "user:" + userID, Relation: string(RoleOwner), Object: "organization:" + created.ID},
 		); err != nil {
 			uc.log.Errorf("write FGA tuples failed, rolling back org: %v", err)
 			_ = uc.repo.RemoveMember(ctx, created.ID, userID)
@@ -165,19 +166,16 @@ func (uc *OrganizationUsecase) Get(ctx context.Context, id string) (*entity.Orga
 	return org, nil
 }
 
-func (uc *OrganizationUsecase) List(ctx context.Context, page, pageSize int32) ([]*entity.Organization, int64, error) {
-	a, ok := actor.FromContext(ctx)
-	if !ok || a.Type() != actor.TypeUser {
+func (uc *OrganizationUsecase) List(ctx context.Context, userID, tenantID string, page, pageSize int32) ([]*entity.Organization, int64, error) {
+	if userID == "" {
 		return nil, 0, orgpb.ErrorOrganizationNotFound("user not authenticated")
 	}
 
-	tenantID, _ := actor.TenantIDFromContext(ctx)
-
 	if uc.authz != nil {
-		ids, err := uc.authz.CachedListObjects(ctx, DefaultListCacheTTL, a.ID(), "can_view", "organization")
+		ids, err := uc.authz.CachedListObjects(ctx, DefaultListCacheTTL, userID, "can_view", "organization")
 		if err != nil {
 			uc.log.Warnf("ListObjects fallback to DB: %v", err)
-			orgs, total, err := uc.repo.ListByUserID(ctx, a.ID(), tenantID, page, pageSize)
+			orgs, total, err := uc.repo.ListByUserID(ctx, userID, tenantID, page, pageSize)
 			if err != nil {
 				uc.log.Errorf("list organizations failed: %v", err)
 				return nil, 0, errors.InternalServer("INTERNAL", "internal error")
@@ -192,7 +190,7 @@ func (uc *OrganizationUsecase) List(ctx context.Context, page, pageSize int32) (
 		return orgs, total, nil
 	}
 
-	orgs, total, err := uc.repo.ListByUserID(ctx, a.ID(), tenantID, page, pageSize)
+	orgs, total, err := uc.repo.ListByUserID(ctx, userID, tenantID, page, pageSize)
 	if err != nil {
 		uc.log.Errorf("list organizations failed: %v", err)
 		return nil, 0, errors.InternalServer("INTERNAL", "internal error")
@@ -268,19 +266,6 @@ func (uc *OrganizationUsecase) purgeOrgFGA(ctx context.Context, orgID, tenantID 
 	}
 	var tuples []Tuple
 
-	projects, _ := uc.projRepo.ListAllByOrgID(ctx, orgID)
-	for _, p := range projects {
-		projMembers, _ := uc.projRepo.ListAllMembers(ctx, p.ID)
-		for _, m := range projMembers {
-			tuples = append(tuples,
-				Tuple{User: "user:" + m.UserID, Relation: m.Role, Object: "project:" + p.ID},
-			)
-		}
-		tuples = append(tuples,
-			Tuple{User: "organization:" + p.OrganizationID, Relation: "organization", Object: "project:" + p.ID},
-		)
-	}
-
 	members, _ := uc.repo.ListAllMembers(ctx, orgID)
 	for _, m := range members {
 		tuples = append(tuples,
@@ -333,6 +318,10 @@ func (uc *OrganizationUsecase) RemoveMember(ctx context.Context, orgID, userID s
 		return orgpb.ErrorOrganizationMemberNotFound("member not found")
 	}
 
+	if Role(member.Role).IsOwner() {
+		return orgpb.ErrorOrganizationDeleteFailed("owner cannot be removed; transfer ownership first")
+	}
+
 	if err := uc.repo.RemoveMember(ctx, orgID, userID); err != nil {
 		uc.log.Errorf("remove member failed: %v", err)
 		return orgpb.ErrorOrganizationDeleteFailed("%v", err)
@@ -373,6 +362,10 @@ func (uc *OrganizationUsecase) UpdateMemberRole(ctx context.Context, orgID, user
 	oldMember, err := uc.repo.GetMember(ctx, orgID, userID)
 	if err != nil {
 		return nil, orgpb.ErrorOrganizationMemberNotFound("member not found")
+	}
+
+	if Role(oldMember.Role).IsOwner() {
+		return nil, orgpb.ErrorOrganizationUpdateFailed("cannot change owner's role; use TransferOwnership instead")
 	}
 
 	updated, err := uc.repo.UpdateMemberRole(ctx, orgID, userID, newRole)
@@ -454,6 +447,63 @@ func (uc *OrganizationUsecase) AcceptInvitation(ctx context.Context, orgID, user
 		uc.log.Errorf("accept invitation failed: %v", err)
 		return orgpb.ErrorOrganizationUpdateFailed("failed to accept invitation")
 	}
+	return nil
+}
+
+// TransferOwnership atomically transfers organization ownership to a target user who
+// must currently be an admin. The caller must hold can_transfer_ownership (verified by
+// the authz middleware); this method only enforces business rules.
+func (uc *OrganizationUsecase) TransferOwnership(ctx context.Context, orgID, callerID, newOwnerUserID string) error {
+	if callerID == newOwnerUserID {
+		return orgpb.ErrorOrganizationUpdateFailed("new owner must be a different user")
+	}
+
+	// Find and validate the transfer target (must be an existing admin member).
+	newOwnerMember, err := uc.repo.GetMember(ctx, orgID, newOwnerUserID)
+	if err != nil {
+		return orgpb.ErrorOrganizationMemberNotFound("target user is not an organization member")
+	}
+	if Role(newOwnerMember.Role) != RoleAdmin {
+		return orgpb.ErrorOrganizationUpdateFailed("target user must currently be an admin")
+	}
+
+	// Find the current owner (they may differ from the caller when a tenant/platform admin forces transfer).
+	currentOwner, err := uc.repo.GetOwnerMember(ctx, orgID)
+	if err != nil {
+		uc.log.Errorf("find current owner failed: %v", err)
+		return orgpb.ErrorOrganizationUpdateFailed("could not locate current owner")
+	}
+
+	// Demote current owner → admin, then promote target → owner.
+	if _, err := uc.repo.UpdateMemberRole(ctx, orgID, currentOwner.UserID, string(RoleAdmin)); err != nil {
+		uc.log.Errorf("demote old owner failed: %v", err)
+		return orgpb.ErrorOrganizationUpdateFailed("failed to transfer ownership")
+	}
+
+	if _, err := uc.repo.UpdateMemberRole(ctx, orgID, newOwnerUserID, string(RoleOwner)); err != nil {
+		uc.log.Errorf("promote new owner failed, rolling back: %v", err)
+		if _, rbErr := uc.repo.UpdateMemberRole(ctx, orgID, currentOwner.UserID, string(RoleOwner)); rbErr != nil {
+			uc.log.Errorf("rollback old owner failed: %v", rbErr)
+		}
+		return orgpb.ErrorOrganizationUpdateFailed("failed to transfer ownership")
+	}
+
+	if uc.authz != nil {
+		if err := uc.authz.DeleteTuples(ctx,
+			Tuple{User: "user:" + currentOwner.UserID, Relation: string(RoleOwner), Object: "organization:" + orgID},
+			Tuple{User: "user:" + newOwnerUserID, Relation: string(RoleAdmin), Object: "organization:" + orgID},
+		); err != nil {
+			uc.log.Warnf("delete old FGA tuples failed during transfer: %v", err)
+		}
+		if err := uc.authz.WriteTuples(ctx,
+			Tuple{User: "user:" + currentOwner.UserID, Relation: string(RoleAdmin), Object: "organization:" + orgID},
+			Tuple{User: "user:" + newOwnerUserID, Relation: string(RoleOwner), Object: "organization:" + orgID},
+		); err != nil {
+			uc.log.Errorf("write new FGA tuples failed during transfer: %v", err)
+			return orgpb.ErrorOrganizationUpdateFailed("failed to update authorization tuples")
+		}
+	}
+
 	return nil
 }
 

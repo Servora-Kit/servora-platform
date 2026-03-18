@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/organizationmember"
-	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/projectmember"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/tenantmember"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/user"
 	"github.com/google/uuid"
@@ -168,21 +167,6 @@ func (_c *UserCreate) AddOrgMemberships(v ...*OrganizationMember) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddOrgMembershipIDs(ids...)
-}
-
-// AddProjectMembershipIDs adds the "project_memberships" edge to the ProjectMember entity by IDs.
-func (_c *UserCreate) AddProjectMembershipIDs(ids ...uuid.UUID) *UserCreate {
-	_c.mutation.AddProjectMembershipIDs(ids...)
-	return _c
-}
-
-// AddProjectMemberships adds the "project_memberships" edges to the ProjectMember entity.
-func (_c *UserCreate) AddProjectMemberships(v ...*ProjectMember) *UserCreate {
-	ids := make([]uuid.UUID, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _c.AddProjectMembershipIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -381,22 +365,6 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(organizationmember.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := _c.mutation.ProjectMembershipsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.ProjectMembershipsTable,
-			Columns: []string{user.ProjectMembershipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectmember.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

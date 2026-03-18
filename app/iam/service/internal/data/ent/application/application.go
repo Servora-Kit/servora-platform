@@ -33,25 +33,25 @@ const (
 	FieldApplicationType = "application_type"
 	// FieldAccessTokenType holds the string denoting the access_token_type field in the database.
 	FieldAccessTokenType = "access_token_type"
-	// FieldOrganizationID holds the string denoting the organization_id field in the database.
-	FieldOrganizationID = "organization_id"
+	// FieldTenantID holds the string denoting the tenant_id field in the database.
+	FieldTenantID = "tenant_id"
 	// FieldIDTokenLifetime holds the string denoting the id_token_lifetime field in the database.
 	FieldIDTokenLifetime = "id_token_lifetime"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// EdgeOrganization holds the string denoting the organization edge name in mutations.
-	EdgeOrganization = "organization"
+	// EdgeTenant holds the string denoting the tenant edge name in mutations.
+	EdgeTenant = "tenant"
 	// Table holds the table name of the application in the database.
 	Table = "applications"
-	// OrganizationTable is the table that holds the organization relation/edge.
-	OrganizationTable = "applications"
-	// OrganizationInverseTable is the table name for the Organization entity.
-	// It exists in this package in order to avoid circular dependency with the "organization" package.
-	OrganizationInverseTable = "organizations"
-	// OrganizationColumn is the table column denoting the organization relation/edge.
-	OrganizationColumn = "organization_id"
+	// TenantTable is the table that holds the tenant relation/edge.
+	TenantTable = "applications"
+	// TenantInverseTable is the table name for the Tenant entity.
+	// It exists in this package in order to avoid circular dependency with the "tenant" package.
+	TenantInverseTable = "tenants"
+	// TenantColumn is the table column denoting the tenant relation/edge.
+	TenantColumn = "tenant_id"
 )
 
 // Columns holds all SQL columns for application fields.
@@ -66,7 +66,7 @@ var Columns = []string{
 	FieldGrantTypes,
 	FieldApplicationType,
 	FieldAccessTokenType,
-	FieldOrganizationID,
+	FieldTenantID,
 	FieldIDTokenLifetime,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -147,9 +147,9 @@ func ByAccessTokenType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAccessTokenType, opts...).ToFunc()
 }
 
-// ByOrganizationID orders the results by the organization_id field.
-func ByOrganizationID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldOrganizationID, opts...).ToFunc()
+// ByTenantID orders the results by the tenant_id field.
+func ByTenantID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTenantID, opts...).ToFunc()
 }
 
 // ByIDTokenLifetime orders the results by the id_token_lifetime field.
@@ -167,16 +167,16 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
-// ByOrganizationField orders the results by organization field.
-func ByOrganizationField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByTenantField orders the results by tenant field.
+func ByTenantField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newOrganizationStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newTenantStep(), sql.OrderByField(field, opts...))
 	}
 }
-func newOrganizationStep() *sqlgraph.Step {
+func newTenantStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(OrganizationInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, OrganizationTable, OrganizationColumn),
+		sqlgraph.To(TenantInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, TenantTable, TenantColumn),
 	)
 }

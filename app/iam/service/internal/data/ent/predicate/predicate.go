@@ -15,12 +15,6 @@ type Organization func(*sql.Selector)
 // OrganizationMember is the predicate function for organizationmember builders.
 type OrganizationMember func(*sql.Selector)
 
-// Project is the predicate function for project builders.
-type Project func(*sql.Selector)
-
-// ProjectMember is the predicate function for projectmember builders.
-type ProjectMember func(*sql.Selector)
-
 // Tenant is the predicate function for tenant builders.
 type Tenant func(*sql.Selector)
 

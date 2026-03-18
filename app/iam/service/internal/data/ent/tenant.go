@@ -24,6 +24,8 @@ type Tenant struct {
 	Slug string `json:"slug,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// DisplayName holds the value of the "display_name" field.
+	DisplayName *string `json:"display_name,omitempty"`
 	// Kind holds the value of the "kind" field.
 	Kind tenant.Kind `json:"kind,omitempty"`
 	// Domain holds the value of the "domain" field.
@@ -46,9 +48,11 @@ type TenantEdges struct {
 	Organizations []*Organization `json:"organizations,omitempty"`
 	// Members holds the value of the members edge.
 	Members []*TenantMember `json:"members,omitempty"`
+	// Applications holds the value of the applications edge.
+	Applications []*Application `json:"applications,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // OrganizationsOrErr returns the Organizations value or an error if the edge
@@ -69,12 +73,21 @@ func (e TenantEdges) MembersOrErr() ([]*TenantMember, error) {
 	return nil, &NotLoadedError{edge: "members"}
 }
 
+// ApplicationsOrErr returns the Applications value or an error if the edge
+// was not loaded in eager-loading.
+func (e TenantEdges) ApplicationsOrErr() ([]*Application, error) {
+	if e.loadedTypes[2] {
+		return e.Applications, nil
+	}
+	return nil, &NotLoadedError{edge: "applications"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Tenant) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case tenant.FieldSlug, tenant.FieldName, tenant.FieldKind, tenant.FieldDomain, tenant.FieldStatus:
+		case tenant.FieldSlug, tenant.FieldName, tenant.FieldDisplayName, tenant.FieldKind, tenant.FieldDomain, tenant.FieldStatus:
 			values[i] = new(sql.NullString)
 		case tenant.FieldDeletedAt, tenant.FieldCreatedAt, tenant.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -119,6 +132,13 @@ func (_m *Tenant) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				_m.Name = value.String
+			}
+		case tenant.FieldDisplayName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field display_name", values[i])
+			} else if value.Valid {
+				_m.DisplayName = new(string)
+				*_m.DisplayName = value.String
 			}
 		case tenant.FieldKind:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -174,6 +194,11 @@ func (_m *Tenant) QueryMembers() *TenantMemberQuery {
 	return NewTenantClient(_m.config).QueryMembers(_m)
 }
 
+// QueryApplications queries the "applications" edge of the Tenant entity.
+func (_m *Tenant) QueryApplications() *ApplicationQuery {
+	return NewTenantClient(_m.config).QueryApplications(_m)
+}
+
 // Update returns a builder for updating this Tenant.
 // Note that you need to call Tenant.Unwrap() before calling this method if this Tenant
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -207,6 +232,11 @@ func (_m *Tenant) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
+	builder.WriteString(", ")
+	if v := _m.DisplayName; v != nil {
+		builder.WriteString("display_name=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("kind=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Kind))

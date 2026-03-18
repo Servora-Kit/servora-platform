@@ -7,7 +7,11 @@ tuples:
     relation: admin
     object: platform:default
 
-  # Tenant setup
+  # Tenant setup (platform:default linked for inheritance chain)
+  - user: platform:default
+    relation: platform
+    object: tenant:root
+
   - user: user:tenant-owner
     relation: owner
     object: tenant:root
@@ -40,19 +44,6 @@ tuples:
   - user: user:org-viewer
     relation: viewer
     object: organization:acme
-
-  # Project setup
-  - user: organization:acme
-    relation: organization
-    object: project:alpha
-
-  - user: user:proj-member
-    relation: member
-    object: project:alpha
-
-  - user: user:proj-viewer
-    relation: viewer
-    object: project:alpha
 
 tests:
   # --- Platform tests ---
@@ -88,8 +79,9 @@ tests:
           can_view: true
           can_manage: true
           can_manage_members: true
+          can_transfer_ownership: true
 
-  - name: tenant admin has member and can_manage access
+  - name: tenant admin has member and can_manage access but cannot transfer ownership
     check:
       - user: user:tenant-admin
         object: tenant:root
@@ -100,6 +92,7 @@ tests:
           can_view: true
           can_manage: true
           can_manage_members: true
+          can_transfer_ownership: false
 
   - name: tenant member can view but not manage
     check:
@@ -112,10 +105,24 @@ tests:
           can_view: true
           can_manage: false
           can_manage_members: false
+          can_transfer_ownership: false
+
+  - name: platform admin inherits tenant admin via inheritance chain
+    check:
+      - user: user:platform-admin
+        object: tenant:root
+        assertions:
+          owner: false
+          admin: true
+          member: true
+          can_view: true
+          can_manage: true
+          can_manage_members: true
+          can_transfer_ownership: true
 
   # --- Organization tests ---
 
-  - name: organization owner inherits admin and member
+  - name: organization owner inherits admin and member and can transfer ownership
     check:
       - user: user:org-owner
         object: organization:acme
@@ -127,8 +134,9 @@ tests:
           can_view: true
           can_manage: true
           can_manage_members: true
+          can_transfer_ownership: true
 
-  - name: organization admin inherits member but not owner
+  - name: organization admin inherits member but not owner and cannot transfer ownership
     check:
       - user: user:org-admin
         object: organization:acme
@@ -140,6 +148,7 @@ tests:
           can_view: true
           can_manage: true
           can_manage_members: true
+          can_transfer_ownership: false
 
   - name: organization member can view but not manage
     check:
@@ -153,6 +162,7 @@ tests:
           can_view: true
           can_manage: false
           can_manage_members: false
+          can_transfer_ownership: false
 
   - name: organization viewer can only view
     check:
@@ -166,6 +176,7 @@ tests:
           can_view: true
           can_manage: false
           can_manage_members: false
+          can_transfer_ownership: false
 
   - name: tenant admin inherits organization admin via tenant relation
     check:
@@ -179,6 +190,7 @@ tests:
           can_view: true
           can_manage: true
           can_manage_members: true
+          can_transfer_ownership: true
 
   - name: tenant member inherits organization member via tenant relation
     check:
@@ -192,77 +204,18 @@ tests:
           can_view: true
           can_manage: false
           can_manage_members: false
+          can_transfer_ownership: false
 
-  # --- Project tests ---
-
-  - name: organization owner inherits project admin via relation
+  - name: platform admin inherits organization admin via full inheritance chain
     check:
-      - user: user:org-owner
-        object: project:alpha
+      - user: user:platform-admin
+        object: organization:acme
         assertions:
+          owner: false
           admin: true
           member: true
           viewer: true
           can_view: true
-          can_edit: true
-          can_admin: true
-
-  - name: organization admin inherits project admin via relation
-    check:
-      - user: user:org-admin
-        object: project:alpha
-        assertions:
-          admin: true
-          member: true
-          viewer: true
-          can_view: true
-          can_edit: true
-          can_admin: true
-
-  - name: tenant admin inherits project admin via tenant-org-project chain
-    check:
-      - user: user:tenant-admin
-        object: project:alpha
-        assertions:
-          admin: true
-          member: true
-          viewer: true
-          can_view: true
-          can_edit: true
-          can_admin: true
-
-  - name: project member can edit but not admin
-    check:
-      - user: user:proj-member
-        object: project:alpha
-        assertions:
-          admin: false
-          member: true
-          viewer: true
-          can_view: true
-          can_edit: true
-          can_admin: false
-
-  - name: project viewer can only view
-    check:
-      - user: user:proj-viewer
-        object: project:alpha
-        assertions:
-          admin: false
-          member: false
-          viewer: true
-          can_view: true
-          can_edit: false
-          can_admin: false
-
-  - name: organization member without direct project role has no project access
-    check:
-      - user: user:org-member
-        object: project:alpha
-        assertions:
-          admin: false
-          member: false
-          viewer: false
-          can_view: false
-          can_edit: false
-          can_admin: false
+          can_manage: true
+          can_manage_members: true
+          can_transfer_ownership: true

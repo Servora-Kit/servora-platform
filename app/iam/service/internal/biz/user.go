@@ -10,7 +10,6 @@ import (
 	userpb "github.com/Servora-Kit/servora/api/gen/go/user/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
-	"github.com/Servora-Kit/servora/pkg/actor"
 	"github.com/Servora-Kit/servora/pkg/logger"
 )
 
@@ -24,6 +23,7 @@ type UserRepo interface {
 	GetUserByIdIncludingDeleted(context.Context, string) (*entity.User, error)
 	UpdateUser(context.Context, *entity.User) (*entity.User, error)
 	ListUsers(context.Context, int32, int32) ([]*entity.User, int64, error)
+	ListByTenantID(context.Context, string, int32, int32) ([]*entity.User, int64, error)
 }
 
 type UserUsecase struct {
@@ -32,7 +32,6 @@ type UserUsecase struct {
 	cfg        *conf.App
 	authnRepo  AuthnRepo
 	orgRepo    OrganizationRepo
-	projRepo   ProjectRepo
 	tenantRepo TenantRepo
 	authz      AuthZRepo
 }
@@ -43,7 +42,6 @@ func NewUserUsecase(
 	cfg *conf.App,
 	authnRepo AuthnRepo,
 	orgRepo OrganizationRepo,
-	projRepo ProjectRepo,
 	tenantRepo TenantRepo,
 	authz AuthZRepo,
 ) *UserUsecase {
@@ -53,19 +51,16 @@ func NewUserUsecase(
 		cfg:        cfg,
 		authnRepo:  authnRepo,
 		orgRepo:    orgRepo,
-		projRepo:   projRepo,
 		tenantRepo: tenantRepo,
 		authz:      authz,
 	}
 }
 
-func (uc *UserUsecase) CurrentUserInfo(ctx context.Context) (*entity.User, error) {
-	a, ok := actor.FromContext(ctx)
-	if !ok || a.Type() != actor.TypeUser {
+func (uc *UserUsecase) CurrentUserInfo(ctx context.Context, callerID string) (*entity.User, error) {
+	if callerID == "" {
 		return nil, authnpb.ErrorUnauthorized("user not authenticated")
 	}
-
-	u, err := uc.repo.GetUserById(ctx, a.ID())
+	u, err := uc.repo.GetUserById(ctx, callerID)
 	if err != nil {
 		return nil, userpb.ErrorUserNotFound("user not found")
 	}
@@ -73,22 +68,6 @@ func (uc *UserUsecase) CurrentUserInfo(ctx context.Context) (*entity.User, error
 }
 
 func (uc *UserUsecase) GetUser(ctx context.Context, id string) (*entity.User, error) {
-	a, ok := actor.FromContext(ctx)
-	if !ok || a.Type() != actor.TypeUser {
-		return nil, authnpb.ErrorUnauthorized("user not authenticated")
-	}
-
-	if a.ID() != id {
-		caller, err := uc.repo.GetUserById(ctx, a.ID())
-		if err != nil {
-			uc.log.Errorf("get caller for GetUser failed: %v", err)
-			return nil, errors.InternalServer("INTERNAL", "internal error")
-		}
-		if caller.Role != "admin" && caller.Role != "operator" {
-			return nil, authnpb.ErrorUnauthorized("insufficient permissions")
-		}
-	}
-
 	u, err := uc.repo.GetUserById(ctx, id)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -100,9 +79,8 @@ func (uc *UserUsecase) GetUser(ctx context.Context, id string) (*entity.User, er
 	return u, nil
 }
 
-func (uc *UserUsecase) UpdateUser(ctx context.Context, user *entity.User) (*entity.User, error) {
-	a, ok := actor.FromContext(ctx)
-	if !ok || a.Type() != actor.TypeUser {
+func (uc *UserUsecase) UpdateUser(ctx context.Context, callerID string, user *entity.User) (*entity.User, error) {
+	if callerID == "" {
 		return nil, authnpb.ErrorUnauthorized("user not authenticated")
 	}
 
@@ -115,17 +93,8 @@ func (uc *UserUsecase) UpdateUser(ctx context.Context, user *entity.User) (*enti
 		return nil, errors.InternalServer("INTERNAL", "internal error")
 	}
 
-	callerUser, err := uc.repo.GetUserById(ctx, a.ID())
-	if err != nil {
-		uc.log.Errorf("get caller user failed: %v", err)
-		return nil, errors.InternalServer("INTERNAL", "internal error")
-	}
-	isAdmin := callerUser.Role == "admin" || callerUser.Role == "operator"
-	if !isAdmin && a.ID() != user.ID {
+	if callerID != user.ID {
 		return nil, authnpb.ErrorUnauthorized("you can only update your own information")
-	}
-	if !isAdmin && user.Role != "" && user.Role != callerUser.Role {
-		return nil, authnpb.ErrorUnauthorized("you do not have permission to change your role")
 	}
 
 	if user.Name != "" && user.Name != origUser.Name {
@@ -158,20 +127,76 @@ func (uc *UserUsecase) UpdateUser(ctx context.Context, user *entity.User) (*enti
 	return updatedUser, nil
 }
 
-func (uc *UserUsecase) SaveUser(ctx context.Context, user *entity.User) (*entity.User, error) {
+// CreateUser creates a new user and adds them to the specified tenant and organization.
+// The user is also given a personal tenant/org space.
+func (uc *UserUsecase) CreateUser(ctx context.Context, tenantID, organizationID string, user *entity.User) (*entity.User, error) {
+	if tenantID == "" {
+		return nil, userpb.ErrorCreateUserFailed("tenant_id is required")
+	}
+	if organizationID == "" {
+		return nil, userpb.ErrorCreateUserFailed("organization_id is required")
+	}
+
+	org, err := uc.orgRepo.GetByID(ctx, organizationID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, userpb.ErrorCreateUserFailed("organization not found")
+		}
+		return nil, errors.InternalServer("INTERNAL", "internal error")
+	}
+	if org.TenantID != tenantID {
+		return nil, userpb.ErrorCreateUserFailed("organization does not belong to the specified tenant")
+	}
+
 	if err := uc.checkUserExists(ctx, user); err != nil {
 		return nil, err
 	}
 
+	user.EmailVerified = true
+
 	savedUser, err := uc.repo.SaveUser(ctx, user)
 	if err != nil {
-		uc.log.Errorf("save user failed: %v", err)
-		return nil, userpb.ErrorSaveUserFailed("failed to save user")
+		uc.log.Errorf("create user failed: %v", err)
+		return nil, userpb.ErrorCreateUserFailed("failed to create user")
 	}
+
+	if _, err := uc.tenantRepo.AddMember(ctx, &entity.TenantMember{
+		TenantID: tenantID,
+		UserID:   savedUser.ID,
+		Role:     string(RoleMember),
+		Status:   "active",
+	}); err != nil {
+		uc.log.Errorf("add user to tenant failed: %v", err)
+	}
+
+	if _, err := uc.orgRepo.AddMember(ctx, &entity.OrganizationMember{
+		OrganizationID: organizationID,
+		UserID:         savedUser.ID,
+		Role:           string(RoleMember),
+	}); err != nil {
+		uc.log.Errorf("add user to organization failed: %v", err)
+	}
+
+	if uc.authz != nil {
+		_ = uc.authz.WriteTuples(ctx,
+			Tuple{User: "user:" + savedUser.ID, Relation: string(RoleMember), Object: "tenant:" + tenantID},
+			Tuple{User: "user:" + savedUser.ID, Relation: string(RoleMember), Object: "organization:" + organizationID},
+		)
+	}
+
 	return savedUser, nil
 }
 
-func (uc *UserUsecase) ListUsers(ctx context.Context, page, pageSize int32) ([]*entity.User, int64, error) {
+func (uc *UserUsecase) ListUsers(ctx context.Context, tenantID string, page, pageSize int32) ([]*entity.User, int64, error) {
+	if tenantID != "" {
+		users, total, err := uc.repo.ListByTenantID(ctx, tenantID, page, pageSize)
+		if err != nil {
+			uc.log.Errorf("list users by tenant failed: %v", err)
+			return nil, 0, errors.InternalServer("INTERNAL", "internal error")
+		}
+		return users, total, nil
+	}
+
 	users, total, err := uc.repo.ListUsers(ctx, page, pageSize)
 	if err != nil {
 		uc.log.Errorf("list users failed: %v", err)
@@ -235,13 +260,6 @@ func (uc *UserUsecase) collectUserFGATuples(ctx context.Context, userID string) 
 		)
 	}
 
-	projMemberships, _ := uc.projRepo.ListMembershipsByUserID(ctx, userID)
-	for _, m := range projMemberships {
-		tuples = append(tuples,
-			Tuple{User: "user:" + userID, Relation: m.Role, Object: "project:" + m.ProjectID},
-		)
-	}
-
 	return tuples
 }
 
@@ -264,23 +282,11 @@ func (uc *UserUsecase) CompensateUserPurge(ctx context.Context, userID string) e
 
 	if uc.authz != nil {
 		orgRelations := []string{"owner", "admin", "member", "viewer"}
-		projRelations := []string{"admin", "member", "viewer"}
 
 		for _, rel := range orgRelations {
 			objects, err := uc.authz.ListObjects(ctx, userID, rel, "organization")
 			if err != nil {
 				uc.log.Warnf("CompensateUserPurge ListObjects(organization/%s) failed: %v", rel, err)
-				continue
-			}
-			for _, obj := range objects {
-				tuples = append(tuples, Tuple{User: "user:" + userID, Relation: rel, Object: obj})
-			}
-		}
-
-		for _, rel := range projRelations {
-			objects, err := uc.authz.ListObjects(ctx, userID, rel, "project")
-			if err != nil {
-				uc.log.Warnf("CompensateUserPurge ListObjects(project/%s) failed: %v", rel, err)
 				continue
 			}
 			for _, obj := range objects {

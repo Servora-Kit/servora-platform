@@ -21,6 +21,7 @@ func (Tenant) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).Default(newUUIDv7),
 		field.String("slug").MaxLen(64).Unique(),
 		field.String("name").MaxLen(128),
+		field.String("display_name").MaxLen(255).Optional().Nillable(),
 		field.Enum("kind").Values("business", "personal").Default("business"),
 		field.String("domain").MaxLen(128).Optional().Nillable().Unique(),
 		field.Enum("status").Values("active", "disabled").Default("active"),
@@ -39,6 +40,7 @@ func (Tenant) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("organizations", Organization.Type),
 		edge.To("members", TenantMember.Type),
+		edge.To("applications", Application.Type),
 	}
 }
 

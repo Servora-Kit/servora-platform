@@ -55,12 +55,12 @@ func (r *fakeApplicationRepo) GetByClientID(_ context.Context, clientID string) 
 	return nil, fmt.Errorf("application not found by client_id: %s", clientID)
 }
 
-func (r *fakeApplicationRepo) ListByOrganizationID(_ context.Context, orgID string, page, pageSize int32) ([]*entity.Application, int64, error) {
+func (r *fakeApplicationRepo) ListByTenantID(_ context.Context, tenantID string, page, pageSize int32) ([]*entity.Application, int64, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	var result []*entity.Application
 	for _, a := range r.apps {
-		if a.OrganizationID == orgID {
+		if a.TenantID == tenantID {
 			out := *a
 			result = append(result, &out)
 		}
@@ -120,7 +120,7 @@ func TestApplicationUsecase_Create(t *testing.T) {
 	uc, repo := newTestApplicationUsecase()
 	ctx := context.Background()
 
-	app := &entity.Application{Name: "test-app", OrganizationID: "org-1"}
+	app := &entity.Application{Name: "test-app", TenantID: "tenant-1"}
 	created, plainSecret, err := uc.Create(ctx, app)
 	if err != nil {
 		t.Fatalf("Create() error: %v", err)
@@ -148,7 +148,7 @@ func TestApplicationUsecase_Get(t *testing.T) {
 	uc, _ := newTestApplicationUsecase()
 	ctx := context.Background()
 
-	app := &entity.Application{Name: "get-test", OrganizationID: "org-1"}
+	app := &entity.Application{Name: "get-test", TenantID: "tenant-1"}
 	created, _, err := uc.Create(ctx, app)
 	if err != nil {
 		t.Fatalf("Create() error: %v", err)
@@ -170,7 +170,7 @@ func TestApplicationUsecase_RegenerateClientSecret(t *testing.T) {
 	uc, repo := newTestApplicationUsecase()
 	ctx := context.Background()
 
-	app := &entity.Application{Name: "regen-test", OrganizationID: "org-1"}
+	app := &entity.Application{Name: "regen-test", TenantID: "tenant-1"}
 	created, oldSecret, err := uc.Create(ctx, app)
 	if err != nil {
 		t.Fatalf("Create() error: %v", err)
@@ -207,7 +207,7 @@ func TestApplicationUsecase_Delete(t *testing.T) {
 	uc, _ := newTestApplicationUsecase()
 	ctx := context.Background()
 
-	app := &entity.Application{Name: "delete-test", OrganizationID: "org-1"}
+	app := &entity.Application{Name: "delete-test", TenantID: "tenant-1"}
 	created, _, err := uc.Create(ctx, app)
 	if err != nil {
 		t.Fatalf("Create() error: %v", err)

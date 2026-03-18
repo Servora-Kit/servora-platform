@@ -37,8 +37,6 @@ const (
 	EdgeTenantMembers = "tenant_members"
 	// EdgeOrgMemberships holds the string denoting the org_memberships edge name in mutations.
 	EdgeOrgMemberships = "org_memberships"
-	// EdgeProjectMemberships holds the string denoting the project_memberships edge name in mutations.
-	EdgeProjectMemberships = "project_memberships"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// TenantMembersTable is the table that holds the tenant_members relation/edge.
@@ -55,13 +53,6 @@ const (
 	OrgMembershipsInverseTable = "organization_members"
 	// OrgMembershipsColumn is the table column denoting the org_memberships relation/edge.
 	OrgMembershipsColumn = "user_id"
-	// ProjectMembershipsTable is the table that holds the project_memberships relation/edge.
-	ProjectMembershipsTable = "project_members"
-	// ProjectMembershipsInverseTable is the table name for the ProjectMember entity.
-	// It exists in this package in order to avoid circular dependency with the "projectmember" package.
-	ProjectMembershipsInverseTable = "project_members"
-	// ProjectMembershipsColumn is the table column denoting the project_memberships relation/edge.
-	ProjectMembershipsColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -191,20 +182,6 @@ func ByOrgMemberships(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newOrgMembershipsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-
-// ByProjectMembershipsCount orders the results by project_memberships count.
-func ByProjectMembershipsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newProjectMembershipsStep(), opts...)
-	}
-}
-
-// ByProjectMemberships orders the results by project_memberships terms.
-func ByProjectMemberships(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newProjectMembershipsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
 func newTenantMembersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -217,12 +194,5 @@ func newOrgMembershipsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OrgMembershipsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, OrgMembershipsTable, OrgMembershipsColumn),
-	)
-}
-func newProjectMembershipsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ProjectMembershipsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, ProjectMembershipsTable, ProjectMembershipsColumn),
 	)
 }

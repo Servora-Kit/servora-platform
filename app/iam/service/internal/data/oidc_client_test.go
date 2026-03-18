@@ -19,7 +19,7 @@ func newTestApp() *entity.Application {
 		GrantTypes:      []string{"authorization_code", "refresh_token"},
 		ApplicationType: "web",
 		AccessTokenType: "jwt",
-		OrganizationID:  "org-1",
+		TenantID:        "tenant-1",
 		IDTokenLifetime: 5 * time.Minute,
 	}
 }

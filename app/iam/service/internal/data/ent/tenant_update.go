@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/application"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/organization"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/predicate"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/tenant"
@@ -76,6 +77,26 @@ func (_u *TenantUpdate) SetNillableName(v *string) *TenantUpdate {
 	if v != nil {
 		_u.SetName(*v)
 	}
+	return _u
+}
+
+// SetDisplayName sets the "display_name" field.
+func (_u *TenantUpdate) SetDisplayName(v string) *TenantUpdate {
+	_u.mutation.SetDisplayName(v)
+	return _u
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (_u *TenantUpdate) SetNillableDisplayName(v *string) *TenantUpdate {
+	if v != nil {
+		_u.SetDisplayName(*v)
+	}
+	return _u
+}
+
+// ClearDisplayName clears the value of the "display_name" field.
+func (_u *TenantUpdate) ClearDisplayName() *TenantUpdate {
+	_u.mutation.ClearDisplayName()
 	return _u
 }
 
@@ -163,6 +184,21 @@ func (_u *TenantUpdate) AddMembers(v ...*TenantMember) *TenantUpdate {
 	return _u.AddMemberIDs(ids...)
 }
 
+// AddApplicationIDs adds the "applications" edge to the Application entity by IDs.
+func (_u *TenantUpdate) AddApplicationIDs(ids ...uuid.UUID) *TenantUpdate {
+	_u.mutation.AddApplicationIDs(ids...)
+	return _u
+}
+
+// AddApplications adds the "applications" edges to the Application entity.
+func (_u *TenantUpdate) AddApplications(v ...*Application) *TenantUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddApplicationIDs(ids...)
+}
+
 // Mutation returns the TenantMutation object of the builder.
 func (_u *TenantUpdate) Mutation() *TenantMutation {
 	return _u.mutation
@@ -208,6 +244,27 @@ func (_u *TenantUpdate) RemoveMembers(v ...*TenantMember) *TenantUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMemberIDs(ids...)
+}
+
+// ClearApplications clears all "applications" edges to the Application entity.
+func (_u *TenantUpdate) ClearApplications() *TenantUpdate {
+	_u.mutation.ClearApplications()
+	return _u
+}
+
+// RemoveApplicationIDs removes the "applications" edge to Application entities by IDs.
+func (_u *TenantUpdate) RemoveApplicationIDs(ids ...uuid.UUID) *TenantUpdate {
+	_u.mutation.RemoveApplicationIDs(ids...)
+	return _u
+}
+
+// RemoveApplications removes "applications" edges to Application entities.
+func (_u *TenantUpdate) RemoveApplications(v ...*Application) *TenantUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveApplicationIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -258,6 +315,11 @@ func (_u *TenantUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Tenant.name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.DisplayName(); ok {
+		if err := tenant.DisplayNameValidator(v); err != nil {
+			return &ValidationError{Name: "display_name", err: fmt.Errorf(`ent: validator failed for field "Tenant.display_name": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Kind(); ok {
 		if err := tenant.KindValidator(v); err != nil {
 			return &ValidationError{Name: "kind", err: fmt.Errorf(`ent: validator failed for field "Tenant.kind": %w`, err)}
@@ -299,6 +361,12 @@ func (_u *TenantUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(tenant.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.DisplayName(); ok {
+		_spec.SetField(tenant.FieldDisplayName, field.TypeString, value)
+	}
+	if _u.mutation.DisplayNameCleared() {
+		_spec.ClearField(tenant.FieldDisplayName, field.TypeString)
 	}
 	if value, ok := _u.mutation.Kind(); ok {
 		_spec.SetField(tenant.FieldKind, field.TypeEnum, value)
@@ -405,6 +473,51 @@ func (_u *TenantUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.ApplicationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenant.ApplicationsTable,
+			Columns: []string{tenant.ApplicationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedApplicationsIDs(); len(nodes) > 0 && !_u.mutation.ApplicationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenant.ApplicationsTable,
+			Columns: []string{tenant.ApplicationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ApplicationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenant.ApplicationsTable,
+			Columns: []string{tenant.ApplicationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{tenant.Label}
@@ -470,6 +583,26 @@ func (_u *TenantUpdateOne) SetNillableName(v *string) *TenantUpdateOne {
 	if v != nil {
 		_u.SetName(*v)
 	}
+	return _u
+}
+
+// SetDisplayName sets the "display_name" field.
+func (_u *TenantUpdateOne) SetDisplayName(v string) *TenantUpdateOne {
+	_u.mutation.SetDisplayName(v)
+	return _u
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (_u *TenantUpdateOne) SetNillableDisplayName(v *string) *TenantUpdateOne {
+	if v != nil {
+		_u.SetDisplayName(*v)
+	}
+	return _u
+}
+
+// ClearDisplayName clears the value of the "display_name" field.
+func (_u *TenantUpdateOne) ClearDisplayName() *TenantUpdateOne {
+	_u.mutation.ClearDisplayName()
 	return _u
 }
 
@@ -557,6 +690,21 @@ func (_u *TenantUpdateOne) AddMembers(v ...*TenantMember) *TenantUpdateOne {
 	return _u.AddMemberIDs(ids...)
 }
 
+// AddApplicationIDs adds the "applications" edge to the Application entity by IDs.
+func (_u *TenantUpdateOne) AddApplicationIDs(ids ...uuid.UUID) *TenantUpdateOne {
+	_u.mutation.AddApplicationIDs(ids...)
+	return _u
+}
+
+// AddApplications adds the "applications" edges to the Application entity.
+func (_u *TenantUpdateOne) AddApplications(v ...*Application) *TenantUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddApplicationIDs(ids...)
+}
+
 // Mutation returns the TenantMutation object of the builder.
 func (_u *TenantUpdateOne) Mutation() *TenantMutation {
 	return _u.mutation
@@ -602,6 +750,27 @@ func (_u *TenantUpdateOne) RemoveMembers(v ...*TenantMember) *TenantUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMemberIDs(ids...)
+}
+
+// ClearApplications clears all "applications" edges to the Application entity.
+func (_u *TenantUpdateOne) ClearApplications() *TenantUpdateOne {
+	_u.mutation.ClearApplications()
+	return _u
+}
+
+// RemoveApplicationIDs removes the "applications" edge to Application entities by IDs.
+func (_u *TenantUpdateOne) RemoveApplicationIDs(ids ...uuid.UUID) *TenantUpdateOne {
+	_u.mutation.RemoveApplicationIDs(ids...)
+	return _u
+}
+
+// RemoveApplications removes "applications" edges to Application entities.
+func (_u *TenantUpdateOne) RemoveApplications(v ...*Application) *TenantUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveApplicationIDs(ids...)
 }
 
 // Where appends a list predicates to the TenantUpdate builder.
@@ -665,6 +834,11 @@ func (_u *TenantUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Tenant.name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.DisplayName(); ok {
+		if err := tenant.DisplayNameValidator(v); err != nil {
+			return &ValidationError{Name: "display_name", err: fmt.Errorf(`ent: validator failed for field "Tenant.display_name": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Kind(); ok {
 		if err := tenant.KindValidator(v); err != nil {
 			return &ValidationError{Name: "kind", err: fmt.Errorf(`ent: validator failed for field "Tenant.kind": %w`, err)}
@@ -723,6 +897,12 @@ func (_u *TenantUpdateOne) sqlSave(ctx context.Context) (_node *Tenant, err erro
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(tenant.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.DisplayName(); ok {
+		_spec.SetField(tenant.FieldDisplayName, field.TypeString, value)
+	}
+	if _u.mutation.DisplayNameCleared() {
+		_spec.ClearField(tenant.FieldDisplayName, field.TypeString)
 	}
 	if value, ok := _u.mutation.Kind(); ok {
 		_spec.SetField(tenant.FieldKind, field.TypeEnum, value)
@@ -822,6 +1002,51 @@ func (_u *TenantUpdateOne) sqlSave(ctx context.Context) (_node *Tenant, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tenantmember.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ApplicationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenant.ApplicationsTable,
+			Columns: []string{tenant.ApplicationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedApplicationsIDs(); len(nodes) > 0 && !_u.mutation.ApplicationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenant.ApplicationsTable,
+			Columns: []string{tenant.ApplicationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ApplicationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenant.ApplicationsTable,
+			Columns: []string{tenant.ApplicationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

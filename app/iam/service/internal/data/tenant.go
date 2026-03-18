@@ -38,6 +38,9 @@ func (r *tenantRepo) Create(ctx context.Context, t *entity.Tenant) (*entity.Tena
 	if t.Domain != "" {
 		b.SetDomain(t.Domain)
 	}
+	if t.DisplayName != "" {
+		b.SetDisplayName(t.DisplayName)
+	}
 	created, err := b.Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("create tenant: %w", err)
@@ -131,6 +134,9 @@ func (r *tenantRepo) Update(ctx context.Context, t *entity.Tenant) (*entity.Tena
 	if t.Name != "" {
 		b.SetName(t.Name)
 	}
+	if t.DisplayName != "" {
+		b.SetDisplayName(t.DisplayName)
+	}
 	if t.Domain != "" {
 		b.SetDomain(t.Domain)
 	}
@@ -216,6 +222,22 @@ func (r *tenantRepo) GetMember(ctx context.Context, tenantID, userID string) (*e
 		Where(
 			tenantmember.TenantIDEQ(tid),
 			tenantmember.UserIDEQ(uid),
+		).Only(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.enrichMember(ctx, m)
+}
+
+func (r *tenantRepo) GetOwnerMember(ctx context.Context, tenantID string) (*entity.TenantMember, error) {
+	tid, err := uuid.Parse(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid tenant ID: %w", err)
+	}
+	m, err := r.data.Ent(ctx).TenantMember.Query().
+		Where(
+			tenantmember.TenantIDEQ(tid),
+			tenantmember.RoleEQ(tenantmember.RoleOwner),
 		).Only(ctx)
 	if err != nil {
 		return nil, err

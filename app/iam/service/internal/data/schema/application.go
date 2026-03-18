@@ -27,7 +27,7 @@ func (Application) Fields() []ent.Field {
 		field.JSON("grant_types", []string{}),
 		field.String("application_type").MaxLen(32).Default("web"),
 		field.String("access_token_type").MaxLen(32).Default("jwt"),
-		field.UUID("organization_id", uuid.UUID{}),
+		field.UUID("tenant_id", uuid.UUID{}),
 		field.Int("id_token_lifetime").Default(3600),
 		field.Time("created_at").Default(time.Now).Immutable(),
 		field.Time("updated_at").Default(time.Now).UpdateDefault(time.Now),
@@ -42,9 +42,9 @@ func (Application) Mixin() []ent.Mixin {
 
 func (Application) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("organization", Organization.Type).
+		edge.From("tenant", Tenant.Type).
 			Ref("applications").
-			Field("organization_id").
+			Field("tenant_id").
 			Unique().
 			Required(),
 	}

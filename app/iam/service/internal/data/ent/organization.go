@@ -45,13 +45,9 @@ type OrganizationEdges struct {
 	Tenant *Tenant `json:"tenant,omitempty"`
 	// Members holds the value of the members edge.
 	Members []*OrganizationMember `json:"members,omitempty"`
-	// Projects holds the value of the projects edge.
-	Projects []*Project `json:"projects,omitempty"`
-	// Applications holds the value of the applications edge.
-	Applications []*Application `json:"applications,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [2]bool
 }
 
 // TenantOrErr returns the Tenant value or an error if the edge
@@ -72,24 +68,6 @@ func (e OrganizationEdges) MembersOrErr() ([]*OrganizationMember, error) {
 		return e.Members, nil
 	}
 	return nil, &NotLoadedError{edge: "members"}
-}
-
-// ProjectsOrErr returns the Projects value or an error if the edge
-// was not loaded in eager-loading.
-func (e OrganizationEdges) ProjectsOrErr() ([]*Project, error) {
-	if e.loadedTypes[2] {
-		return e.Projects, nil
-	}
-	return nil, &NotLoadedError{edge: "projects"}
-}
-
-// ApplicationsOrErr returns the Applications value or an error if the edge
-// was not loaded in eager-loading.
-func (e OrganizationEdges) ApplicationsOrErr() ([]*Application, error) {
-	if e.loadedTypes[3] {
-		return e.Applications, nil
-	}
-	return nil, &NotLoadedError{edge: "applications"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -189,16 +167,6 @@ func (_m *Organization) QueryTenant() *TenantQuery {
 // QueryMembers queries the "members" edge of the Organization entity.
 func (_m *Organization) QueryMembers() *OrganizationMemberQuery {
 	return NewOrganizationClient(_m.config).QueryMembers(_m)
-}
-
-// QueryProjects queries the "projects" edge of the Organization entity.
-func (_m *Organization) QueryProjects() *ProjectQuery {
-	return NewOrganizationClient(_m.config).QueryProjects(_m)
-}
-
-// QueryApplications queries the "applications" edge of the Organization entity.
-func (_m *Organization) QueryApplications() *ApplicationQuery {
-	return NewOrganizationClient(_m.config).QueryApplications(_m)
 }
 
 // Update returns a builder for updating this Organization.

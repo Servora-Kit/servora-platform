@@ -35,20 +35,6 @@ var orgMapper = mapper.NewForwardMapper(func(o *ent.Organization) *entity.Organi
 	return e
 })
 
-var projectMapper = mapper.NewForwardMapper(func(p *ent.Project) *entity.Project {
-	e := &entity.Project{
-		ID:             p.ID.String(),
-		OrganizationID: p.OrganizationID.String(),
-		Name:           p.Name,
-		Slug:           p.Slug,
-		CreatedAt:      p.CreatedAt,
-		UpdatedAt:      p.UpdatedAt,
-	}
-	if p.Description != nil {
-		e.Description = *p.Description
-	}
-	return e
-})
 
 var tenantMapper = mapper.NewForwardMapper(func(t *ent.Tenant) *entity.Tenant {
 	e := &entity.Tenant{
@@ -62,6 +48,9 @@ var tenantMapper = mapper.NewForwardMapper(func(t *ent.Tenant) *entity.Tenant {
 	}
 	if t.Domain != nil {
 		e.Domain = *t.Domain
+	}
+	if t.DisplayName != nil {
+		e.DisplayName = *t.DisplayName
 	}
 	return e
 })
@@ -77,7 +66,7 @@ var applicationMapper = mapper.NewForwardMapper(func(a *ent.Application) *entity
 		GrantTypes:       a.GrantTypes,
 		ApplicationType:  a.ApplicationType,
 		AccessTokenType:  a.AccessTokenType,
-		OrganizationID:   a.OrganizationID.String(),
+		TenantID:         a.TenantID.String(),
 		IDTokenLifetime:  time.Duration(a.IDTokenLifetime) * time.Second,
 		CreatedAt:        a.CreatedAt,
 		UpdatedAt:        a.UpdatedAt,

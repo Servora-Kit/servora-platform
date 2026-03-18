@@ -22,6 +22,8 @@ const (
 	FieldSlug = "slug"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldDisplayName holds the string denoting the display_name field in the database.
+	FieldDisplayName = "display_name"
 	// FieldKind holds the string denoting the kind field in the database.
 	FieldKind = "kind"
 	// FieldDomain holds the string denoting the domain field in the database.
@@ -36,6 +38,8 @@ const (
 	EdgeOrganizations = "organizations"
 	// EdgeMembers holds the string denoting the members edge name in mutations.
 	EdgeMembers = "members"
+	// EdgeApplications holds the string denoting the applications edge name in mutations.
+	EdgeApplications = "applications"
 	// Table holds the table name of the tenant in the database.
 	Table = "tenants"
 	// OrganizationsTable is the table that holds the organizations relation/edge.
@@ -52,6 +56,13 @@ const (
 	MembersInverseTable = "tenant_members"
 	// MembersColumn is the table column denoting the members relation/edge.
 	MembersColumn = "tenant_id"
+	// ApplicationsTable is the table that holds the applications relation/edge.
+	ApplicationsTable = "applications"
+	// ApplicationsInverseTable is the table name for the Application entity.
+	// It exists in this package in order to avoid circular dependency with the "application" package.
+	ApplicationsInverseTable = "applications"
+	// ApplicationsColumn is the table column denoting the applications relation/edge.
+	ApplicationsColumn = "tenant_id"
 )
 
 // Columns holds all SQL columns for tenant fields.
@@ -60,6 +71,7 @@ var Columns = []string{
 	FieldDeletedAt,
 	FieldSlug,
 	FieldName,
+	FieldDisplayName,
 	FieldKind,
 	FieldDomain,
 	FieldStatus,
@@ -82,6 +94,8 @@ var (
 	SlugValidator func(string) error
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
+	// DisplayNameValidator is a validator for the "display_name" field. It is called by the builders before save.
+	DisplayNameValidator func(string) error
 	// DomainValidator is a validator for the "domain" field. It is called by the builders before save.
 	DomainValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -169,6 +183,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
+// ByDisplayName orders the results by the display_name field.
+func ByDisplayName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDisplayName, opts...).ToFunc()
+}
+
 // ByKind orders the results by the kind field.
 func ByKind(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldKind, opts...).ToFunc()
@@ -221,6 +240,20 @@ func ByMembers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newMembersStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByApplicationsCount orders the results by applications count.
+func ByApplicationsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newApplicationsStep(), opts...)
+	}
+}
+
+// ByApplications orders the results by applications terms.
+func ByApplications(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newApplicationsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newOrganizationsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -233,5 +266,12 @@ func newMembersStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MembersInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, MembersTable, MembersColumn),
+	)
+}
+func newApplicationsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ApplicationsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ApplicationsTable, ApplicationsColumn),
 	)
 }

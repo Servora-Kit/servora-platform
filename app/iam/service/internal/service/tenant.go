@@ -6,7 +6,6 @@ import (
 	tenantpb "github.com/Servora-Kit/servora/api/gen/go/tenant/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz/entity"
-	"github.com/Servora-Kit/servora/pkg/actor"
 	"github.com/Servora-Kit/servora/pkg/pagination"
 )
 
@@ -21,17 +20,18 @@ func NewTenantService(uc *biz.TenantUsecase) *TenantService {
 }
 
 func (s *TenantService) CreateTenant(ctx context.Context, req *tenantpb.CreateTenantRequest) (*tenantpb.CreateTenantResponse, error) {
-	a, ok := actor.FromContext(ctx)
-	if !ok || a.Type() != actor.TypeUser {
-		return nil, tenantpb.ErrorTenantCreateFailed("user not authenticated")
+	callerID, err := requireAuthenticatedUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	t, err := s.uc.CreateWithDefaults(ctx, &entity.Tenant{
-		Name:   req.Name,
-		Slug:   req.Slug,
-		Kind:   req.Kind,
-		Domain: req.Domain,
-	}, a.ID())
+		Name:        req.Name,
+		DisplayName: req.DisplayName,
+		Slug:        req.Slug,
+		Kind:        req.Kind,
+		Domain:      req.Domain,
+	}, callerID)
 	if err != nil {
 		return nil, err
 	}
@@ -47,13 +47,12 @@ func (s *TenantService) GetTenant(ctx context.Context, req *tenantpb.GetTenantRe
 }
 
 func (s *TenantService) ListTenants(ctx context.Context, req *tenantpb.ListTenantsRequest) (*tenantpb.ListTenantsResponse, error) {
-	a, ok := actor.FromContext(ctx)
-	if !ok || a.Type() != actor.TypeUser {
-		return nil, tenantpb.ErrorTenantNotFound("user not authenticated")
+	callerID, err := requireAuthenticatedUser(ctx)
+	if err != nil {
+		return nil, err
 	}
-
 	page, pageSize := pagination.ExtractPage(req.Pagination)
-	tenants, total, err := s.uc.List(ctx, a.ID(), page, pageSize)
+	tenants, total, err := s.uc.List(ctx, callerID, page, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -66,10 +65,11 @@ func (s *TenantService) ListTenants(ctx context.Context, req *tenantpb.ListTenan
 
 func (s *TenantService) UpdateTenant(ctx context.Context, req *tenantpb.UpdateTenantRequest) (*tenantpb.UpdateTenantResponse, error) {
 	t, err := s.uc.Update(ctx, &entity.Tenant{
-		ID:     req.Id,
-		Name:   req.Name,
-		Domain: req.Domain,
-		Status: req.Status,
+		ID:          req.Id,
+		Name:        req.Name,
+		DisplayName: req.DisplayName,
+		Domain:      req.Domain,
+		Status:      req.Status,
 	})
 	if err != nil {
 		return nil, err
@@ -93,25 +93,36 @@ func (s *TenantService) InviteMember(ctx context.Context, req *tenantpb.InviteTe
 }
 
 func (s *TenantService) AcceptInvitation(ctx context.Context, req *tenantpb.AcceptTenantInvitationRequest) (*tenantpb.AcceptTenantInvitationResponse, error) {
-	a, ok := actor.FromContext(ctx)
-	if !ok || a.Type() != actor.TypeUser {
-		return nil, tenantpb.ErrorTenantNotFound("user not authenticated")
+	callerID, err := requireAuthenticatedUser(ctx)
+	if err != nil {
+		return nil, err
 	}
-	if err := s.uc.AcceptInvitation(ctx, req.TenantId, a.ID()); err != nil {
+	if err := s.uc.AcceptInvitation(ctx, req.TenantId, callerID); err != nil {
 		return nil, err
 	}
 	return &tenantpb.AcceptTenantInvitationResponse{Success: true}, nil
 }
 
 func (s *TenantService) RejectInvitation(ctx context.Context, req *tenantpb.RejectTenantInvitationRequest) (*tenantpb.RejectTenantInvitationResponse, error) {
-	a, ok := actor.FromContext(ctx)
-	if !ok || a.Type() != actor.TypeUser {
-		return nil, tenantpb.ErrorTenantNotFound("user not authenticated")
+	callerID, err := requireAuthenticatedUser(ctx)
+	if err != nil {
+		return nil, err
 	}
-	if err := s.uc.RejectInvitation(ctx, req.TenantId, a.ID()); err != nil {
+	if err := s.uc.RejectInvitation(ctx, req.TenantId, callerID); err != nil {
 		return nil, err
 	}
 	return &tenantpb.RejectTenantInvitationResponse{Success: true}, nil
+}
+
+func (s *TenantService) TransferOwnership(ctx context.Context, req *tenantpb.TransferTenantOwnershipRequest) (*tenantpb.TransferTenantOwnershipResponse, error) {
+	callerID, err := requireAuthenticatedUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.uc.TransferOwnership(ctx, req.TenantId, callerID, req.NewOwnerUserId); err != nil {
+		return nil, err
+	}
+	return &tenantpb.TransferTenantOwnershipResponse{Success: true}, nil
 }
 
 func (s *TenantService) ListMembers(ctx context.Context, req *tenantpb.ListTenantMembersRequest) (*tenantpb.ListTenantMembersResponse, error) {
