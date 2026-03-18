@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // MicrosecondsStr 将 time.Duration 类型（nano seconds 为单位）
@@ -16,12 +18,16 @@ func MicrosecondsStr(elapsed time.Duration) string {
 var slugRe = regexp.MustCompile(`[^a-z0-9]+`)
 
 // Slugify converts s into a URL-safe lowercase slug.
+// Non-ASCII characters (e.g. Chinese) that produce an empty slug after
+// stripping are replaced with a short random suffix so we never return the
+// ambiguous string "default".
 func Slugify(s string) string {
 	s = strings.ToLower(strings.TrimSpace(s))
 	s = slugRe.ReplaceAllString(s, "-")
 	s = strings.Trim(s, "-")
 	if s == "" {
-		return "default"
+		id, _ := uuid.NewRandom()
+		return id.String()[:8]
 	}
 	return s
 }
