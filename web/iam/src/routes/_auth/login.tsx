@@ -4,8 +4,7 @@ import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { iamClients } from '#/api'
-import { setTokens, setUser, clearAuth } from '#/stores/auth'
-import { setCurrentTenantId } from '#/stores/scope'
+import { setTokens, setUser } from '#/stores/auth'
 
 export const Route = createFileRoute('/_auth/login')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -54,30 +53,12 @@ function LoginPage() {
         const userInfo = await iamClients.user.CurrentUserInfo({})
         setUser({
           id: userInfo.id ?? '',
-          name: userInfo.name ?? '',
+          name: userInfo.username ?? userInfo.email ?? '',
           email: userInfo.email ?? '',
           role: userInfo.role ?? '',
         })
       } catch {
         // non-critical
-      }
-
-      try {
-        const tenantsRes = await iamClients.tenant.ListTenants({
-          pagination: { page: { page: 1, pageSize: 100 } },
-        })
-        const tenantIds = (tenantsRes.tenants ?? [])
-          .map((t) => t.id)
-          .filter(Boolean) as string[]
-
-        if (tenantIds.length === 0) {
-          setError('当前账号未加入任何租户，请联系管理员')
-          clearAuth()
-          return
-        }
-        setCurrentTenantId(tenantIds[0])
-      } catch {
-        // non-critical: app-shell will retry on mount
       }
 
       const target = redirectTo || '/dashboard'

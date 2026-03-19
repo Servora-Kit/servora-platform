@@ -18,37 +18,19 @@ interface BreadcrumbSegment {
 
 const ROUTE_LABELS: Record<string, string> = {
   dashboard: '概览',
-  organizations: '组织',
   applications: '应用',
   users: '用户',
-  tenants: '租户',
   settings: '设置',
-  members: '成员管理',
   profile: '个人信息',
   security: '安全',
-  roles: '角色管理',
-  permissions: '权限码管理',
-  menus: '菜单管理',
-  platform: '平台管理',
 }
 
-/** Map paramName → { queryKey, queryFn } for entity name resolution */
 function getEntityQueryConfig(paramName: string, paramValue: string) {
   switch (paramName) {
-    case 'orgId':
-      return {
-        queryKey: ['organization', paramValue] as const,
-        queryFn: () => iamClients.organization.GetOrganization({ id: paramValue }),
-      }
     case 'userId':
       return {
         queryKey: ['user', paramValue] as const,
         queryFn: () => iamClients.user.GetUser({ id: paramValue }),
-      }
-    case 'tenantId':
-      return {
-        queryKey: ['tenant', paramValue] as const,
-        queryFn: () => iamClients.tenant.GetTenant({ id: paramValue }),
       }
     case 'appId':
       return {
@@ -63,17 +45,9 @@ function getEntityQueryConfig(paramName: string, paramValue: string) {
 function extractEntityName(paramName: string, data: unknown): string | undefined {
   if (!data) return undefined
   switch (paramName) {
-    case 'orgId': {
-      const d = data as { organization?: { displayName?: string; name?: string } }
-      return d.organization?.displayName || d.organization?.name || undefined
-    }
     case 'userId': {
-      const d = data as { user?: { name?: string } }
-      return d.user?.name || undefined
-    }
-    case 'tenantId': {
-      const d = data as { tenant?: { displayName?: string; name?: string } }
-      return d.tenant?.displayName || d.tenant?.name || undefined
+      const d = data as { user?: { username?: string } }
+      return d.user?.username || undefined
     }
     case 'appId': {
       const d = data as { application?: { name?: string } }
@@ -84,34 +58,24 @@ function extractEntityName(paramName: string, data: unknown): string | undefined
   }
 }
 
-/** Determine if a URL segment looks like a UUID or other dynamic ID */
 function looksLikeDynamicId(segment: string): boolean {
-  // UUID v4 pattern
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment)
 }
 
 export function AppBreadcrumb() {
   const matches = useMatches()
-
   const leafMatch = matches.length > 0 ? matches[matches.length - 1] : null
-
-  // Use actual resolved pathname (e.g., /organizations/some-uuid/members)
-  // instead of routeId which may use {param} or $param syntax depending on TanStack Router version.
   const pathname = leafMatch?.pathname ?? ''
   const params = (leafMatch?.params ?? {}) as Record<string, string>
 
-  // Build a reverse map: paramValue → paramName
-  // e.g., { 'some-uuid': 'orgId' }
   const valueToParamName = new Map(
     Object.entries(params)
       .filter(([, v]) => v && looksLikeDynamicId(v))
       .map(([k, v]) => [v, k]),
   )
 
-  // Split pathname into logical path segments (strip leading slash)
   const pathParts = pathname.split('/').filter(Boolean)
 
-  // Collect unique dynamic segments for entity queries
   const dynamicSegmentsMap = new Map<string, { paramName: string; paramValue: string }>()
   pathParts.forEach((segment) => {
     const paramName = valueToParamName.get(segment)
@@ -121,7 +85,6 @@ export function AppBreadcrumb() {
   })
   const dynamicSegments = [...dynamicSegmentsMap.values()]
 
-  // Fetch entity display names — deduped with queries already made by the page
   const entityQueries = useQueries({
     queries: dynamicSegments.map(({ paramName, paramValue }) => {
       const config = getEntityQueryConfig(paramName, paramValue)
@@ -136,7 +99,6 @@ export function AppBreadcrumb() {
     }),
   })
 
-  // Map: paramValue → resolved display name
   const entityNameByValue = new Map<string, string>()
   dynamicSegments.forEach(({ paramName, paramValue }, idx) => {
     const name = extractEntityName(paramName, entityQueries[idx]?.data)
@@ -145,18 +107,15 @@ export function AppBreadcrumb() {
     }
   })
 
-  // Build breadcrumb segments from the actual URL parts
   const segments: BreadcrumbSegment[] = []
   let accumulatedPath = ''
 
   for (const part of pathParts) {
     accumulatedPath += '/' + part
-
     const isDynamic = valueToParamName.has(part)
     const label = isDynamic
-      ? (entityNameByValue.get(part) ?? part.slice(0, 8)) // fallback to truncated ID while loading
+      ? (entityNameByValue.get(part) ?? part.slice(0, 8))
       : (ROUTE_LABELS[part] ?? part)
-
     segments.push({ label, href: accumulatedPath })
   }
 

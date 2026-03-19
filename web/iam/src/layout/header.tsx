@@ -12,7 +12,6 @@ import {
 } from '#/components/ui/dropdown-menu'
 import { Separator } from '#/components/ui/separator'
 import { AppBreadcrumb } from '#/components/app-breadcrumb'
-import { OrgContextPicker } from '#/components/org-context-picker'
 import ThemeToggle from '#/components/ThemeToggle'
 import type { UserInfo } from '#/stores/auth'
 
@@ -56,7 +55,6 @@ export function Header({ user, onLogout }: HeaderProps) {
     <header className="flex h-[50px] shrink-0 items-center justify-between border-b border-border bg-header px-4">
       <div className="flex items-center gap-2">
         <AppBreadcrumb />
-        <OrgContextPicker />
       </div>
 
       <div className="flex items-center gap-1">
