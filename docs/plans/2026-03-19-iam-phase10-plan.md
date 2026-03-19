@@ -366,13 +366,13 @@ const user = createUserServiceClient(handler)
 
 | Task | 优先级 | 依赖 | 预估工作量 | 状态 |
 |------|--------|------|------------|------|
-| D': @servora/api-client request handler | — | — | 已完成 | ✅ |
-| A: M2M Client Credentials | 高 | 无 | 0.5 天（已有实现，只需验证和测试） | 待实施 |
-| B: OpenFGA service 授权 | 中 | 无 | 0.5 天 | 待实施 |
-| E: pkg/authn | 高 | 无 | 1 天 | 待实施 |
-| F: pkg/authz | 高 | E | 1.5 天 | 待实施 |
-| C: web/accounts/ | 中 | D' | 3 天 | 待实施 |
-| D: web/ui/ | 低 | C | 1 天 | 待实施 |
+| D': @servora/web-pkg request handler | — | — | 已完成 | ✅ |
+| A: M2M Client Credentials | 高 | 无 | 0.5 天 | ✅ 已完成 |
+| E: pkg/authn | 高 | 无 | 1 天 | ✅ 已完成 |
+| F: pkg/authz | 高 | E | 1.5 天 | ✅ 已完成 |
+| B: OpenFGA service 授权 | 中 | 无 | 0.5 天 | ✅ 已完成 |
+| C: web/accounts/ | 中 | D' | 3 天 | ✅ 已完成 |
+| D: web/ui/ | 低 | C | 1 天 | ✅ 已完成 |
 
 **推荐实施顺序：** A → E → F → B → C → D
 
