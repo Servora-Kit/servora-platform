@@ -44,21 +44,15 @@ func NewHTTPMiddleware(
 		Build()
 
 	publicWhitelist := svrmw.NewWhiteList(svrmw.Exact,
-		// 登录/注册/刷新 token —— 用户尚未持有 JWT，无需鉴权
 		iamv1.OperationAuthnServiceLoginByEmailPassword,
 		iamv1.OperationAuthnServiceRefreshToken,
 		iamv1.OperationAuthnServiceSignupByEmail,
-		// 邮箱验证/密码重置 —— 用户可能未登录，且业务逻辑本身已防信息泄露
 		iamv1.OperationAuthnServiceRequestEmailVerification,
 		iamv1.OperationAuthnServiceVerifyEmail,
 		iamv1.OperationAuthnServiceRequestPasswordReset,
 		iamv1.OperationAuthnServiceResetPassword,
-		// Cap 人机验证 —— 在注册页面使用，用户此时尚未登录
 		cap.OperationCapChallenge,
 		cap.OperationCapRedeem,
-		// 测试接口
-		iamv1.OperationTestServiceTest,
-		iamv1.OperationTestServiceHello,
 	)
 
 	authn := iammw.Authn(iammw.WithVerifier(km.Verifier()))
@@ -76,7 +70,6 @@ func NewHTTPMiddleware(
 		selector.Server(authn).
 			Match(publicWhitelist.MatchFunc()).
 			Build(),
-		svrmw.ScopeFromHeaders(),
 		authz,
 	)
 
@@ -99,13 +92,7 @@ func NewHTTPServer(
 	h *health.Handler,
 	authn *service.AuthnService,
 	user *service.UserService,
-	test *service.TestService,
-	org *service.OrganizationService,
-	tenant *service.TenantService,
 	app *service.ApplicationService,
-	rbac *service.RbacService,
-	position *service.PositionService,
-	dict *service.DictService,
 	capSvc *cap.Cap,
 	oidcProvider *op.Provider,
 	loginHandler *oidc.LoginHandler,
@@ -124,13 +111,7 @@ func NewHTTPServer(
 			func(s *khttp.Server) { cap.Register(s, capSvc) },
 			func(s *khttp.Server) { iamv1.RegisterAuthnServiceHTTPServer(s, authn) },
 			func(s *khttp.Server) { iamv1.RegisterUserServiceHTTPServer(s, user) },
-			func(s *khttp.Server) { iamv1.RegisterTestServiceHTTPServer(s, test) },
-			func(s *khttp.Server) { iamv1.RegisterOrganizationServiceHTTPServer(s, org) },
-			func(s *khttp.Server) { iamv1.RegisterTenantServiceHTTPServer(s, tenant) },
 			func(s *khttp.Server) { iamv1.RegisterApplicationServiceHTTPServer(s, app) },
-			func(s *khttp.Server) { iamv1.RegisterRbacServiceHTTPServer(s, rbac) },
-			func(s *khttp.Server) { iamv1.RegisterPositionServiceHTTPServer(s, position) },
-			func(s *khttp.Server) { iamv1.RegisterDictServiceHTTPServer(s, dict) },
 			func(s *khttp.Server) { oidc.Register(s, oidcProvider, loginHandler, loginCompleteHandler) },
 		),
 	}
@@ -142,8 +123,7 @@ func NewHTTPServer(
 	return http.NewServer(opts...)
 }
 
-// forwardAuthVerify 注册 GET/HEAD /v1/auth/verify，供 Traefik 等网关 ForwardAuth 调用。
-// 校验 Authorization Bearer token，成功 204 + X-User-ID，失败 401。
+// forwardAuthVerify 注册 GET/HEAD /v1/auth/verify 供网关 ForwardAuth 调用。
 func forwardAuthVerify(authSvc *service.AuthnService) func(s *khttp.Server) {
 	return func(s *khttp.Server) {
 		s.Handle("/v1/auth/verify", nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
