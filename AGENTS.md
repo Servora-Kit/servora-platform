@@ -60,7 +60,7 @@ type(scope): description
 - `app/`：服务实现；当前包含 `iam/service/`（IAM 微服务）与 `sayhello/service/`（示例服务）
 - `cmd/svr/`：中心化 CLI，当前提供 `svr gen gorm`
 - `cmd/protoc-gen-servora-authz/`：自定义 protoc 插件，用于生成 AuthZ 规则
-- `pkg/`：共享基础库，现有 `actor`、`bootstrap`、`ent/mixin`、`governance`、`health`、`helpers`、`jwks`、`jwt`、`k8s`、`logger`、`mapper`、`openfga`、`redis`、`transport`；`pkg/transport/server/middleware/` 提供 ChainBuilder、WhiteList、IdentityFromHeader（从网关 X-User-ID 头注入身份）、TokenFromContext 等，不含 Authn/Authz（在 IAM 内部）
+- `pkg/`：共享基础库，现有 `actor`（v2，含 Subject/Roles/Scopes/Attrs/ServiceActor）、`audit`（Emitter/Recorder/middleware骨架）、`bootstrap`、`broker`（消息代理抽象）、`broker/kafka`（franz-go实现）、`ent/mixin`、`governance`、`health`、`helpers`、`jwks`、`jwt`、`k8s`、`logger`（暴力重构，`New`/`For`/`Zap`）、`mapper`、`openfga`、`redis`、`transport`；`pkg/transport/server/middleware/` 提供 ChainBuilder、WhiteList、IdentityFromHeader（支持多 header+HeaderMapping+ServiceActor）、TokenFromContext 等，不含 Authn/Authz（在 IAM 内部）
 - `manifests/`：统一部署清单，K8s 在 `manifests/k8s/`；OpenFGA model 在 `manifests/openfga/`；脚本在 `manifests/scripts/`
 - `templates/`：通用部署模板，给使用框架的人作为参考
 - `docs/`：文档目录；当前包含 `design/`、`development/`、`knowledge/`、`reference/`

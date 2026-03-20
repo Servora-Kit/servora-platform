@@ -1,18 +1,21 @@
 # AGENTS.md - pkg/
 
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-03-15 | Updated: 2026-03-15 -->
+<!-- Generated: 2026-03-15 | Updated: 2026-03-20 -->
 
 ## 目录概览
 
-`pkg/` 提供跨服务复用的基础能力。当前子目录：`actor`、`bootstrap`、`ent/mixin`、`governance`、`health`、`helpers`、`jwks`、`jwt`、`k8s`、`logger`、`mapper`、`openfga`、`redis`、`transport`。
+`pkg/` 提供跨服务复用的基础能力。当前子目录：`actor`、`audit`、`bootstrap`、`broker`、`ent/mixin`、`governance`、`health`、`helpers`、`jwks`、`jwt`、`k8s`、`logger`、`mapper`、`openfga`、`redis`、`transport`。
 
 ## 模块速览
 
 | 目录 | 用途 |
 |------|------|
-| `actor/` | 请求上下文中的调用方抽象 |
+| `actor/` | 请求 Actor v2（User/Service/System/Anonymous），含 Subject/Roles/Scopes/Attrs |
+| `audit/` | 审计事件运行时（Emitter接口、BrokerEmitter/LogEmitter/NoopEmitter、Recorder、Kratos middleware骨架） |
 | `bootstrap/` | 启动链路与配置加载 |
+| `broker/` | 消息代理抽象接口（Broker/Message/Event/Subscriber）|
+| `broker/kafka/` | franz-go 实现（KRaft，kzap日志桥接，kotel OTel hooks，SASL支持）|
 | `ent/mixin` | Ent schema 混入 |
 | `governance/` | 注册发现、配置中心、遥测 |
 | `health/` | 健康检查 |
@@ -20,7 +23,7 @@
 | `jwks/` | JWKS 解析 |
 | `jwt/` | JWT 工具与 context 注入 |
 | `k8s/` | Kubernetes 客户端 |
-| `logger/` | Kratos + Zap，含 GORM/Ent 桥接 |
+| `logger/` | Kratos + Zap，暴力重构版：`New(app)`、`For(l,module)`、`With(l,args...)`、`Zap()`、`Sync()` |
 | `mapper/` | 模型映射 |
 | `openfga/` | OpenFGA 客户端与授权 |
 | `redis/` | Redis 客户端与锁/Cache-aside |
