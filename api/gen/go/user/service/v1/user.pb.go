@@ -8,6 +8,7 @@ package userpb
 
 import (
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	_ "github.com/Servora-Kit/servora/api/gen/go/mapper/v1"
 	v1 "github.com/Servora-Kit/servora/api/gen/go/pagination/v1"
 	_ "github.com/go-kratos/kratos/v2/errors"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -1053,7 +1054,7 @@ var File_user_service_v1_user_proto protoreflect.FileDescriptor
 
 const file_user_service_v1_user_proto_rawDesc = "" +
 	"\n" +
-	"\x1auser/service/v1/user.proto\x12\x0fuser.service.v1\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1epagination/v1/pagination.proto\"\x81\x02\n" +
+	"\x1auser/service/v1/user.proto\x12\x0fuser.service.v1\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x16mapper/v1/mapper.proto\x1a\x1epagination/v1/pagination.proto\"\x81\x02\n" +
 	"\vUserProfile\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
@@ -1065,22 +1066,24 @@ const file_user_service_v1_user_proto_rawDesc = "" +
 	"\x06gender\x18\x06 \x01(\tR\x06gender\x12\x1c\n" +
 	"\tbirthdate\x18\a \x01(\tR\tbirthdate\x12\x1a\n" +
 	"\bzoneinfo\x18\b \x01(\tR\bzoneinfo\x12\x16\n" +
-	"\x06locale\x18\t \x01(\tR\x06locale\"\x91\x04\n" +
-	"\x04User\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
+	"\x06locale\x18\t \x01(\tR\x06locale\"\xe6\x04\n" +
+	"\x04User\x12\x1a\n" +
+	"\x02id\x18\x01 \x01(\tB\n" +
+	"\xca\xc1\x18\x06\n" +
+	"\x02ID\x10\x03R\x02id\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12\x12\n" +
 	"\x04role\x18\x04 \x01(\tR\x04role\x12\x16\n" +
 	"\x06status\x18\x05 \x01(\tR\x06status\x12%\n" +
 	"\x0eemail_verified\x18\x06 \x01(\bR\remailVerified\x12\x14\n" +
 	"\x05phone\x18\a \x01(\tR\x05phone\x12%\n" +
-	"\x0ephone_verified\x18\b \x01(\bR\rphoneVerified\x12K\n" +
-	"\x11email_verified_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampH\x00R\x0femailVerifiedAt\x88\x01\x01\x126\n" +
-	"\aprofile\x182 \x01(\v2\x1c.user.service.v1.UserProfileR\aprofile\x12>\n" +
+	"\x0ephone_verified\x18\b \x01(\bR\rphoneVerified\x12S\n" +
+	"\x11email_verified_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x06\xca\xc1\x18\x02\x10\x01H\x00R\x0femailVerifiedAt\x88\x01\x01\x12J\n" +
+	"\aprofile\x182 \x01(\v2\x1c.user.service.v1.UserProfileB\x12\xca\xc1\x18\x0e\x1a\fuser_profileR\aprofile\x12F\n" +
 	"\n" +
-	"created_at\x18d \x01(\v2\x1a.google.protobuf.TimestampH\x01R\tcreatedAt\x88\x01\x01\x12>\n" +
+	"created_at\x18d \x01(\v2\x1a.google.protobuf.TimestampB\x06\xca\xc1\x18\x02\x10\x01H\x01R\tcreatedAt\x88\x01\x01\x12F\n" +
 	"\n" +
-	"updated_at\x18e \x01(\v2\x1a.google.protobuf.TimestampH\x02R\tupdatedAt\x88\x01\x01B\x14\n" +
+	"updated_at\x18e \x01(\v2\x1a.google.protobuf.TimestampB\x06\xca\xc1\x18\x02\x10\x01H\x02R\tupdatedAt\x88\x01\x01:\x1b\xc2\xc1\x18\x17\b\x01\x12\x13common_proto_entityB\x14\n" +
 	"\x12_email_verified_atB\r\n" +
 	"\v_created_atB\r\n" +
 	"\v_updated_at\"\x18\n" +

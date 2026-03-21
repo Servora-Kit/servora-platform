@@ -5,6 +5,7 @@ package user.service.v1;
 import "buf/validate/validate.proto";
 import "errors/errors.proto";
 import "google/protobuf/timestamp.proto";
+import "mapper/v1/mapper.proto";
 import "pagination/v1/pagination.proto";
 
 option go_package = "github.com/Servora-Kit/servora/api/gen/go/user/service/v1;userpb";
@@ -56,7 +57,12 @@ message UserProfile {
 
 // User 资源 message — 不含密码等敏感字段（通过 repo 独立参数传递）
 message User {
-  string id = 1;
+  option (mapper.v1.mapper) = {
+    enabled: true
+    presets: ["common_proto_entity"]
+  };
+
+  string id = 1 [(mapper.v1.mapper_field) = {rename: "ID", converter: CONVERTER_KIND_STRING_PTR}];
   string username = 2;
   string email = 3;
   string role = 4;
@@ -64,10 +70,10 @@ message User {
   bool email_verified = 6;
   string phone = 7;
   bool phone_verified = 8;
-  optional google.protobuf.Timestamp email_verified_at = 9;
-  UserProfile profile = 50;
-  optional google.protobuf.Timestamp created_at = 100;
-  optional google.protobuf.Timestamp updated_at = 101;
+  optional google.protobuf.Timestamp email_verified_at = 9 [(mapper.v1.mapper_field) = {converter: CONVERTER_KIND_TIMESTAMP_TIME}];
+  UserProfile profile = 50 [(mapper.v1.mapper_field) = {custom: "user_profile"}];
+  optional google.protobuf.Timestamp created_at = 100 [(mapper.v1.mapper_field) = {converter: CONVERTER_KIND_TIMESTAMP_TIME}];
+  optional google.protobuf.Timestamp updated_at = 101 [(mapper.v1.mapper_field) = {converter: CONVERTER_KIND_TIMESTAMP_TIME}];
 }
 
 message CurrentUserInfoRequest {}
