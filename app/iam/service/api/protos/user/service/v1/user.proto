@@ -4,6 +4,7 @@ package user.service.v1;
 
 import "buf/validate/validate.proto";
 import "errors/errors.proto";
+import "google/protobuf/timestamp.proto";
 import "pagination/v1/pagination.proto";
 
 option go_package = "github.com/Servora-Kit/servora/api/gen/go/user/service/v1;userpb";
@@ -53,27 +54,26 @@ message UserProfile {
   string locale = 9;
 }
 
-message UserInfo {
-  string id = 1;
-  string username = 2;
-  string email = 3;
-  string role = 4;
-  bool email_verified = 5;
-  string phone = 6;
-  bool phone_verified = 7;
-  string status = 8;
-  UserProfile profile = 9;
-}
-
-message CurrentUserInfoRequest {}
-
-message CurrentUserInfoResponse {
+// User 资源 message — 不含密码等敏感字段（通过 repo 独立参数传递）
+message User {
   string id = 1;
   string username = 2;
   string email = 3;
   string role = 4;
   string status = 5;
-  UserProfile profile = 6;
+  bool email_verified = 6;
+  string phone = 7;
+  bool phone_verified = 8;
+  optional google.protobuf.Timestamp email_verified_at = 9;
+  UserProfile profile = 50;
+  optional google.protobuf.Timestamp created_at = 100;
+  optional google.protobuf.Timestamp updated_at = 101;
+}
+
+message CurrentUserInfoRequest {}
+
+message CurrentUserInfoResponse {
+  User user = 1;
 }
 
 message GetUserRequest {
@@ -81,7 +81,7 @@ message GetUserRequest {
 }
 
 message GetUserResponse {
-  UserInfo user = 1;
+  User user = 1;
 }
 
 message ListUsersRequest {
@@ -89,7 +89,7 @@ message ListUsersRequest {
 }
 
 message ListUsersResponse {
-  repeated UserInfo users = 1;
+  repeated User users = 1;
   pagination.v1.PaginationResponse pagination = 2;
 }
 
@@ -114,31 +114,26 @@ message RestoreUserRequest {
 }
 
 message RestoreUserResponse {
-  UserInfo user = 1;
-}
-
-message UpdateUserRequest {
-  string id = 1;
-  optional string username = 2;
-  optional string email = 3;
-  optional string phone = 4;
-  optional string status = 5;
-  optional UserProfile profile = 6;
-}
-
-message UpdateUserResponse {
-  UserInfo user = 1;
+  User user = 1;
 }
 
 message CreateUserRequest {
-  string username = 1 [(buf.validate.field).string = {min_len: 2, max_len: 64}];
-  string email = 2 [(buf.validate.field).string.email = true];
-  string password = 3 [(buf.validate.field).string = {
+  User data = 1;
+  string password = 2 [(buf.validate.field).string = {
     min_len: 6
     max_len: 64
   }];
 }
 
 message CreateUserResponse {
+  User user = 1;
+}
+
+message UpdateUserRequest {
   string id = 1;
+  User data = 2;
+}
+
+message UpdateUserResponse {
+  User user = 1;
 }

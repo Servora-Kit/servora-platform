@@ -28,28 +28,32 @@ export type UserProfile = {
   locale: string | undefined;
 };
 
-export type UserInfo = {
+// User 资源 message — 不含密码等敏感字段（通过 repo 独立参数传递）
+export type User = {
   id: string | undefined;
   username: string | undefined;
   email: string | undefined;
   role: string | undefined;
+  status: string | undefined;
   emailVerified: boolean | undefined;
   phone: string | undefined;
   phoneVerified: boolean | undefined;
-  status: string | undefined;
+  emailVerifiedAt?: wellKnownTimestamp;
   profile: UserProfile | undefined;
+  createdAt?: wellKnownTimestamp;
+  updatedAt?: wellKnownTimestamp;
 };
+
+// Encoded using RFC 3339, where generated output will always be Z-normalized
+// and uses 0, 3, 6 or 9 fractional digits.
+// Offsets other than "Z" are also accepted.
+type wellKnownTimestamp = string;
 
 export type CurrentUserInfoRequest = {
 };
 
 export type CurrentUserInfoResponse = {
-  id: string | undefined;
-  username: string | undefined;
-  email: string | undefined;
-  role: string | undefined;
-  status: string | undefined;
-  profile: UserProfile | undefined;
+  user: User | undefined;
 };
 
 export type GetUserRequest = {
@@ -57,7 +61,7 @@ export type GetUserRequest = {
 };
 
 export type GetUserResponse = {
-  user: UserInfo | undefined;
+  user: User | undefined;
 };
 
 export type ListUsersRequest = {
@@ -80,7 +84,7 @@ export type paginationv1_CursorPaginationRequest = {
 };
 
 export type ListUsersResponse = {
-  users: UserInfo[] | undefined;
+  users: User[] | undefined;
   pagination: paginationv1_PaginationResponse | undefined;
 };
 
@@ -121,30 +125,25 @@ export type RestoreUserRequest = {
 };
 
 export type RestoreUserResponse = {
-  user: UserInfo | undefined;
-};
-
-export type UpdateUserRequest = {
-  id: string | undefined;
-  username?: string;
-  email?: string;
-  phone?: string;
-  status?: string;
-  profile?: UserProfile;
-};
-
-export type UpdateUserResponse = {
-  user: UserInfo | undefined;
+  user: User | undefined;
 };
 
 export type CreateUserRequest = {
-  username: string | undefined;
-  email: string | undefined;
+  data: User | undefined;
   password: string | undefined;
 };
 
 export type CreateUserResponse = {
+  user: User | undefined;
+};
+
+export type UpdateUserRequest = {
   id: string | undefined;
+  data: User | undefined;
+};
+
+export type UpdateUserResponse = {
+  user: User | undefined;
 };
 
 // User gRPC 服务 - 纯 gRPC 接口

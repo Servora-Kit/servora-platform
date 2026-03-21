@@ -733,12 +733,23 @@ export type userservicev1_CurrentUserInfoRequest = {
 };
 
 export type userservicev1_CurrentUserInfoResponse = {
+  user: userservicev1_User | undefined;
+};
+
+// User 资源 message — 不含密码等敏感字段（通过 repo 独立参数传递）
+export type userservicev1_User = {
   id: string | undefined;
   username: string | undefined;
   email: string | undefined;
   role: string | undefined;
   status: string | undefined;
+  emailVerified: boolean | undefined;
+  phone: string | undefined;
+  phoneVerified: boolean | undefined;
+  emailVerifiedAt?: wellKnownTimestamp;
   profile: userservicev1_UserProfile | undefined;
+  createdAt?: wellKnownTimestamp;
+  updatedAt?: wellKnownTimestamp;
 };
 
 // UserProfile 对应 OIDC Standard Claims 中的 profile scope 字段。
@@ -760,19 +771,7 @@ export type userservicev1_GetUserRequest = {
 };
 
 export type userservicev1_GetUserResponse = {
-  user: userservicev1_UserInfo | undefined;
-};
-
-export type userservicev1_UserInfo = {
-  id: string | undefined;
-  username: string | undefined;
-  email: string | undefined;
-  role: string | undefined;
-  emailVerified: boolean | undefined;
-  phone: string | undefined;
-  phoneVerified: boolean | undefined;
-  status: string | undefined;
-  profile: userservicev1_UserProfile | undefined;
+  user: userservicev1_User | undefined;
 };
 
 export type userservicev1_ListUsersRequest = {
@@ -780,31 +779,26 @@ export type userservicev1_ListUsersRequest = {
 };
 
 export type userservicev1_ListUsersResponse = {
-  users: userservicev1_UserInfo[] | undefined;
+  users: userservicev1_User[] | undefined;
   pagination: paginationv1_PaginationResponse | undefined;
 };
 
 export type userservicev1_UpdateUserRequest = {
   id: string | undefined;
-  username?: string;
-  email?: string;
-  phone?: string;
-  status?: string;
-  profile?: userservicev1_UserProfile;
+  data: userservicev1_User | undefined;
 };
 
 export type userservicev1_UpdateUserResponse = {
-  user: userservicev1_UserInfo | undefined;
+  user: userservicev1_User | undefined;
 };
 
 export type userservicev1_CreateUserRequest = {
-  username: string | undefined;
-  email: string | undefined;
+  data: userservicev1_User | undefined;
   password: string | undefined;
 };
 
 export type userservicev1_CreateUserResponse = {
-  id: string | undefined;
+  user: userservicev1_User | undefined;
 };
 
 export type userservicev1_DeleteUserRequest = {
@@ -828,7 +822,7 @@ export type userservicev1_RestoreUserRequest = {
 };
 
 export type userservicev1_RestoreUserResponse = {
-  user: userservicev1_UserInfo | undefined;
+  user: userservicev1_User | undefined;
 };
 
 
