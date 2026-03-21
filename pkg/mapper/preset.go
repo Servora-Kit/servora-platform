@@ -56,12 +56,16 @@ func (r *PresetRegistry) RegisterDefaults() {
 		cs = append(cs, NewInt64PointerConverterPair()...)
 		return cs
 	})
+	r.Register("uuid_string", NewUUIDStringConverterPair)
+	r.Register("int_int32", NewIntInt32ConverterPair)
 	r.Register("common_proto_entity", func() []copier.TypeConverter {
 		var cs []copier.TypeConverter
 		cs = append(cs, NewTimestamppbConverterPair()...)
 		cs = append(cs, NewTimeConverterPair()...)
 		cs = append(cs, NewStringPointerConverterPair()...)
 		cs = append(cs, NewInt64PointerConverterPair()...)
+		cs = append(cs, NewUUIDStringConverterPair()...)
+		cs = append(cs, NewIntInt32ConverterPair()...)
 		return cs
 	})
 }

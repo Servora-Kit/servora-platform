@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jinzhu/copier"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -244,6 +245,24 @@ func NewGenericConverterPair[A any, B any](
 	}
 }
 
+// NewUUIDStringConverterPair creates converters between uuid.UUID and string.
+// Covers the common case where ent uses uuid.UUID for primary keys and proto uses string.
+func NewUUIDStringConverterPair() []copier.TypeConverter {
+	return NewGenericConverterPair(
+		func(id uuid.UUID) (string, error) { return id.String(), nil },
+		func(s string) (uuid.UUID, error) { return uuid.Parse(s) },
+	)
+}
+
+// NewIntInt32ConverterPair creates converters between int and int32.
+// Covers the common case where ent uses int and proto uses int32.
+func NewIntInt32ConverterPair() []copier.TypeConverter {
+	return NewGenericConverterPair(
+		func(i int) (int32, error) { return int32(i), nil },
+		func(i int32) (int, error) { return int(i), nil },
+	)
+}
+
 // AllBuiltinConverters 返回所有内置转换器
 func AllBuiltinConverters() []copier.TypeConverter {
 	converters := make([]copier.TypeConverter, 0)
@@ -251,6 +270,8 @@ func AllBuiltinConverters() []copier.TypeConverter {
 	converters = append(converters, NewTimestamppbConverterPair()...)
 	converters = append(converters, NewStringPointerConverterPair()...)
 	converters = append(converters, NewInt64PointerConverterPair()...)
+	converters = append(converters, NewUUIDStringConverterPair()...)
+	converters = append(converters, NewIntInt32ConverterPair()...)
 	return converters
 }
 

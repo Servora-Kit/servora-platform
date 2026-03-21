@@ -95,3 +95,49 @@ func TestMapperPlan_ValidateFails(t *testing.T) {
 	require.Contains(t, err.Error(), "bad_preset")
 	require.Contains(t, err.Error(), "bad_hook")
 }
+
+func TestMapperPlan_FieldConverters(t *testing.T) {
+	plan := &MapperPlan{
+		FieldConverters: map[string]ConverterKind{
+			"CreatedAt": ConverterTimestampTime,
+			"UpdatedAt": ConverterTimestampTime,
+		},
+	}
+
+	m := NewCopierMapper[domainUser, entLikeUser]()
+	presets := DefaultPresets()
+	hooks := NewHookRegistry()
+
+	err := ApplyPlan(plan, m, presets, hooks)
+	require.NoError(t, err)
+}
+
+func TestMapperPlan_InvalidFieldConverter(t *testing.T) {
+	plan := &MapperPlan{
+		FieldConverters: map[string]ConverterKind{
+			"SomeField": "NONEXISTENT_KIND",
+		},
+	}
+
+	presets := DefaultPresets()
+	hooks := NewHookRegistry()
+
+	err := plan.Validate(presets, hooks)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "NONEXISTENT_KIND")
+	require.Contains(t, err.Error(), "SomeField")
+}
+
+func TestMapperPlan_IgnoredFields(t *testing.T) {
+	plan := &MapperPlan{
+		Presets:       []string{"common_proto_entity"},
+		IgnoredFields: []string{"Password", "Secret"},
+	}
+
+	m := NewCopierMapper[domainUser, entLikeUser]()
+	presets := DefaultPresets()
+	hooks := NewHookRegistry()
+
+	err := ApplyPlan(plan, m, presets, hooks)
+	require.NoError(t, err)
+}
