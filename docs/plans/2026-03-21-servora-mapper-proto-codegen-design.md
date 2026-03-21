@@ -734,7 +734,7 @@ mapper 如果也进入这条路线，整个框架方法论会更一致。
 
 ### 16.1 Phase 0：透传边界与设计冻结 ✅ 已完成
 
-> **实施记录：** 2026-03-21 完成。详见 `docs/plans/2026-03-21-eliminate-entity-proto-passthrough-design.md` 和 `docs/plans/2026-03-21-eliminate-entity-impl-plan.md`。
+> **实施记录：** 2026-03-21 完成。详见 `docs/plans/archive/2026-03-21-eliminate-entity-proto-passthrough-design.md` 和 `docs/plans/archive/2026-03-21-eliminate-entity-impl-plan.md`。
 >
 > 主要变更：
 > - 消灭 `biz/entity` 包，proto message 直通 biz 层
@@ -750,7 +750,7 @@ mapper 如果也进入这条路线，整个框架方法论会更一致。
 
 ### 16.2 Phase 1：重构 `pkg/mapper` ✅ 已完成
 
-> **实施记录：** 2026-03-21 完成。详见 `docs/plans/2026-03-21-mapper-runtime-annotation-impl-plan.md` Task 1–4。
+> **实施记录：** 2026-03-21 完成。详见 `docs/plans/archive/2026-03-21-mapper-runtime-annotation-impl-plan.md` Task 1–4。
 >
 > 主要变更：
 > - `CopierProtoMapper` + `CopierDBMapper` 合并为统一 `CopierMapper[P, E]`，API 返回 `(result, error)` 而非吞掉 error
@@ -767,7 +767,7 @@ mapper 如果也进入这条路线，整个框架方法论会更一致。
 
 ### 16.3 Phase 2：定义 proto annotation ✅ 已完成
 
-> **实施记录：** 2026-03-21 完成。详见 `docs/plans/2026-03-21-mapper-runtime-annotation-impl-plan.md` Task 5–6。
+> **实施记录：** 2026-03-21 完成。详见 `docs/plans/archive/2026-03-21-mapper-runtime-annotation-impl-plan.md` Task 5–6。
 >
 > 主要变更：
 > - 新增 `api/protos/mapper/v1/mapper.proto`：定义 `ConverterKind` 枚举、`MapperMessageRule`（message 级）、`MapperFieldRule`（field 级）
@@ -781,7 +781,7 @@ mapper 如果也进入这条路线，整个框架方法论会更一致。
 
 ### 16.4 Phase 3：实现 `protoc-gen-servora-mapper` ✅ 已完成
 
-> **实施记录：** 2026-03-21 完成。详见 `docs/plans/2026-03-21-protoc-gen-servora-mapper-impl-plan.md` Task 1–3。
+> **实施记录：** 2026-03-21 完成。详见 `docs/plans/archive/2026-03-21-protoc-gen-servora-mapper-impl-plan.md` Task 1–3。
 >
 > 主要变更：
 > - 实现 `cmd/protoc-gen-servora-mapper/main.go`：读取 `mapper.v1.mapper` / `mapper.v1.mapper_field` annotation，为每个 `enabled: true` 的 message 输出 `XxxMapperPlan()` 函数
@@ -797,7 +797,7 @@ mapper 如果也进入这条路线，整个框架方法论会更一致。
 
 ### 16.5 Phase 4：在代表性资源上落地 ✅ 已完成
 
-> **实施记录：** 2026-03-21 完成。详见 `docs/plans/2026-03-21-protoc-gen-servora-mapper-impl-plan.md` Task 4–7。
+> **实施记录：** 2026-03-21 完成。详见 `docs/plans/archive/2026-03-21-protoc-gen-servora-mapper-impl-plan.md` Task 4–7。
 >
 > 主要变更：
 > - mapper 从包级 `var` 全局单例迁移到 repo struct 字段，对齐设计文档 §11 和 go-wind-admin 模式
