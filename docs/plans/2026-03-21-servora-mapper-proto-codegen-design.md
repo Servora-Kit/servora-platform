@@ -712,19 +712,36 @@ mapper 如果也进入这条路线，整个框架方法论会更一致。
 ~~2. 冻结 `resource proto <-> ent entity` 为默认映射关系；~~
 ~~3. 明确 custom hook 的责任边界。~~
 
-### 16.2 Phase 1：重构 `pkg/mapper`
+### 16.2 Phase 1：重构 `pkg/mapper` ✅ 已完成
 
-1. 引入增强版 `CopierMapper`；
-2. 整理 builtin converter；
-3. 建立 preset；
-4. 建立 custom hook registry；
-5. 建立 plan/apply/validate 机制。
+> **实施记录：** 2026-03-21 完成。详见 `docs/plans/2026-03-21-mapper-runtime-annotation-impl-plan.md` Task 1–4。
+>
+> 主要变更：
+> - `CopierProtoMapper` + `CopierDBMapper` 合并为统一 `CopierMapper[P, E]`，API 返回 `(result, error)` 而非吞掉 error
+> - 新增 `PresetRegistry`：命名 converter 组（`proto_time`、`time_ptr`、`pointer`、`common_proto_entity`），支持 `Collect` 批量获取
+> - 新增 `HookRegistry`：命名 custom converter hooks，`Register`/`Get`/`MustGet`/`CheckRequired`
+> - 新增 `MapperPlan` + `ApplyPlan[P,E]`：声明式配置 mapper（presets + field mapping + custom hooks），带 `Validate` 前置校验
+> - IAM `applicationMapper` 已迁移至 `CopierMapper` 运行时，30 个 pkg/mapper 测试 + 12 个 IAM 测试全通过
 
-### 16.3 Phase 2：定义 proto annotation
+~~1. 引入增强版 `CopierMapper`；~~
+~~2. 整理 builtin converter；~~
+~~3. 建立 preset；~~
+~~4. 建立 custom hook registry；~~
+~~5. 建立 plan/apply/validate 机制。~~
 
-1. 新增 `servora.mapper` annotation proto；
-2. 支持 message 级与 field 级最小集合；
-3. 预留 future-ready 字段但不一次性实现全部行为。
+### 16.3 Phase 2：定义 proto annotation ✅ 已完成
+
+> **实施记录：** 2026-03-21 完成。详见 `docs/plans/2026-03-21-mapper-runtime-annotation-impl-plan.md` Task 5–6。
+>
+> 主要变更：
+> - 新增 `api/protos/mapper/v1/mapper.proto`：定义 `ConverterKind` 枚举、`MapperMessageRule`（message 级）、`MapperFieldRule`（field 级）
+> - Extension numbers：message options `50200`、field options `50201`（与 authz `50100` 号段分离）
+> - `User` proto message 已添加 mapper 注解示例：presets、rename、converter、custom hook
+> - Go 生成代码 `api/gen/go/mapper/v1/mapper.pb.go` 已输出，编译通过
+
+~~1. 新增 `servora.mapper` annotation proto；~~
+~~2. 支持 message 级与 field 级最小集合；~~
+~~3. 预留 future-ready 字段但不一次性实现全部行为。~~
 
 ### 16.4 Phase 3：实现 `protoc-gen-servora-mapper`
 
