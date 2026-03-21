@@ -9,6 +9,7 @@ import (
 	apppb "github.com/Servora-Kit/servora/api/gen/go/application/service/v1"
 	"github.com/Servora-Kit/servora/pkg/helpers"
 	"github.com/go-kratos/kratos/v2/log"
+	"google.golang.org/protobuf/proto"
 )
 
 type fakeApplicationRepo struct {
@@ -110,11 +111,7 @@ func (r *fakeApplicationRepo) UpdateClientSecretHash(_ context.Context, id strin
 }
 
 func cloneApp(a *apppb.Application) *apppb.Application {
-	out := *a
-	out.RedirectUris = append([]string(nil), a.RedirectUris...)
-	out.Scopes = append([]string(nil), a.Scopes...)
-	out.GrantTypes = append([]string(nil), a.GrantTypes...)
-	return &out
+	return proto.Clone(a).(*apppb.Application)
 }
 
 func newTestApplicationUsecase() (*ApplicationUsecase, *fakeApplicationRepo) {
