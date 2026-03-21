@@ -152,7 +152,7 @@ rpc GetOrganization(...) returns (...) {
 - 读取 proto 文件中的 `(servora.authz.v1.rule)` 方法选项
 - 生成 `authz_rules.gen.go` 到 `api/gen/go/iam/service/v1/`
 - 输出 `AuthzRules map[string]AuthzRuleEntry`，供 IAM 服务内 AuthZ 中间件（`app/iam/service/internal/server/middleware/authz.go`）查表使用
-- 集成在 `make api` 流程中（通过 `buf.authz.gen.yaml`）
+- 集成在 `make api` 流程中（通过 `buf.go.gen.yaml` 中的 `protoc-gen-servora-authz` 插件）
 
 ## OpenFGA Tuple 双写
 

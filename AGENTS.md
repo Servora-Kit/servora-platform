@@ -73,7 +73,7 @@ type(scope): description
 - `buf.yaml`：Buf v2 workspace，声明三个 proto module 路径
 - `buf.go.gen.yaml`：根级 Go 代码生成模板，输出到 `api/gen/go`
 - `buf.typescript.gen.yaml`：根级共享 TS 生成模板，输出到 `api/gen/ts/`（`clean: true`）
-- `buf.authz.gen.yaml`：AuthZ 规则生成模板，使用 `protoc-gen-servora-authz` 插件
+- `buf.go.gen.yaml` 同时包含 Servora 自定义插件（`protoc-gen-servora-authz`、`protoc-gen-servora-mapper`）
 - `pnpm-workspace.yaml`：pnpm monorepo，纳管 `api/ts-client`、`web/pkg` 与 `web/*`
 - `package.json`：根级 pnpm 配置（`onlyBuiltDependencies` 等共享设置）
 - `go.work` / `go.work.sum`：多模块工作区配置
@@ -142,7 +142,7 @@ make openfga.model.apply            # 等同于 svr openfga model apply
 
 ## 维护提示
 
-- 根 `make api` 固定使用 `buf.go.gen.yaml` + `buf.authz.gen.yaml`；`make api-ts` 生成所有 TypeScript 客户端
+- 根 `make api` 固定使用 `buf.go.gen.yaml`（含 authz + mapper 插件）；`make api-ts` 生成所有 TypeScript 客户端
 - 修改任意 proto 后优先执行根目录 `make gen`；需要重新构建服务时直接执行根目录 `make build`
 - 修改服务依赖注入后执行对应服务目录下的 `make wire`
 - 不要手改 `api/gen/go/`、`api/gen/ts/`、`wire_gen.go`、`openapi.yaml`、`authz_rules.gen.go`

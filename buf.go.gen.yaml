@@ -44,11 +44,14 @@ plugins:
           - paths=source_relative
           - lang=go
 
-    # ==================== Python ====================
-    # # generate python struct code
-    # - remote: buf.build/protocolbuffers/python
-    #   out: gen/python
+    # ==================== Servora custom plugins ====================
 
-    # # generate python grpc service code
-    # - remote: buf.build/grpc/python
-    #   out: gen/python
+    # generate authz rules from proto annotations
+    - local: protoc-gen-servora-authz
+      out: api/gen/go
+      opt: paths=source_relative
+
+    # generate mapper plans from proto annotations
+    - local: protoc-gen-servora-mapper
+      out: api/gen/go
+      opt: paths=source_relative

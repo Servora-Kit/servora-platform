@@ -65,8 +65,7 @@
 ├── openspec/                        # OpenSpec 变更与归档
 ├── app.mk                           # 服务级通用 Makefile 模板
 ├── buf.yaml                         # Buf v2 workspace
-├── buf.go.gen.yaml                  # Go 代码生成模板
-├── buf.authz.gen.yaml               # AuthZ 规则生成模板
+├── buf.go.gen.yaml                  # Go 代码生成模板（含 authz + mapper 插件）
 ├── go.work                          # Go workspace
 └── Makefile                         # 根目录统一入口
 ```
