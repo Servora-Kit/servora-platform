@@ -1,20 +1,26 @@
-# protoc-gen-servora-mapper & 落地验证 — Implementation Plan (Batch B)
+# protoc-gen-servora-mapper & 落地验证 — Implementation Plan (Batch B) ✅ 全部完成
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **状态：** 2026-03-21 全部完成。Task 1–3（Phase 3）+ Task 4–7（Phase 4+5）均已实施并验证通过。
 
 **Goal:** 实现 `protoc-gen-servora-mapper` protoc 插件，从 proto annotation 生成 ORM 无关的 `MapperPlan` 函数；打通 Buf 生成链路；在 IAM `User` 和 `Application` 资源上完成端到端验证。
 
 **Architecture:** 插件读取 `mapper.v1.mapper` / `mapper.v1.mapper_field` annotation，为每个 `enabled: true` 的 message 输出一个 `XxxMapperPlan()` 函数到 `api/gen/go/` 同包。生成代码只依赖 `pkg/mapper`，不依赖任何 ORM。data 层 repo 调用 `mapper.ApplyPlan(xxxpb.XxxMapperPlan(), m, presets, hooks)` 完成装配。
 
-**Tech Stack:** Go 1.24, `google.golang.org/protobuf/compiler/protogen`, Buf v2, `pkg/mapper`
+**Tech Stack:** Go 1.26, `google.golang.org/protobuf/compiler/protogen`, Buf v2, `pkg/mapper`
 
 **Design Doc:** `docs/plans/2026-03-21-servora-mapper-proto-codegen-design.md` — Sections 9-11
 
 **Reference:** `cmd/protoc-gen-servora-authz/main.go` — 同样模式的 Servora protoc 插件
 
+> **实施与原计划的主要偏差：**
+> 1. mapper 从包级 `var` 全局单例改为 repo struct 字段 + 工厂函数（对齐 go-wind-admin 和设计文档 §11）
+> 2. `uuid.UUID <-> string` 和 `int <-> int32` 从服务层手写提升为 `pkg/mapper` 内置 converter 和 preset
+> 3. `MapperPlan` 补全 `FieldConverters` / `IgnoredFields` 支持；插件补全 `field.converter` / `field.ignore` 生成
+> 4. proto 新增 `CONVERTER_KIND_UUID_STRING` / `CONVERTER_KIND_INT_INT32` 枚举值
+
 ---
 
-## Task 1: 创建 `protoc-gen-servora-mapper` 插件骨架
+## Task 1: 创建 `protoc-gen-servora-mapper` 插件骨架 ✅ 已完成
 
 **Files:**
 - Create: `cmd/protoc-gen-servora-mapper/main.go`
@@ -175,76 +181,17 @@ git commit -m "feat(cmd): add protoc-gen-servora-mapper plugin skeleton"
 
 ---
 
-## Task 2: 创建 `buf.mapper.gen.yaml` 并集成到 Makefile
+## Task 2: 创建 `buf.mapper.gen.yaml` 并集成到 Makefile ✅ 已完成
+
+> **实施记录：** 最初创建了独立的 `buf.mapper.gen.yaml`，后在 Batch B 期间将 `buf.authz.gen.yaml` 和 `buf.mapper.gen.yaml` 合并到 `buf.go.gen.yaml`，实现单文件统一所有 Go 代码生成（struct + authz rules + mapper plans）。`make api` 命令简化为只调用一次 `buf generate --template buf.go.gen.yaml`。
 
 **Files:**
-- Create: `buf.mapper.gen.yaml`
+- ~~Create: `buf.mapper.gen.yaml`~~ → 已合并到 `buf.go.gen.yaml`
 - Modify: `Makefile`
-
-**Step 1: Create buf template**
-
-```yaml
-version: v2
-
-managed:
-    enabled: true
-
-    disable:
-        - module: buf.build/googleapis/googleapis
-        - module: buf.build/bufbuild/protovalidate
-        - module: buf.build/kratos/apis
-        - module: buf.build/gnostic/gnostic
-
-plugins:
-    - local: protoc-gen-servora-mapper
-      out: api/gen/go
-      opt: paths=source_relative
-```
-
-**Step 2: Update Makefile**
-
-在 `api-authz:` target 之后添加 `api-mapper:` target，并把它加入 `api:` 依赖链。
-
-将 `api: api-go api-authz api-ts` 改为 `api: api-go api-authz api-mapper api-ts`。
-
-添加新 target：
-
-```makefile
-# generate mapper plans from proto annotations
-api-mapper:
-	@echo "$(CYAN)Generating Mapper plans via buf.mapper.gen.yaml...$(RESET)"
-	@buf generate --template buf.mapper.gen.yaml
-```
-
-同时在 `plugin:` target 中添加 `@go install ./cmd/protoc-gen-servora-mapper`。
-
-**Step 3: Install plugin and run generation**
-
-Run: `make plugin && make api`
-Expected: `api/gen/go/user/service/v1/user_mapper.gen.go` 生成成功
-
-**Step 4: Verify generated file content**
-
-检查生成的文件包含 `UserMapperPlan()` 函数，返回的 `MapperPlan` 中有：
-- `Presets: []string{"common_proto_entity"}`
-- `FieldMapping: map[string]string{"ID": "Id"}`
-- `CustomHooks: []string{"user_profile"}`
-
-**Step 5: Verify compilation**
-
-Run: `go build ./...`
-Expected: 全量编译通过
-
-**Step 6: Commit**
-
-```bash
-git add buf.mapper.gen.yaml Makefile api/gen/go/
-git commit -m "feat(buf): add buf.mapper.gen.yaml and api-mapper target"
-```
 
 ---
 
-## Task 3: 为 `Application` proto 添加 mapper annotation
+## Task 3: 为 `Application` proto 添加 mapper annotation ✅ 已完成
 
 **Files:**
 - Modify: `app/iam/service/api/protos/application/service/v1/application.proto`
@@ -262,7 +209,7 @@ message Application {
     presets: ["common_proto_entity"]
   };
 
-  string id = 1 [(mapper.v1.mapper_field) = {rename: "ID"}];
+  string id = 1 [(mapper.v1.mapper_field) = {rename: "ID", converter: CONVERTER_KIND_UUID_STRING}];
   string client_id = 2 [(mapper.v1.mapper_field) = {rename: "ClientID"}];
   string name = 3;
   repeated string redirect_uris = 4;
@@ -271,7 +218,7 @@ message Application {
   string application_type = 7;
   string access_token_type = 8;
   string type = 9;
-  int32 id_token_lifetime = 10 [(mapper.v1.mapper_field) = {rename: "IDTokenLifetime"}];
+  int32 id_token_lifetime = 10 [(mapper.v1.mapper_field) = {rename: "IDTokenLifetime", converter: CONVERTER_KIND_INT_INT32}];
   optional google.protobuf.Timestamp created_at = 100 [(mapper.v1.mapper_field) = {converter: CONVERTER_KIND_TIMESTAMP_TIME}];
   optional google.protobuf.Timestamp updated_at = 101 [(mapper.v1.mapper_field) = {converter: CONVERTER_KIND_TIMESTAMP_TIME}];
 }
@@ -296,145 +243,124 @@ git commit -m "feat(api/proto): annotate Application message with servora.mapper
 
 ---
 
-## Task 4: 重写 `data/mapper.go` 使用 generated MapperPlan
+## Task 4: 重写 `data/mapper.go` — applicationMapper 使用 generated plan ✅ 已完成
 
 **Files:**
 - Modify: `app/iam/service/internal/data/mapper.go`
+- Modify: `app/iam/service/internal/data/application.go`
+- Modify: `app/iam/service/internal/data/oidc_storage.go`
 
-**Step 1: Rewrite userMapper to use generated plan**
+> **策略：** 分两步迁移。先迁移较简单的 `applicationMapper`（无 custom hook），验证通过后再迁移 `userMapper`（有 profile custom hook + 调用方式变化）。
 
-将 `userMapper` 从手写 `ForwardMapper` 改为 `CopierMapper` + `ApplyPlan`：
+> **实施记录：** 与原计划偏差已在后续审计中修正。最终实现采用 repo struct 持有 mapper（而非包级 `var`），`uuid.UUID <-> string` 和 `int <-> int32` 提升为 `pkg/mapper` 内置 converter。
+
+**最终实现：**
+
+`data/mapper.go` 中的 `newApplicationMapper()` 工厂函数（不再是包级 `var`）：
 
 ```go
-package data
-
-import (
-	"github.com/google/uuid"
-
-	apppb "github.com/Servora-Kit/servora/api/gen/go/application/service/v1"
-	userpb "github.com/Servora-Kit/servora/api/gen/go/user/service/v1"
-	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
-	"github.com/Servora-Kit/servora/pkg/mapper"
-)
-
-// shared converters reused by multiple mappers
-var uuidStringConverter = mapper.NewGenericConverterPair[uuid.UUID, string](
-	func(id uuid.UUID) (string, error) { return id.String(), nil },
-	func(s string) (uuid.UUID, error) { return uuid.Parse(s) },
-)
-
-var intInt32Converter = mapper.NewGenericConverterPair[int, int32](
-	func(i int) (int32, error) { return int32(i), nil },
-	func(i int32) (int, error) { return int(i), nil },
-)
-
-// userMapper: uses generated UserMapperPlan + custom hook for profile
-var userMapper = func() *mapper.CopierMapper[userpb.User, ent.User] {
-	m := mapper.NewCopierMapper[userpb.User, ent.User]()
-	m.AppendConverters(uuidStringConverter)
-
-	hooks := mapper.NewHookRegistry()
-	hooks.Register("user_profile") // profile handled by manual post-processing, not copier
-
-	if err := mapper.ApplyPlan(userpb.UserMapperPlan(), m, mapper.DefaultPresets(), hooks); err != nil {
-		panic("mapper: apply user plan: " + err.Error())
-	}
-	return m
-}()
-
-// applicationMapper: uses generated ApplicationMapperPlan
-var applicationMapper = func() *mapper.CopierMapper[apppb.Application, ent.Application] {
+func newApplicationMapper() *mapper.CopierMapper[apppb.Application, ent.Application] {
 	m := mapper.NewCopierMapper[apppb.Application, ent.Application]()
-	m.AppendConverters(uuidStringConverter)
-	m.AppendConverters(intInt32Converter)
-
 	hooks := mapper.NewHookRegistry()
 	if err := mapper.ApplyPlan(apppb.ApplicationMapperPlan(), m, mapper.DefaultPresets(), hooks); err != nil {
 		panic("mapper: apply application plan: " + err.Error())
 	}
 	return m
-}()
+}
 ```
 
-> **注意：** `userMapper` 中 profile 字段注册了空的 `user_profile` hook（满足 plan validation），但实际的 `profileFromJSON` 转换仍在 repo 的 `Map` 调用后手工执行。`CopierMapper` 处理不了 `map[string]interface{} → *UserProfile` 的结构化映射——这正是 custom hook 的设计意图：声明依赖、repo 补实现。
->
-> `profileFromJSON` 函数保留在同文件中。
-
-**Step 2: Update repo call sites**
-
-当前 `userMapper` 是 `ForwardMapper`，调用 `.Map(entUser)`。新版是 `CopierMapper`，调用 `.MustToProto(entUser)`。
-
-检查 `app/iam/service/internal/data/user.go` 中所有 `userMapper.Map(` 调用，替换为 `userMapper.MustToProto(`。
-
-同样检查 `applicationMapper.MustToProto(` 是否已在 Batch A Task 7 中完成（应该已完成）。
-
-> **Profile 后处理：** 对于 userMapper，copier 无法处理 `map[string]interface{} → *UserProfile`，因此在 `MustToProto` 之后仍需手动设置 `pbUser.Profile = profileFromJSON(entUser.Profile)`。需要在 repo 中包裹一个 helper 或在 MapSlice 之后逐项补。
-
-**Step 3: Run tests**
-
-Run: `cd app/iam/service && go test ./... -v`
-Expected: all pass
-
-**Step 4: Run lint**
-
-Run: `cd app/iam/service && golangci-lint run ./...`
-Expected: 0 issues
-
-**Step 5: Commit**
-
-```bash
-git add app/iam/service/internal/data/
-git commit -m "refactor(app/iam): rewrite data/mapper.go to use generated MapperPlan"
-```
+> **关键变化（vs 原计划）：**
+> - 不再需要手动 `uuidStringConverter` / `intInt32Converter`，这些已内置到 `common_proto_entity` preset
+> - mapper 不再是包级 `var`，而是通过工厂函数 `newApplicationMapper()` 在 `NewApplicationRepo()` / `NewOIDCStorage()` 中创建
+> - `applicationRepo` 和 `oidcStorage` struct 各自持有 `mapper` / `appMapper` 字段
+> - 调用方从 `applicationMapper.MustToProto()` 改为 `r.mapper.MustToProto()` / `s.appMapper.MustToProto()`
 
 ---
 
-## Task 5: 端到端验证
+## Task 5: 重写 `data/mapper.go` — userMapper 使用 generated plan ✅ 已完成
+
+**Files:**
+- Modify: `app/iam/service/internal/data/mapper.go`
+- Modify: `app/iam/service/internal/data/user.go`
+- Modify: `app/iam/service/internal/data/authn.go`
+
+> **难点：** `userMapper` 当前是 `ForwardMapper`（调用 `.Map()` / `.MapSlice()`），改为 `CopierMapper` 后调用方式变为 `.MustToProto()` / `.ToProtoList()`。
+> 另外，`ent.User.Profile` 是 `map[string]interface{}`，proto 是 `*UserProfile` 结构体——copier 无法自动映射，需要在 `MustToProto()` 之后手动调用 `profileFromJSON` 后处理。
+
+> **实施记录：** 与 Task 4 一致，最终实现采用 repo struct 持有 mapper。
+
+**最终实现：**
+
+`data/mapper.go` 中的 `newUserMapper()` 工厂函数：
+
+```go
+func newUserMapper() *mapper.CopierMapper[userpb.User, ent.User] {
+	m := mapper.NewCopierMapper[userpb.User, ent.User]()
+	hooks := mapper.NewHookRegistry()
+	hooks.Register("user_profile")
+	if err := mapper.ApplyPlan(userpb.UserMapperPlan(), m, mapper.DefaultPresets(), hooks); err != nil {
+		panic("mapper: apply user plan: " + err.Error())
+	}
+	return m
+}
+```
+
+`mapUser` / `mapUsers` helper 接受 mapper 实例作为参数：
+
+```go
+func mapUser(m *mapper.CopierMapper[userpb.User, ent.User], u *ent.User) *userpb.User {
+	pb := m.MustToProto(u)
+	if pb != nil && u.Profile != nil {
+		pb.Profile = profileFromJSON(u.Profile)
+	}
+	return pb
+}
+
+func mapUsers(m *mapper.CopierMapper[userpb.User, ent.User], users []*ent.User) []*userpb.User {
+	result := make([]*userpb.User, 0, len(users))
+	for _, u := range users {
+		if u != nil {
+			result = append(result, mapUser(m, u))
+		}
+	}
+	return result
+}
+```
+
+> **关键变化（vs 原计划）：**
+> - mapper 不再是包级 `var`，而是通过 `newUserMapper()` 在 `NewUserRepo()` / `NewAuthnRepo()` 中创建
+> - `userRepo` 和 `authnRepo` struct 各自持有 `mapper` 字段
+> - `mapUser` / `mapUsers` 接受 mapper 实例参数（`r.mapper`），而非引用包级变量
+> - 调用方从 `mapUser(u)` 改为 `mapUser(r.mapper, u)`
+> - 不再需要手动 `uuidStringConverter`，已内置到 `common_proto_entity` preset
+
+---
+
+## Task 6: 端到端验证 ✅ 已完成
 
 **Files:** (no new changes, verification only)
 
-**Step 1: Full build**
-
-Run: `go build ./...`
-Expected: 0 errors
-
-**Step 2: Full test**
-
-Run: `cd app/iam/service && go test ./... -v`
-Expected: all tests pass
-
-**Step 3: Full lint**
-
-Run: `cd app/iam/service && golangci-lint run ./...`
-Expected: 0 issues
-
-**Step 4: Regenerate and verify idempotency**
-
-Run: `make api && go build ./...`
-Expected: 生成代码不变（或仅 timestamp 变化），编译通过
-
-**Step 5: Verify TS generation**
-
-Run: `make api-ts`
-Expected: TypeScript 类型正常生成
+> **实施记录：** 全部通过。
+>
+> - `go build ./...` — 0 errors
+> - `cd app/iam/service && go test ./... -v` — all pass
+> - `golangci-lint run ./...` — 0 issues
+> - `make api && go build ./...` — regen 幂等
+> - `cd pkg/mapper && go test ./... -v` — 33 tests pass
+> - IAM 服务启动 — 无 panic，mapper 初始化成功
 
 ---
 
-## Task 6: 更新设计文档
+## Task 7: 更新设计文档并标记 Phase 4+5 完成 ✅ 已完成
 
 **Files:**
 - Modify: `docs/plans/2026-03-21-servora-mapper-proto-codegen-design.md`
 
-**Step 1: Update Phase 3 and Phase 4 status**
-
-标记 Phase 3 (16.4) 和 Phase 4 (16.5) 为已完成，添加实施记录：
-- protoc-gen-servora-mapper 插件实现完成，输出 ORM 无关的 `XxxMapperPlan()` 函数
-- 在 User 和 Application 两个资源上完成端到端验证
-- data/mapper.go 已从手写映射改为 `ApplyPlan` + generated plan
-
-**Step 2: Commit**
-
-```bash
-git add docs/plans/
-git commit -m "docs(plans): mark Phase 3 (protoc plugin) and Phase 4 (User/Application landing) as completed"
-```
+> **实施记录：** 设计文档已更新：
+> - Phase 4 (§16.5) 标记 ✅，补充完整实施记录（repo struct mapper、内置 converter、FieldConverters/IgnoredFields）
+> - Phase 5 (§16.6) 标记 ✅，IAM 作为框架唯一参考实现，所有 mapper 已迁移
+> - 状态行更新为 "Phase 0–5 全部完成 · 设计冻结"
+> - §7.3 补充 `proto_enum` 不能作为静态 preset 的说明
+> - §7.5 补充 `FieldConverters`/`IgnoredFields` 字段
+> - §12.3.1 新增 post-processing hook 变体说明
+> - §11.4 更新 repo-internal mapper 模式对齐 go-wind-admin
