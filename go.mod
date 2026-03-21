@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	entgo.io/ent v0.14.5
-	github.com/Servora-Kit/servora/api/gen v0.0.0-20260316020318-6d011fc13865
+	github.com/Servora-Kit/servora/api/gen v0.0.0-20260320151517-5de2ddbbcfe4
 	github.com/charmbracelet/huh v0.8.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/glebarez/sqlite v1.11.0
@@ -20,7 +20,6 @@ require (
 	github.com/google/wire v0.7.0
 	github.com/hashicorp/consul/api v1.33.4
 	github.com/jinzhu/copier v0.4.0
-	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/nacos-group/nacos-sdk-go v1.1.6
 	github.com/openfga/go-sdk v0.7.5
 	github.com/openfga/language/pkg/go v0.2.0-beta.2
@@ -31,6 +30,7 @@ require (
 	github.com/twmb/franz-go v1.20.7
 	github.com/twmb/franz-go/plugin/kotel v1.6.0
 	github.com/twmb/franz-go/plugin/kzap v1.1.2
+	github.com/wneessen/go-mail v0.7.2
 	go.etcd.io/etcd/client/v3 v3.6.8
 	go.opentelemetry.io/otel v1.40.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.40.0
