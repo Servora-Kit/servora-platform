@@ -14,29 +14,31 @@ const (
 	DefaultListCacheTTL  = 10 * time.Minute
 )
 
-// CachedCheck is like Check but caches results in Redis.  If the Redis client
-// is nil the call degrades to a plain Check.
+// CachedCheck is like Check but caches results in Redis. If the Redis client
+// is nil the call degrades to a plain Check. The second return value indicates
+// whether the result was served from cache.
 func (c *Client) CachedCheck(ctx context.Context, rdb *redis.Client, ttl time.Duration,
-	userID, relation, objectType, objectID string) (bool, error) {
+	user, relation, objectType, objectID string) (allowed bool, cacheHit bool, err error) {
 
 	if rdb == nil {
-		return c.Check(ctx, userID, relation, objectType, objectID)
+		allowed, err = c.Check(ctx, user, relation, objectType, objectID)
+		return allowed, false, err
 	}
 
-	key := checkCacheKey(userID, relation, objectType, objectID)
+	key := checkCacheKey(user, relation, objectType, objectID)
 
-	cached, err := rdb.Get(ctx, key)
-	if err == nil {
-		return cached == "1", nil
+	cached, getErr := rdb.Get(ctx, key)
+	if getErr == nil {
+		return cached == "1", true, nil
 	}
 
-	allowed, err := c.Check(ctx, userID, relation, objectType, objectID)
+	allowed, err = c.Check(ctx, user, relation, objectType, objectID)
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
 
 	_ = rdb.Set(ctx, key, boolStr(allowed), ttl)
-	return allowed, nil
+	return allowed, false, nil
 }
 
 // CachedListObjects is like ListObjects but caches the full ID list in Redis.
@@ -44,20 +46,20 @@ func (c *Client) CachedCheck(ctx context.Context, rdb *redis.Client, ttl time.Du
 // repeated OpenFGA round-trips.  Returns all IDs; the caller is responsible
 // for pagination.
 func (c *Client) CachedListObjects(ctx context.Context, rdb *redis.Client, ttl time.Duration,
-	userID, relation, objectType string) ([]string, error) {
+	user, relation, objectType string) ([]string, error) {
 
 	if rdb == nil {
-		return c.ListObjects(ctx, userID, relation, objectType)
+		return c.ListObjects(ctx, user, relation, objectType)
 	}
 
-	key := listCacheKey(userID, relation, objectType)
+	key := listCacheKey(user, relation, objectType)
 
 	members, err := rdb.SMembers(ctx, key)
 	if err == nil && len(members) > 0 {
 		return members, nil
 	}
 
-	ids, err := c.ListObjects(ctx, userID, relation, objectType)
+	ids, err := c.ListObjects(ctx, user, relation, objectType)
 	if err != nil {
 		return nil, err
 	}
@@ -76,19 +78,19 @@ func (c *Client) CachedListObjects(ctx context.Context, rdb *redis.Client, ttl t
 }
 
 // InvalidateCheck removes a cached Check result.
-func InvalidateCheck(ctx context.Context, rdb *redis.Client, userID, relation, objectType, objectID string) {
+func InvalidateCheck(ctx context.Context, rdb *redis.Client, user, relation, objectType, objectID string) {
 	if rdb == nil {
 		return
 	}
-	_ = rdb.Del(ctx, checkCacheKey(userID, relation, objectType, objectID))
+	_ = rdb.Del(ctx, checkCacheKey(user, relation, objectType, objectID))
 }
 
 // InvalidateListObjects removes a cached ListObjects result.
-func InvalidateListObjects(ctx context.Context, rdb *redis.Client, userID, relation, objectType string) {
+func InvalidateListObjects(ctx context.Context, rdb *redis.Client, user, relation, objectType string) {
 	if rdb == nil {
 		return
 	}
-	_ = rdb.Del(ctx, listCacheKey(userID, relation, objectType))
+	_ = rdb.Del(ctx, listCacheKey(user, relation, objectType))
 }
 
 // InvalidateForTuples invalidates all cached Check and ListObjects entries
@@ -98,8 +100,8 @@ func InvalidateListObjects(ctx context.Context, rdb *redis.Client, userID, relat
 // For each tuple it invalidates:
 //   - The exact Check cache entry (user + relation + object)
 //   - The ListObjects cache for the user on the object's type with the tuple's relation
-//   - The ListObjects cache for common computed relations (can_view, can_edit, can_admin, can_manage)
-func InvalidateForTuples(ctx context.Context, rdb *redis.Client, tuples []Tuple) {
+//   - Additional computed relations as configured via WithComputedRelations
+func (c *Client) InvalidateForTuples(ctx context.Context, rdb *redis.Client, tuples []Tuple) {
 	if rdb == nil || len(tuples) == 0 {
 		return
 	}
@@ -108,21 +110,21 @@ func InvalidateForTuples(ctx context.Context, rdb *redis.Client, tuples []Tuple)
 	seen := make(map[string]struct{})
 
 	for _, t := range tuples {
-		userID, objectType, objectID := parseTupleComponents(t)
-		if userID == "" || objectType == "" {
+		user, objectType, objectID := parseTupleComponents(t)
+		if user == "" || objectType == "" {
 			continue
 		}
 
 		if objectID != "" {
-			k := checkCacheKey(userID, t.Relation, objectType, objectID)
+			k := checkCacheKey(user, t.Relation, objectType, objectID)
 			if _, ok := seen[k]; !ok {
 				keys = append(keys, k)
 				seen[k] = struct{}{}
 			}
 		}
 
-		for _, rel := range affectedRelations(t.Relation, objectType) {
-			k := listCacheKey(userID, rel, objectType)
+		for _, rel := range c.affectedRelations(t.Relation, objectType) {
+			k := listCacheKey(user, rel, objectType)
 			if _, ok := seen[k]; !ok {
 				keys = append(keys, k)
 				seen[k] = struct{}{}
@@ -135,11 +137,12 @@ func InvalidateForTuples(ctx context.Context, rdb *redis.Client, tuples []Tuple)
 	}
 }
 
-// parseTupleComponents extracts the bare userID, objectType, and objectID from a Tuple.
-// Tuple.User is e.g. "user:abc" or "tenant:root"; Tuple.Object is e.g. "organization:xyz".
-func parseTupleComponents(t Tuple) (userID, objectType, objectID string) {
-	if i := strings.IndexByte(t.User, ':'); i >= 0 && strings.HasPrefix(t.User, "user:") {
-		userID = t.User[i+1:]
+// parseTupleComponents extracts the user principal, objectType, and objectID from a Tuple.
+// Tuple.User is e.g. "user:abc", "service:gateway", or "organization:org-1#member".
+// Tuple.Object is e.g. "organization:xyz".
+func parseTupleComponents(t Tuple) (user, objectType, objectID string) {
+	if i := strings.IndexByte(t.User, ':'); i >= 0 {
+		user = t.User[i+1:]
 	}
 	if i := strings.IndexByte(t.Object, ':'); i >= 0 {
 		objectType = t.Object[:i]
@@ -149,17 +152,13 @@ func parseTupleComponents(t Tuple) (userID, objectType, objectID string) {
 }
 
 // affectedRelations returns the tuple's own relation plus computed relations
-// that might be affected by a change to the given assignable relation.
-func affectedRelations(relation, objectType string) []string {
+// configured via WithComputedRelations for the given object type.
+func (c *Client) affectedRelations(relation, objectType string) []string {
 	rels := []string{relation}
-
-	computedByType := map[string][]string{
-		"tenant":       {"can_view", "can_manage"},
-		"organization": {"can_view", "can_manage", "can_manage_members"},
-		"project":      {"can_view", "can_edit", "can_admin", "can_manage_members"},
-	}
-	if computed, ok := computedByType[objectType]; ok {
-		rels = append(rels, computed...)
+	if c.computedRelations != nil {
+		if computed, ok := c.computedRelations[objectType]; ok {
+			rels = append(rels, computed...)
+		}
 	}
 	return rels
 }

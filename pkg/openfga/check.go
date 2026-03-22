@@ -7,11 +7,12 @@ import (
 	fgaclient "github.com/openfga/go-sdk/client"
 )
 
-// Check returns whether userID has the given relation on objectType:objectID.
-func (c *Client) Check(ctx context.Context, userID, relation, objectType, objectID string) (bool, error) {
+// Check returns whether the given principal (e.g. "user:uuid") has the specified
+// relation on objectType:objectID.
+func (c *Client) Check(ctx context.Context, user, relation, objectType, objectID string) (bool, error) {
 	resp, err := c.sdk.Check(ctx).
 		Body(fgaclient.ClientCheckRequest{
-			User:     "user:" + userID,
+			User:     user,
 			Relation: relation,
 			Object:   objectType + ":" + objectID,
 		}).

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Servora-Kit/servora/pkg/actor"
+	"github.com/Servora-Kit/servora/pkg/audit"
 	fgaclient "github.com/openfga/go-sdk/client"
 )
 
@@ -14,8 +16,17 @@ type Tuple struct {
 	Object   string // e.g. "organization:uuid", "project:uuid"
 }
 
-// WriteTuples writes one or more relationship tuples atomically.
+// WriteTuples writes one or more relationship tuples atomically and emits
+// an audit event on success when a recorder is configured.
 func (c *Client) WriteTuples(ctx context.Context, tuples ...Tuple) error {
+	if err := c.writeTuplesCore(ctx, tuples...); err != nil {
+		return err
+	}
+	c.emitTupleAudit(ctx, "openfga.WriteTuples", audit.TupleMutationWrite, tuples)
+	return nil
+}
+
+func (c *Client) writeTuplesCore(ctx context.Context, tuples ...Tuple) error {
 	if len(tuples) == 0 {
 		return nil
 	}
@@ -70,8 +81,17 @@ func (c *Client) EnsureTuples(ctx context.Context, tuples ...Tuple) error {
 	return nil
 }
 
-// DeleteTuples deletes one or more relationship tuples atomically.
+// DeleteTuples deletes one or more relationship tuples atomically and emits
+// an audit event on success when a recorder is configured.
 func (c *Client) DeleteTuples(ctx context.Context, tuples ...Tuple) error {
+	if err := c.deleteTuplesCore(ctx, tuples...); err != nil {
+		return err
+	}
+	c.emitTupleAudit(ctx, "openfga.DeleteTuples", audit.TupleMutationDelete, tuples)
+	return nil
+}
+
+func (c *Client) deleteTuplesCore(ctx context.Context, tuples ...Tuple) error {
 	if len(tuples) == 0 {
 		return nil
 	}
@@ -90,4 +110,19 @@ func (c *Client) DeleteTuples(ctx context.Context, tuples ...Tuple) error {
 		return fmt.Errorf("openfga delete: %w", err)
 	}
 	return nil
+}
+
+func (c *Client) emitTupleAudit(ctx context.Context, operation string, mutation audit.TupleMutationType, tuples []Tuple) {
+	if c.recorder == nil || len(tuples) == 0 {
+		return
+	}
+	changes := make([]audit.TupleChange, len(tuples))
+	for i, t := range tuples {
+		changes[i] = audit.TupleChange{User: t.User, Relation: t.Relation, Object: t.Object}
+	}
+	a, _ := actor.FromContext(ctx)
+	c.recorder.RecordTupleChange(ctx, operation, a, audit.TupleMutationDetail{
+		MutationType: mutation,
+		Tuples:       changes,
+	})
 }

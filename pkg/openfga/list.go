@@ -8,13 +8,13 @@ import (
 	fgaclient "github.com/openfga/go-sdk/client"
 )
 
-// ListObjects returns the IDs of objects of the given type that the user has
-// the specified relation to.  The returned strings are bare IDs (i.e. the
-// "type:" prefix is stripped).
-func (c *Client) ListObjects(ctx context.Context, userID, relation, objectType string) ([]string, error) {
+// ListObjects returns the IDs of objects of the given type that the principal
+// (e.g. "user:uuid") has the specified relation to. The returned strings are
+// bare IDs (i.e. the "type:" prefix is stripped).
+func (c *Client) ListObjects(ctx context.Context, user, relation, objectType string) ([]string, error) {
 	resp, err := c.sdk.ListObjects(ctx).
 		Body(fgaclient.ClientListObjectsRequest{
-			User:     "user:" + userID,
+			User:     user,
 			Relation: relation,
 			Type:     objectType,
 		}).
