@@ -102,9 +102,9 @@ Servora 当前仓库同时承载了框架能力（`pkg/`、`cmd/`、`api/`）与
 
 ### 4.4 Proto 定义
 
-- `api/protos/audit/v1/audit.proto`：AuditEvent、4 种 typed detail（Authn/Authz/TupleMutation/ResourceMutation）
-- `api/protos/audit/v1/annotations.proto`：AuditRule message + audit_rule method option
-- `api/protos/conf/v1/conf.proto`：Data 新增 Kafka（含 SASL）、ClickHouse 配置；App 新增 Audit 配置
+- `api/protos/servora/audit/v1/audit.proto`：AuditEvent、4 种 typed detail（Authn/Authz/TupleMutation/ResourceMutation）
+- `api/protos/servora/audit/v1/annotations.proto`：AuditRule message + audit_rule method option
+- `api/protos/servora/conf/v1/conf.proto`：Data 新增 Kafka（含 SASL）、ClickHouse 配置；App 新增 Audit 配置
 
 ### 4.5 pkg/broker — 消息代理抽象
 
@@ -138,7 +138,7 @@ Servora 当前仓库同时承载了框架能力（`pkg/`、`cmd/`、`api/`）与
 以下约束在 Phase 1 实现过程中确立，后续阶段必须遵循：
 
 1. **Optional-init 模式统一**：所有可选基础设施组件（Kafka、ClickHouse、OpenFGA）使用 `NewXxxOptional` 函数，nil 配置返回 nil 而非 panic，调用方 nil-check 后使用
-2. **Proto 集中配置**：所有框架级配置（Kafka/ClickHouse/Audit）通过 `api/protos/conf/v1/conf.proto` 统一管理，不做分散的 Go config struct
+2. **Proto 集中配置**：所有框架级配置（Kafka/ClickHouse/Audit）通过 `api/protos/servora/conf/v1/conf.proto` 统一管理，不做分散的 Go config struct
 3. **Logger 桥接模式**：第三方库（franz-go kzap、GORM、Ent）通过 `logger.Zap()` 获取底层 `*zap.Logger`，不直接传递 Kratos `log.Logger`
 4. **Module 命名规范**：`logger.For(l, "module")` 中 module 使用 `domain/layer/service` 格式（如 `"user/biz/iam"`），不带 `-service` 后缀
 5. **broker 接口扩展点**：新增 broker 实现（NATS、RabbitMQ 等）只需实现 `broker.Broker` interface，不需修改 `pkg/broker` 核心
@@ -198,8 +198,8 @@ proto 注解 → protoc-gen-servora-audit → middleware 自动执行
 ```
 
 结构：
-- `api/protos/audit/v1/audit.proto` — ✅ 已定义
-- `api/protos/audit/v1/annotations.proto` — ✅ 已定义（AuditRule + audit_rule method option）
+- `api/protos/servora/audit/v1/audit.proto` — ✅ 已定义
+- `api/protos/servora/audit/v1/annotations.proto` — ✅ 已定义（AuditRule + audit_rule method option）
 - `cmd/protoc-gen-servora-audit` — Phase 4 实现
 - `pkg/audit` runtime — ✅ 骨架已实现
 

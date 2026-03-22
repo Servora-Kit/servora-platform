@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	conf "github.com/Servora-Kit/servora/api/gen/go/conf/v1"
+	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 	"github.com/Servora-Kit/servora/pkg/bootstrap/config"
 	"github.com/Servora-Kit/servora/pkg/governance/telemetry"
 	"github.com/Servora-Kit/servora/pkg/logger"

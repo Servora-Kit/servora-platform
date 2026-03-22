@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	apppb "github.com/Servora-Kit/servora/api/gen/go/application/service/v1"
+	apppb "github.com/Servora-Kit/servora/api/gen/go/servora/application/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/servora/pkg/pagination"
 )

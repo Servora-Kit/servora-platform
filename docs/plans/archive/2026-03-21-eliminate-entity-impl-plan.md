@@ -15,7 +15,7 @@
 ## Task 1: 修改 User proto — 新增 `User` message，重构 Request/Response
 
 **Files:**
-- Modify: `app/iam/service/api/protos/user/service/v1/user.proto`
+- Modify: `app/iam/service/api/protos/servora/user/service/v1/user.proto`
 
 **Step 1: 修改 proto 定义**
 
@@ -24,14 +24,14 @@
 ```proto
 syntax = "proto3";
 
-package user.service.v1;
+package servora.user.service.v1;
 
 import "buf/validate/validate.proto";
 import "errors/errors.proto";
 import "google/protobuf/timestamp.proto";
 import "pagination/v1/pagination.proto";
 
-option go_package = "github.com/Servora-Kit/servora/api/gen/go/user/service/v1;userpb";
+option go_package = "github.com/Servora-Kit/servora/api/gen/go/servora/user/service/v1;userpb";
 option java_multiple_files = true;
 option java_outer_classname = "UserProtoV1";
 option java_package = "dev.servora.api.user.v1";
@@ -147,12 +147,12 @@ message RestoreUserResponse {
 cd /Users/horonlee/projects/go/servora && make api
 ```
 
-Expected: 生成成功，`api/gen/go/user/service/v1/` 下的 Go 文件更新。
+Expected: 生成成功，`api/gen/go/servora/user/service/v1/` 下的 Go 文件更新。
 
 **Step 3: Commit**
 
 ```bash
-git add app/iam/service/api/protos/user/ api/gen/go/user/
+git add app/iam/service/api/protos/servora/user/ api/gen/go/servora/user/
 git commit -m "feat(api/proto): replace UserInfo with full User resource message"
 ```
 
@@ -161,7 +161,7 @@ git commit -m "feat(api/proto): replace UserInfo with full User resource message
 ## Task 2: 修改 Application proto — 新增 `Application` message
 
 **Files:**
-- Modify: `app/iam/service/api/protos/application/service/v1/application.proto`
+- Modify: `app/iam/service/api/protos/servora/application/service/v1/application.proto`
 
 **Step 1: 修改 proto 定义**
 
@@ -170,14 +170,14 @@ git commit -m "feat(api/proto): replace UserInfo with full User resource message
 ```proto
 syntax = "proto3";
 
-package application.service.v1;
+package servora.application.service.v1;
 
 import "buf/validate/validate.proto";
 import "errors/errors.proto";
 import "google/protobuf/timestamp.proto";
 import "pagination/v1/pagination.proto";
 
-option go_package = "github.com/Servora-Kit/servora/api/gen/go/application/service/v1;apppb";
+option go_package = "github.com/Servora-Kit/servora/api/gen/go/servora/application/service/v1;apppb";
 option java_multiple_files = true;
 option java_outer_classname = "ApplicationProtoV1";
 option java_package = "dev.servora.api.application.v1";
@@ -271,7 +271,7 @@ cd /Users/horonlee/projects/go/servora && make api
 **Step 3: Commit**
 
 ```bash
-git add app/iam/service/api/protos/application/ api/gen/go/application/
+git add app/iam/service/api/protos/servora/application/ api/gen/go/servora/application/
 git commit -m "feat(api/proto): replace ApplicationInfo with full Application resource message"
 ```
 
@@ -346,8 +346,8 @@ git commit -m "refactor(app/biz): replace entity types with proto messages in bi
 package data
 
 import (
-	apppb "github.com/Servora-Kit/servora/api/gen/go/application/service/v1"
-	userpb "github.com/Servora-Kit/servora/api/gen/go/user/service/v1"
+	apppb "github.com/Servora-Kit/servora/api/gen/go/servora/application/service/v1"
+	userpb "github.com/Servora-Kit/servora/api/gen/go/servora/user/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
 	"github.com/Servora-Kit/servora/pkg/mapper"
 	"google.golang.org/protobuf/types/known/timestamppb"

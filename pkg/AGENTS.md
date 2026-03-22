@@ -47,7 +47,7 @@
 - 优先保持无状态、可复用、低耦合
 - 需要资源释放时返回 `cleanup func()`
 - 不在库代码里 `panic` 或 `log.Fatal`
-- 依赖生成配置类型时，从 `api/gen/go/conf/v1` 导入
+- 依赖生成配置类型时，从 `api/gen/go/servora/conf/v1` 导入
 
 ## 常用命令
 

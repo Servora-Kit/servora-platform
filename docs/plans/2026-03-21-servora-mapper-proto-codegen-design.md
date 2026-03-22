@@ -481,14 +481,14 @@ future-ready：`DURATION_DURATIONPB`、`JSON_TYPED`、`WRAPPER_VALUE`
 生成文件位置：
 
 ```text
-api/gen/go/<package>/xxx_mapper.gen.go
+api/gen/go/servora/<package>/xxx_mapper.gen.go
 ```
 
 实际示例（`User` 资源）：
 
 ```text
-api/gen/go/user/service/v1/user_mapper.gen.go    → UserMapperPlan()
-api/gen/go/application/service/v1/application_mapper.gen.go → ApplicationMapperPlan()
+api/gen/go/servora/user/service/v1/user_mapper.gen.go    → UserMapperPlan()
+api/gen/go/servora/application/service/v1/application_mapper.gen.go → ApplicationMapperPlan()
 ```
 
 生成代码只依赖 `pkg/mapper.MapperPlan`，不引入任何 ORM 类型。
@@ -768,7 +768,7 @@ Servora 要求：
 |------|------|------|
 | Phase 0 | 消灭 entity 层，proto message 直通 biz；冻结透传边界规范 | ✅ 完成 |
 | Phase 1 | 重构 `pkg/mapper`：统一 `CopierMapper[P,E]`、`PresetRegistry`、`HookRegistry`、`MapperPlan` + `ApplyPlan` | ✅ 完成 |
-| Phase 2 | 定义 `api/protos/mapper/v1/mapper.proto`：`ConverterKind` 枚举、message/field 级注解 | ✅ 完成 |
+| Phase 2 | 定义 `api/protos/servora/mapper/v1/mapper.proto`：`ConverterKind` 枚举、message/field 级注解 | ✅ 完成 |
 | Phase 3 | 实现 `protoc-gen-servora-mapper`：生成 `XxxMapperPlan()`；并入 `buf.go.gen.yaml`，`make api` 统一生成 | ✅ 完成 |
 | Phase 4 | IAM User/Application 落地：repo struct 持有 mapper、generated plan 装配、post-hook 内聚 | ✅ 完成 |
 | Phase 5 | IAM 全部手写 mapper 迁移：消灭 `ForwardMapper`、包级单例；新服务只需 3 步接入 | ✅ 完成 |

@@ -2,7 +2,7 @@
 
 ### Requirement: Kafka configuration in Data message
 
-`api/protos/conf/v1/conf.proto` 的 `Data` message SHALL 包含 `Kafka kafka` 字段，`Data.Kafka` message SHALL 包含以下字段：
+`api/protos/servora/conf/v1/conf.proto` 的 `Data` message SHALL 包含 `Kafka kafka` 字段，`Data.Kafka` message SHALL 包含以下字段：
 - `repeated string brokers` — Kafka broker 地址列表
 - `string client_id` — 客户端标识
 - `string consumer_group` — 消费者组 ID

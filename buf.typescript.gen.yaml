@@ -9,7 +9,7 @@ managed:
 inputs:
     - directory: api/protos
       paths:
-          - api/protos/pagination/v1
+          - api/protos/servora/pagination/v1
 
 plugins:
     - local: protoc-gen-typescript-http

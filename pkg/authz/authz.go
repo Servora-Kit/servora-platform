@@ -4,7 +4,7 @@
 // Example usage in a service:
 //
 //	import pkgauthz "github.com/Servora-Kit/servora/pkg/authz"
-//	import orderpb "github.com/Servora-Kit/servora/api/gen/go/order/service/v1"
+//	import orderpb "github.com/Servora-Kit/servora/api/gen/go/servora/order/service/v1"
 //
 //	mw = append(mw, pkgauthz.Authz(
 //	    pkgauthz.WithFGAClient(fgaClient),
@@ -24,7 +24,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	authzpb "github.com/Servora-Kit/servora/api/gen/go/authz/service/v1"
+	authzpb "github.com/Servora-Kit/servora/api/gen/go/servora/authz/service/v1"
 	"github.com/Servora-Kit/servora/pkg/actor"
 	"github.com/Servora-Kit/servora/pkg/openfga"
 	"github.com/Servora-Kit/servora/pkg/redis"

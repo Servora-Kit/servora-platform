@@ -93,10 +93,18 @@ function CreateAppButton({ onCreated }: { onCreated: () => void }) {
     setLoading(true)
     try {
       await iamClients.application.CreateApplication({
-        name,
-        redirectUris: redirectUris.split('\n').map((u) => u.trim()).filter(Boolean),
-        scopes: [],
-        grantTypes: [],
+        data: {
+          id: '',
+          clientId: '',
+          name,
+          redirectUris: redirectUris.split('\n').map((u) => u.trim()).filter(Boolean),
+          scopes: [],
+          grantTypes: [],
+          applicationType: '',
+          accessTokenType: '',
+          type: '',
+          idTokenLifetime: 0,
+        },
       })
       setOpen(false)
       setName('')

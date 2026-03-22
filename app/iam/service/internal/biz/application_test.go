@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	apppb "github.com/Servora-Kit/servora/api/gen/go/application/service/v1"
+	apppb "github.com/Servora-Kit/servora/api/gen/go/servora/application/service/v1"
 	"github.com/Servora-Kit/servora/pkg/helpers"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/proto"

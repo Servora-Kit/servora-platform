@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
+	"github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 
 	"github.com/go-kratos/kratos/v2/registry"
 )

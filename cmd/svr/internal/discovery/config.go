@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	conf "github.com/Servora-Kit/servora/api/gen/go/conf/v1"
+	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 	config "github.com/Servora-Kit/servora/pkg/bootstrap/config"
 )
 

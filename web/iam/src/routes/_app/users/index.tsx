@@ -75,8 +75,17 @@ function UserListPage() {
     setCreateLoading(true)
     try {
       await iamClients.user.CreateUser({
-        username: form.username,
-        email: form.email,
+        data: {
+          id: '',
+          username: form.username,
+          email: form.email,
+          role: '',
+          status: '',
+          emailVerified: false,
+          phone: '',
+          phoneVerified: false,
+          profile: undefined,
+        },
         password: form.password,
       })
       setCreateOpen(false)

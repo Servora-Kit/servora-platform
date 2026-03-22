@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	conf "github.com/Servora-Kit/servora/api/gen/go/conf/v1"
+	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 	"github.com/Servora-Kit/servora/pkg/broker"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/plain"

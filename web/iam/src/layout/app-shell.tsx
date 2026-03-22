@@ -49,11 +49,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     iamClients.user
       .CurrentUserInfo({})
       .then((info) => {
+        const currentUser = info.user
         setUser({
-          id: info.id ?? '',
-          name: info.username ?? info.email ?? '',
-          email: info.email ?? '',
-          role: info.role ?? '',
+          id: currentUser?.id ?? '',
+          name: currentUser?.username ?? currentUser?.email ?? '',
+          email: currentUser?.email ?? '',
+          role: currentUser?.role ?? '',
         })
       })
       .catch(() => {})

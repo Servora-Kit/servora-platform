@@ -3,7 +3,7 @@ package kafka
 import (
 	"context"
 
-	conf "github.com/Servora-Kit/servora/api/gen/go/conf/v1"
+	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 	"github.com/Servora-Kit/servora/pkg/broker"
 	"github.com/Servora-Kit/servora/pkg/logger"
 	"go.uber.org/zap"

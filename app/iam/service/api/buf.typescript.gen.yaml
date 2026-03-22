@@ -10,13 +10,10 @@ managed:
 inputs:
     - directory: app/iam/service/api/protos
       paths:
-          - app/iam/service/api/protos/iam/service/v1
-          - app/iam/service/api/protos/authn/service/v1
-          - app/iam/service/api/protos/user/service/v1
-          - app/iam/service/api/protos/organization/service/v1
-          - app/iam/service/api/protos/application/service/v1
-          - app/iam/service/api/protos/tenant/service/v1
-          - app/iam/service/api/protos/rbac/service/v1
+          - app/iam/service/api/protos/servora/iam/service/v1
+          - app/iam/service/api/protos/servora/authn/service/v1
+          - app/iam/service/api/protos/servora/user/service/v1
+          - app/iam/service/api/protos/servora/application/service/v1
 
 plugins:
     - local: protoc-gen-typescript-http

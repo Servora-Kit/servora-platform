@@ -88,6 +88,13 @@ type(scope): description
 - `sayhello` 服务 proto 放在 `app/sayhello/service/api/protos/`
 - Go 生成代码统一输出到 `api/gen/go/`
 
+### Proto 命名规范
+- 新增或迁移后的 proto `package` 必须以 `servora.` 开头，并显式携带版本后缀（如 `servora.audit.v1`、`servora.authn.service.v1`）
+- `.proto` 所在目录必须与 `package` 命名空间逐段对齐，满足 Buf `PACKAGE_DIRECTORY_MATCH`
+- `service` 不是默认层级；只有当目录语义本身包含 `service/` 时，`package` 才保留 `.service.` 段
+- `go_package` 必须与 namespaced proto 目录和生成目录一致，统一落到 `api/gen/go/servora/**`
+- 本轮业务 proto 只补 `servora.` 顶层前缀，不在这次迁移中额外收敛到 `servora.iam.*`、`servora.platform.*` 等新领域层级
+
 ### 服务实现
 - `app/iam/service/`：IAM 微服务（认证、授权、组织、项目），包含 `api/`、`cmd/`、`internal/`、`configs/`；认证/授权中间件（Authn、Authz）位于 `internal/server/middleware/`
 - `app/sayhello/service/`：独立示例服务，包含自己的 `api/` 与运行时目录

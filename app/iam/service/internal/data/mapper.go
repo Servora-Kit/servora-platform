@@ -1,8 +1,8 @@
 package data
 
 import (
-	apppb "github.com/Servora-Kit/servora/api/gen/go/application/service/v1"
-	userpb "github.com/Servora-Kit/servora/api/gen/go/user/service/v1"
+	apppb "github.com/Servora-Kit/servora/api/gen/go/servora/application/service/v1"
+	userpb "github.com/Servora-Kit/servora/api/gen/go/servora/user/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
 	"github.com/Servora-Kit/servora/pkg/mapper"
 )

@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package servora.iam.service.v1;
+
+import "google/api/annotations.proto";
+import "servora/authz/service/v1/authz.proto";
+import "servora/user/service/v1/user.proto";
+
+option go_package = "github.com/Servora-Kit/servora/api/gen/go/servora/iam/service/v1;iampb";
+
+service UserService {
+  rpc CurrentUserInfo(servora.user.service.v1.CurrentUserInfoRequest) returns (servora.user.service.v1.CurrentUserInfoResponse) {
+    option (google.api.http) = {get: "/v1/user/info"};
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
+  }
+
+  rpc GetUser(servora.user.service.v1.GetUserRequest) returns (servora.user.service.v1.GetUserResponse) {
+    option (google.api.http) = {get: "/v1/users/{id}"};
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "can_manage_users"
+    };
+  }
+
+  rpc ListUsers(servora.user.service.v1.ListUsersRequest) returns (servora.user.service.v1.ListUsersResponse) {
+    option (google.api.http) = {get: "/v1/users"};
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "can_manage_users"
+    };
+  }
+
+  rpc UpdateUser(servora.user.service.v1.UpdateUserRequest) returns (servora.user.service.v1.UpdateUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/user/update"
+      body: "*"
+    };
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
+  }
+
+  // 创建用户需要平台管理员权限
+  rpc CreateUser(servora.user.service.v1.CreateUserRequest) returns (servora.user.service.v1.CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/users"
+      body: "*"
+    };
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "admin"
+    };
+  }
+
+  rpc DeleteUser(servora.user.service.v1.DeleteUserRequest) returns (servora.user.service.v1.DeleteUserResponse) {
+    option (google.api.http) = {delete: "/v1/users/{id}"};
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "admin"
+    };
+  }
+
+  rpc PurgeUser(servora.user.service.v1.PurgeUserRequest) returns (servora.user.service.v1.PurgeUserResponse) {
+    option (google.api.http) = {delete: "/v1/users/{id}/purge"};
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "admin"
+    };
+  }
+
+  rpc RestoreUser(servora.user.service.v1.RestoreUserRequest) returns (servora.user.service.v1.RestoreUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/users/{id}/restore"
+      body: "*"
+    };
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "admin"
+    };
+  }
+}

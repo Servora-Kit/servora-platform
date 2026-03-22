@@ -23,20 +23,38 @@ function ProfilePage() {
   const [username, setUsername] = useState('')
   const [saving, setSaving] = useState(false)
 
+  const currentUser = userInfo?.user
+
   useEffect(() => {
-    if (userInfo?.username) setUsername(userInfo.username)
-  }, [userInfo?.username])
+    if (currentUser?.username) setUsername(currentUser.username)
+  }, [currentUser?.username])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     try {
-      await iamClients.user.UpdateUser({ id: userInfo?.id ?? '', username, email: userInfo?.email })
+      await iamClients.user.UpdateUser({
+        id: currentUser?.id ?? '',
+        data: {
+          id: currentUser?.id ?? '',
+          username,
+          email: currentUser?.email ?? '',
+          role: currentUser?.role ?? '',
+          status: currentUser?.status ?? '',
+          emailVerified: currentUser?.emailVerified ?? false,
+          phone: currentUser?.phone ?? '',
+          phoneVerified: currentUser?.phoneVerified ?? false,
+          profile: currentUser?.profile,
+          emailVerifiedAt: currentUser?.emailVerifiedAt,
+          createdAt: currentUser?.createdAt,
+          updatedAt: currentUser?.updatedAt,
+        },
+      })
       setUser({
-        id: userInfo?.id ?? '',
+        id: currentUser?.id ?? '',
         name: username,
-        email: userInfo?.email ?? '',
-        role: userInfo?.role ?? '',
+        email: currentUser?.email ?? '',
+        role: currentUser?.role ?? '',
       })
       void refetch()
       toast.success('保存成功')
@@ -55,7 +73,7 @@ function ProfilePage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label>邮箱</Label>
-                <Input value={userInfo?.email ?? ''} disabled />
+                <Input value={currentUser?.email ?? ''} disabled />
               </div>
               <div className="space-y-2">
                 <Label>用户名</Label>

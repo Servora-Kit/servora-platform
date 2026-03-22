@@ -19,7 +19,7 @@ managed:
 inputs:
     - directory: app/iam/service/api/protos
       paths:
-          - app/iam/service/api/protos/iam/service/v1 # 只生成 IAM 服务的 HTTP 接口（i_*.proto）
+          - app/iam/service/api/protos/servora/iam/service/v1 # 只生成 IAM 服务的 HTTP 接口（i_*.proto）
 
 plugins:
     # generate openapi v3 yaml doc

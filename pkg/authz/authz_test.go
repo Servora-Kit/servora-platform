@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-kratos/kratos/v2/transport"
 
-	authzpb "github.com/Servora-Kit/servora/api/gen/go/authz/service/v1"
-	userpb "github.com/Servora-Kit/servora/api/gen/go/user/service/v1"
+	authzpb "github.com/Servora-Kit/servora/api/gen/go/servora/authz/service/v1"
+	userpb "github.com/Servora-Kit/servora/api/gen/go/servora/user/service/v1"
 	"github.com/Servora-Kit/servora/pkg/actor"
 )
 

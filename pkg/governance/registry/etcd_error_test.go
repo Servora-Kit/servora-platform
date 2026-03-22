@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/go-kratos/kratos/v2/registry"
-	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
+	"github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 )
 
 // TestEtcdErrorHandling 测试各种错误处理场景

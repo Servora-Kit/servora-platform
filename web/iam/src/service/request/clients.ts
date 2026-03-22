@@ -5,12 +5,12 @@ import {
   createApplicationServiceClient,
   createAuthnServiceClient,
   createUserServiceClient,
-} from '@servora/api-client/iam/service/v1/index'
+} from '@servora/api-client/servora/iam/service/v1/index'
 import type {
   ApplicationService,
   AuthnService,
   UserService,
-} from '@servora/api-client/iam/service/v1/index'
+} from '@servora/api-client/servora/iam/service/v1/index'
 
 export interface IamClients {
   authn: AuthnService

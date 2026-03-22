@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-kratos/kratos/v2/errors"
 
-	authnpb "github.com/Servora-Kit/servora/api/gen/go/authn/service/v1"
+	authnpb "github.com/Servora-Kit/servora/api/gen/go/servora/authn/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/servora/pkg/actor"
 	"github.com/Servora-Kit/servora/pkg/cap"

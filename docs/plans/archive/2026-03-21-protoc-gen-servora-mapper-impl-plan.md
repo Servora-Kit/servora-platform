@@ -37,7 +37,7 @@ import (
 	"path"
 	"strings"
 
-	mapperpb "github.com/Servora-Kit/servora/api/gen/go/mapper/v1"
+	mapperpb "github.com/Servora-Kit/servora/api/gen/go/servora/mapper/v1"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -194,7 +194,7 @@ git commit -m "feat(cmd): add protoc-gen-servora-mapper plugin skeleton"
 ## Task 3: 为 `Application` proto 添加 mapper annotation ✅ 已完成
 
 **Files:**
-- Modify: `app/iam/service/api/protos/application/service/v1/application.proto`
+- Modify: `app/iam/service/api/protos/servora/application/service/v1/application.proto`
 
 **Step 1: Add mapper annotations**
 
@@ -227,7 +227,7 @@ message Application {
 **Step 2: Regenerate**
 
 Run: `make api`
-Expected: `api/gen/go/application/service/v1/application_mapper.gen.go` 生成，包含 `ApplicationMapperPlan()`
+Expected: `api/gen/go/servora/application/service/v1/application_mapper.gen.go` 生成，包含 `ApplicationMapperPlan()`
 
 **Step 3: Verify compilation**
 
@@ -237,7 +237,7 @@ Expected: 0 errors
 **Step 4: Commit**
 
 ```bash
-git add app/iam/service/api/protos/application/ api/gen/go/
+git add app/iam/service/api/protos/servora/application/ api/gen/go/servora/
 git commit -m "feat(api/proto): annotate Application message with servora.mapper rules"
 ```
 

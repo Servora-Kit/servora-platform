@@ -15,7 +15,7 @@
 
 ### 2.1 Proto（契约层）
 
-分页协议定义在 `api/protos/pagination/v1/pagination.proto`：
+分页协议定义在 `api/protos/servora/pagination/v1/pagination.proto`：
 
 - `PaginationRequest` 通过 `oneof mode` 承载两种模式：
   - `page`：`page` + `page_size`
@@ -24,14 +24,14 @@
 
 关键位置：
 
-- `api/protos/pagination/v1/pagination.proto:7`
-- `api/protos/pagination/v1/pagination.proto:23`
-- `api/protos/pagination/v1/pagination.proto:41`
+- `api/protos/servora/pagination/v1/pagination.proto:7`
+- `api/protos/servora/pagination/v1/pagination.proto:23`
+- `api/protos/servora/pagination/v1/pagination.proto:41`
 
 `User` 业务接口直接复用该协议：
 
-- `ListUsersRequest.pagination`：`api/protos/user/service/v1/user.proto:51`
-- `ListUsersResponse.pagination`：`api/protos/user/service/v1/user.proto:55`
+- `ListUsersRequest.pagination`：`app/iam/service/api/protos/servora/user/service/v1/user.proto:51`
+- `ListUsersResponse.pagination`：`app/iam/service/api/protos/servora/user/service/v1/user.proto:55`
 
 ### 2.2 Service（传输适配层）
 
@@ -114,7 +114,7 @@ OpenAPI 暴露了两种模式的 query 参数：
 
 可见证据：
 
-- 协议定义 cursor：`api/protos/pagination/v1/pagination.proto:15`
+- 协议定义 cursor：`api/protos/servora/pagination/v1/pagination.proto:15`
 - Biz 当前仅处理 page：`app/servora/service/internal/biz/user.go:110`
 
 ---
@@ -123,7 +123,7 @@ OpenAPI 暴露了两种模式的 query 参数：
 
 新增列表接口时，建议保持同构：
 
-1. proto 层统一复用 `pagination.v1`，避免重复定义分页字段
+1. proto 层统一复用 `servora.pagination.v1`，避免重复定义分页字段
 2. service 层只做参数透传与响应映射，不写分页算法
 3. biz 层统一维护默认值与模式分发（page/cursor）
 4. data 层确保显式排序 + count + limit/offset（或 cursor where）

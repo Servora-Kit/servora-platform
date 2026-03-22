@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	conf "github.com/Servora-Kit/servora/api/gen/go/conf/v1"
+	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 	kratoslog "github.com/go-kratos/kratos/v2/log"
 )
 

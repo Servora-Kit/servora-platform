@@ -8,7 +8,7 @@ Defines requirements for the `audit-proto` capability.
 
 ### Requirement: AuditEvent proto defines stable event schema
 
-`api/protos/audit/v1/audit.proto` SHALL define an `AuditEvent` message with fields:
+`api/protos/servora/audit/v1/audit.proto` SHALL define an `AuditEvent` message with fields:
 - `string event_id` — UUID
 - `AuditEventType event_type` — enum
 - `string event_version`
@@ -25,7 +25,7 @@ Defines requirements for the `audit-proto` capability.
 #### Scenario: Proto compiles and generates Go code
 
 - **WHEN** `make api` is run
-- **THEN** `api/gen/go/audit/v1/audit.pb.go` SHALL be generated without errors
+- **THEN** `api/gen/go/servora/audit/v1/audit.pb.go` SHALL be generated without errors
 
 #### Scenario: Proto generates TypeScript code
 
@@ -77,7 +77,7 @@ The proto SHALL define:
 
 ### Requirement: Audit annotations proto defines RPC-level audit rules
 
-`api/protos/audit/v1/annotations.proto` SHALL define:
+`api/protos/servora/audit/v1/annotations.proto` SHALL define:
 - `AuditRule` message with fields for `AuditEventType event_type`, `string target_type`, `string target_id_field`
 - A method option `google.protobuf.MethodOptions` extension `audit_rule` of type `AuditRule`
 
@@ -90,5 +90,5 @@ This proto is for future codegen consumption (protoc-gen-servora-audit) and SHAL
 
 #### Scenario: Annotation can be applied to RPC
 
-- **WHEN** a service proto imports `audit/v1/annotations.proto` and annotates an RPC with `option (audit.v1.audit_rule) = { event_type: AUDIT_EVENT_TYPE_RESOURCE_MUTATION, target_type: "project", target_id_field: "project_id" };`
+- **WHEN** a service proto imports `servora/audit/v1/annotations.proto` and annotates an RPC with `option (servora.audit.v1.audit_rule) = { event_type: AUDIT_EVENT_TYPE_RESOURCE_MUTATION, target_type: "project", target_id_field: "project_id" };`
 - **THEN** the proto SHALL compile without errors

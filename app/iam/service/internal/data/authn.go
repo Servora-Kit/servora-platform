@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	userpb "github.com/Servora-Kit/servora/api/gen/go/user/service/v1"
+	userpb "github.com/Servora-Kit/servora/api/gen/go/servora/user/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/user"

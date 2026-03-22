@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package servora.iam.service.v1;
+
+import "servora/authn/service/v1/authn.proto";
+import "google/api/annotations.proto";
+import "servora/authz/service/v1/authz.proto";
+
+option go_package = "github.com/Servora-Kit/servora/api/gen/go/servora/iam/service/v1;iampb";
+
+service AuthnService {
+  rpc SignupByEmail(servora.authn.service.v1.SignupByEmailRequest) returns (servora.authn.service.v1.SignupByEmailResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/signup/using-email"
+      body: "*"
+    };
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
+  }
+
+  rpc LoginByEmailPassword(servora.authn.service.v1.LoginByEmailPasswordRequest) returns (servora.authn.service.v1.LoginByEmailPasswordResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/login/email-password"
+      body: "*"
+    };
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
+  }
+
+  rpc RefreshToken(servora.authn.service.v1.RefreshTokenRequest) returns (servora.authn.service.v1.RefreshTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/refresh-token"
+      body: "*"
+    };
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
+  }
+
+  rpc Logout(servora.authn.service.v1.LogoutRequest) returns (servora.authn.service.v1.LogoutResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/logout"
+      body: "*"
+    };
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
+  }
+
+  rpc ChangePassword(servora.authn.service.v1.ChangePasswordRequest) returns (servora.authn.service.v1.ChangePasswordResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/change-password"
+      body: "*"
+    };
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
+  }
+
+  rpc LogoutAllDevices(servora.authn.service.v1.LogoutAllDevicesRequest) returns (servora.authn.service.v1.LogoutAllDevicesResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/logout-all"
+      body: "*"
+    };
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
+  }
+
+  rpc RequestEmailVerification(servora.authn.service.v1.RequestEmailVerificationRequest) returns (servora.authn.service.v1.RequestEmailVerificationResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/request-email-verification"
+      body: "*"
+    };
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
+  }
+
+  rpc VerifyEmail(servora.authn.service.v1.VerifyEmailRequest) returns (servora.authn.service.v1.VerifyEmailResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/verify-email"
+      body: "*"
+    };
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
+  }
+
+  rpc RequestPasswordReset(servora.authn.service.v1.RequestPasswordResetRequest) returns (servora.authn.service.v1.RequestPasswordResetResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/request-password-reset"
+      body: "*"
+    };
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
+  }
+
+  rpc ResetPassword(servora.authn.service.v1.ResetPasswordRequest) returns (servora.authn.service.v1.ResetPasswordResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/reset-password"
+      body: "*"
+    };
+    option (servora.authz.service.v1.rule) = {
+      mode: AUTHZ_MODE_NONE
+    };
+  }
+}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	sayhellov1 "github.com/Servora-Kit/servora/api/gen/go/sayhello/service/v1"
+	sayhellov1 "github.com/Servora-Kit/servora/api/gen/go/servora/sayhello/service/v1"
 )
 
 type SayHelloService struct {

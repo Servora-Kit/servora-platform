@@ -13,8 +13,8 @@ import (
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 	"github.com/zitadel/oidc/v3/pkg/op"
 
-	apppb "github.com/Servora-Kit/servora/api/gen/go/application/service/v1"
-	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
+	apppb "github.com/Servora-Kit/servora/api/gen/go/servora/application/service/v1"
+	"github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data/ent/application"

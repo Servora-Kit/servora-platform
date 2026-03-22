@@ -5,7 +5,7 @@ import (
 	"path"
 	"strings"
 
-	mapperpb "github.com/Servora-Kit/servora/api/gen/go/mapper/v1"
+	mapperpb "github.com/Servora-Kit/servora/api/gen/go/servora/mapper/v1"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"

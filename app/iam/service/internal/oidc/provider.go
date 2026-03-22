@@ -6,7 +6,7 @@ import (
 
 	"github.com/zitadel/oidc/v3/pkg/op"
 
-	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
+	"github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 )
 
 func NewProvider(appCfg *conf.App, storage op.Storage) (*op.Provider, error) {

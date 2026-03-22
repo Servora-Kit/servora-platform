@@ -4,7 +4,7 @@
 
 **Goal:** 重构 `pkg/mapper` 运行时（增强版 `CopierMapper`、preset 体系、custom hook registry、MapperPlan/apply/validate）并定义 `servora.mapper` proto annotation，为后续 `protoc-gen-servora-mapper` 插件打下基础。
 
-**Architecture:** `pkg/mapper` 提供泛型运行时——`CopierMapper[P,E]` 基于 `jinzhu/copier` 做反射映射，通过 `MapperPlan` 结构声明 preset/field mapping/converter/custom hook，`Apply` 一次性装配，`Validate` 在初始化期检查完整性。Proto annotation 定义在共享 `api/protos/mapper/v1/mapper.proto`，声明 message 级与 field 级规则，供后续 protoc 插件读取。
+**Architecture:** `pkg/mapper` 提供泛型运行时——`CopierMapper[P,E]` 基于 `jinzhu/copier` 做反射映射，通过 `MapperPlan` 结构声明 preset/field mapping/converter/custom hook，`Apply` 一次性装配，`Validate` 在初始化期检查完整性。Proto annotation 定义在共享 `api/protos/servora/mapper/v1/mapper.proto`，声明 message 级与 field 级规则，供后续 protoc 插件读取。
 
 **Tech Stack:** Go 1.24, Protobuf, jinzhu/copier v0.4.0, Buf v2, testify
 
@@ -748,18 +748,18 @@ git commit -m "feat(pkg/mapper): add MapperPlan declarative configuration and Ap
 ## Task 5: 定义 `servora.mapper` proto annotation
 
 **Files:**
-- Create: `api/protos/mapper/v1/mapper.proto`
+- Create: `api/protos/servora/mapper/v1/mapper.proto`
 
 **Step 1: Write the proto file**
 
 ```protobuf
 syntax = "proto3";
 
-package mapper.v1;
+package servora.mapper.v1;
 
 import "google/protobuf/descriptor.proto";
 
-option go_package = "github.com/Servora-Kit/servora/api/gen/go/mapper/v1;mapperpb";
+option go_package = "github.com/Servora-Kit/servora/api/gen/go/servora/mapper/v1;mapperpb";
 
 // ConverterKind enumerates built-in converter types that can be referenced in field annotations.
 enum ConverterKind {
@@ -817,12 +817,12 @@ Expected: 0 errors
 **Step 3: Generate Go code**
 
 Run: `make api`
-Expected: `api/gen/go/mapper/v1/mapper.pb.go` generated successfully
+Expected: `api/gen/go/servora/mapper/v1/mapper.pb.go` generated successfully
 
 **Step 4: Commit**
 
 ```bash
-git add api/protos/mapper/v1/mapper.proto api/gen/go/mapper/v1/
+git add api/protos/servora/mapper/v1/mapper.proto api/gen/go/servora/mapper/v1/
 git commit -m "feat(api/proto): define servora.mapper message and field annotations"
 ```
 
@@ -831,7 +831,7 @@ git commit -m "feat(api/proto): define servora.mapper message and field annotati
 ## Task 6: 在 `User` proto 上添加 mapper annotation 示例
 
 **Files:**
-- Modify: `app/iam/service/api/protos/user/service/v1/user.proto`
+- Modify: `app/iam/service/api/protos/servora/user/service/v1/user.proto`
 
 **Step 1: Add mapper annotations to User message**
 
@@ -876,7 +876,7 @@ Expected: 0 errors
 **Step 4: Commit**
 
 ```bash
-git add app/iam/service/api/protos/user/service/v1/user.proto api/gen/go/
+git add app/iam/service/api/protos/servora/user/service/v1/user.proto api/gen/go/servora/
 git commit -m "feat(api/proto): annotate User message with servora.mapper rules"
 ```
 

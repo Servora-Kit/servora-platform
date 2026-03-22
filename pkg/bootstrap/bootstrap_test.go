@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"testing"
 
-	conf "github.com/Servora-Kit/servora/api/gen/go/conf/v1"
+	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 )
 
 func TestResolveServiceIdentity_UseConfigValues(t *testing.T) {

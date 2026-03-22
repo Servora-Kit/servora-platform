@@ -3,7 +3,7 @@ package logger
 import (
 	"testing"
 
-	conf "github.com/Servora-Kit/servora/api/gen/go/conf/v1"
+	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 )
 
 func TestNew_NilSafe(t *testing.T) {

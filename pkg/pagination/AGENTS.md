@@ -15,7 +15,7 @@
 
 - 默认页码为 `1`
 - 默认页大小为 `20`
-- 依赖共享生成类型 `api/gen/go/pagination/v1`
+- 依赖共享生成类型 `api/gen/go/servora/pagination/v1`
 - 包体量很小，定位是“分页辅助”，不是通用查询框架
 
 ## 边界约束

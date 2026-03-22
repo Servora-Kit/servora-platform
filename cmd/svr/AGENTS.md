@@ -38,7 +38,7 @@ cmd/svr/
 - `<server_name>` 必须对应真实存在的 `app/<server_name>/service` 目录（如 `iam`、`sayhello`）
 - 输出到 `app/<server_name>/service/api/protos/<name>/service/v1/`
 - 只生成 `<name>.proto` 与 `<name>_doc.proto`，不生成 HTTP 专用 `i_*.proto`
-- 模板位于 `api/protos/template/service/v1/`
+- 模板位于 `api/protos/servora/template/service/v1/`
 - 生成后需手动运行 `make gen` 生成 Go 代码
 - 若需 OpenAPI/TypeScript 生成，需检查服务级 `api/buf.openapi.gen.yaml` 或 `api/buf.typescript.gen.yaml`
 

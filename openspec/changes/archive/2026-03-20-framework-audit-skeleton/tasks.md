@@ -35,13 +35,13 @@
 
 ## 3. Proto 定义 — Audit + 配置扩展
 
-- [x] 3.1 新建 `api/protos/audit/v1/audit.proto`：定义 `AuditEvent`、`AuditEventType` enum、`AuditActor`、`AuditTarget`、`AuditResult`、typed detail messages（AuthnDetail、AuthzDetail、TupleMutationDetail、ResourceMutationDetail）
-- [x] 3.2 新建 `api/protos/audit/v1/annotations.proto`：定义 `AuditRule` message 和 `audit_rule` method option extension
-- [x] 3.3 扩展 `api/protos/conf/v1/conf.proto` — `Data` message 新增 `Kafka kafka` 字段：定义 `Data.Kafka` message（brokers、client_id、consumer_group、required_acks、retry_max、retry_backoff、dial/read/write_timeout、compression）和 `KafkaSASL` message（mechanism、username、password）
-- [x] 3.4 扩展 `api/protos/conf/v1/conf.proto` — `Data` message 新增 `ClickHouse clickhouse` 字段：定义 `Data.ClickHouse` message（addrs、database、username、password、dial_timeout、read_timeout、max_open_conns、max_idle_conns、conn_max_lifetime）
-- [x] 3.5 扩展 `api/protos/conf/v1/conf.proto` — `App` message 新增 `Audit audit` 字段：定义 `App.Audit` message（enabled、emitter_type、topic、service_name）
+- [x] 3.1 新建 `api/protos/servora/audit/v1/audit.proto`：定义 `AuditEvent`、`AuditEventType` enum、`AuditActor`、`AuditTarget`、`AuditResult`、typed detail messages（AuthnDetail、AuthzDetail、TupleMutationDetail、ResourceMutationDetail）
+- [x] 3.2 新建 `api/protos/servora/audit/v1/annotations.proto`：定义 `AuditRule` message 和 `audit_rule` method option extension
+- [x] 3.3 扩展 `api/protos/servora/conf/v1/conf.proto` — `Data` message 新增 `Kafka kafka` 字段：定义 `Data.Kafka` message（brokers、client_id、consumer_group、required_acks、retry_max、retry_backoff、dial/read/write_timeout、compression）和 `KafkaSASL` message（mechanism、username、password）
+- [x] 3.4 扩展 `api/protos/servora/conf/v1/conf.proto` — `Data` message 新增 `ClickHouse clickhouse` 字段：定义 `Data.ClickHouse` message（addrs、database、username、password、dial_timeout、read_timeout、max_open_conns、max_idle_conns、conn_max_lifetime）
+- [x] 3.5 扩展 `api/protos/servora/conf/v1/conf.proto` — `App` message 新增 `Audit audit` 字段：定义 `App.Audit` message（enabled、emitter_type、topic、service_name）
 - [x] 3.6 更新 `buf.yaml`：确认新的 `audit/v1` proto 路径被正确纳入 module
-- [x] 3.7 运行 `make api`：验证所有 proto 编译通过，`api/gen/go/audit/v1/` 和 `api/gen/go/conf/v1/` 生成产物正确 ⚡ 需要 `make api`
+- [x] 3.7 运行 `make api`：验证所有 proto 编译通过，`api/gen/go/servora/audit/v1/` 和 `api/gen/go/servora/conf/v1/` 生成产物正确 ⚡ 需要 `make api`
 
 ## 4. pkg/broker — 消息代理抽象
 

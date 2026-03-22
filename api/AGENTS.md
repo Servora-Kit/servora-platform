@@ -61,7 +61,7 @@ api/
 - 修改 proto 后运行根目录 `make gen`（Go）或 `make api-ts`（TypeScript）
 - **禁止手动编辑** `api/gen/go/` 和 `api/gen/ts/`
 - `api/ts-client/` 只有 `package.json`，不要在此存放任何生成或手写代码
-- `api/protos/template/service/v1/` 包含 `svr new api` 使用的 proto 模板
+- `api/protos/servora/template/service/v1/` 包含 `svr new api` 使用的 proto 模板
 
 ## 常用命令
 

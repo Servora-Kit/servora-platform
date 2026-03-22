@@ -1,7 +1,7 @@
 package pagination
 
 import (
-	paginationpb "github.com/Servora-Kit/servora/api/gen/go/pagination/v1"
+	paginationpb "github.com/Servora-Kit/servora/api/gen/go/servora/pagination/v1"
 )
 
 const (

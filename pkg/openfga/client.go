@@ -3,7 +3,7 @@ package openfga
 import (
 	"fmt"
 
-	conf "github.com/Servora-Kit/servora/api/gen/go/conf/v1"
+	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 	fgaclient "github.com/openfga/go-sdk/client"
 	fgacredentials "github.com/openfga/go-sdk/credentials"
 )

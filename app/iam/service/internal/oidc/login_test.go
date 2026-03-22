@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-kratos/kratos/v2/log"
 
-	confpb "github.com/Servora-Kit/servora/api/gen/go/conf/v1"
+	confpb "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 )
 
 func newTestLoginHandler() *LoginHandler {

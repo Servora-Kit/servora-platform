@@ -3,7 +3,7 @@ package audit
 import (
 	"fmt"
 
-	auditv1 "github.com/Servora-Kit/servora/api/gen/go/audit/v1"
+	auditv1 "github.com/Servora-Kit/servora/api/gen/go/servora/audit/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

@@ -12,9 +12,9 @@ managed:
         - module: buf.build/gnostic/gnostic
         # 保留 conf proto 的原始 go_package 设置
         - file_option: go_package
-          path: conf/v1/conf.proto
+          path: servora/conf/v1/conf.proto
         - file_option: go_package
-          path: iam/conf/v1/config.proto
+          path: servora/iam/conf/v1/config.proto
 
 plugins:
     # generate go struct code

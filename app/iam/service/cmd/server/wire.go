@@ -6,8 +6,8 @@
 package main
 
 import (
-	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
-	iamconf "github.com/Servora-Kit/servora/api/gen/go/iam/conf/v1"
+	"github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
+	iamconf "github.com/Servora-Kit/servora/api/gen/go/servora/iam/conf/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/data"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/oidc"

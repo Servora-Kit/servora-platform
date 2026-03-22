@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-kratos/kratos/v2/log"
 
-	userpb "github.com/Servora-Kit/servora/api/gen/go/user/service/v1"
+	userpb "github.com/Servora-Kit/servora/api/gen/go/servora/user/service/v1"
 )
 
 // --- fakes ---

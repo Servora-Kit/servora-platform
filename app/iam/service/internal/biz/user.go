@@ -5,9 +5,9 @@ import (
 
 	"github.com/go-kratos/kratos/v2/errors"
 
-	authnpb "github.com/Servora-Kit/servora/api/gen/go/authn/service/v1"
-	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
-	userpb "github.com/Servora-Kit/servora/api/gen/go/user/service/v1"
+	authnpb "github.com/Servora-Kit/servora/api/gen/go/servora/authn/service/v1"
+	"github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
+	userpb "github.com/Servora-Kit/servora/api/gen/go/servora/user/service/v1"
 	"github.com/Servora-Kit/servora/pkg/helpers"
 	"github.com/Servora-Kit/servora/pkg/logger"
 )

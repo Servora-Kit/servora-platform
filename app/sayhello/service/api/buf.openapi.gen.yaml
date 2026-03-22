@@ -19,7 +19,7 @@ managed:
 inputs:
     - directory: app/sayhello/service/api/protos
       paths:
-          - app/sayhello/service/api/protos/sayhello/service/v1 # 生成 sayhello 服务的接口
+          - app/sayhello/service/api/protos/servora/sayhello/service/v1 # 生成 sayhello 服务的接口
 
 plugins:
     # generate openapi v3 yaml doc

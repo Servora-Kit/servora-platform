@@ -340,7 +340,7 @@ type Emitter interface {
 
 ### D4: audit.proto — 审计事件公共模型
 
-**决策**: proto 定义放在 `api/protos/audit/v1/`，包含两个文件。
+**决策**: proto 定义放在 `api/protos/servora/audit/v1/`，包含两个文件。
 
 **`audit.proto`** — 公共事件模型:
 
@@ -409,7 +409,7 @@ type Emitter interface {
 
 ### D8: 配置层扩展 — conf.proto + pkg 集成
 
-**决策**: 在 `api/protos/conf/v1/conf.proto` 的 `Data` message 中新增 `Kafka` 和 `ClickHouse` 子 message，在 `App` message 中新增 `Audit` 子 message。所有新增 pkg 组件通过 proto 配置初始化。
+**决策**: 在 `api/protos/servora/conf/v1/conf.proto` 的 `Data` message 中新增 `Kafka` 和 `ClickHouse` 子 message，在 `App` message 中新增 `Audit` 子 message。所有新增 pkg 组件通过 proto 配置初始化。
 
 **理由**:
 

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	conf "github.com/Servora-Kit/servora/api/gen/go/conf/v1"
-	authnpb "github.com/Servora-Kit/servora/api/gen/go/authn/service/v1"
+	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
+	authnpb "github.com/Servora-Kit/servora/api/gen/go/servora/authn/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/servora/pkg/jwks"
 	"github.com/Servora-Kit/servora/pkg/logger"

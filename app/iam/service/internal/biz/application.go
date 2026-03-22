@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 
-	apppb "github.com/Servora-Kit/servora/api/gen/go/application/service/v1"
+	apppb "github.com/Servora-Kit/servora/api/gen/go/servora/application/service/v1"
 	"github.com/Servora-Kit/servora/pkg/helpers"
 	"github.com/Servora-Kit/servora/pkg/logger"
 )

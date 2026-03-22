@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	conf "github.com/Servora-Kit/servora/api/gen/go/conf/v1"
+	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 	"github.com/stretchr/testify/assert"
 )
 

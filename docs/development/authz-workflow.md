@@ -94,7 +94,7 @@ svr openfga model apply
 
 ```bash
 # 1. 编辑 proto 文件中的 authz.rule 注解
-vim app/iam/service/api/protos/iam/service/v1/i_organization.proto
+vim app/iam/service/api/protos/servora/iam/service/v1/i_organization.proto
 
 # 2. 重新生成代码（自动更新 authz_rules.gen.go）
 make api
@@ -111,7 +111,7 @@ go build ./app/iam/service/...
 2. **Ent Schema**：在 `app/iam/service/internal/data/schema/` 中新增 schema
 3. **Proto**：新增 proto 服务定义 + HTTP 聚合 proto + AuthZ 注解
 4. **业务代码**：Biz usecase + Data repo + Service layer + OpenFGA tuple 双写
-5. **AuthZ 枚举**：如需新增 ObjectType/Relation，更新 `app/iam/service/api/protos/authz/service/v1/authz.proto`
+5. **AuthZ 枚举**：如需新增 ObjectType/Relation，更新 `app/iam/service/api/protos/servora/authz/service/v1/authz.proto`
 6. **生成与同步**：`make gen` + `make openfga.model.apply`
 
 ## AuthZ Proto 注解参考
@@ -119,7 +119,7 @@ go build ./app/iam/service/...
 在 IAM HTTP 聚合 proto（`i_*.proto`）的每个 RPC 方法上声明权限：
 
 ```protobuf
-import "authz/service/v1/authz.proto";
+import "servora/authz/service/v1/authz.proto";
 
 rpc GetOrganization(...) returns (...) {
   option (google.api.http) = {get: "/v1/organizations/{id}"};
@@ -150,7 +150,7 @@ rpc GetOrganization(...) returns (...) {
 
 `cmd/protoc-gen-servora-authz/` 是一个 protoc 插件：
 - 读取 proto 文件中的 `(servora.authz.v1.rule)` 方法选项
-- 生成 `authz_rules.gen.go` 到 `api/gen/go/iam/service/v1/`
+- 生成 `authz_rules.gen.go` 到 `api/gen/go/servora/iam/service/v1/`
 - 输出 `AuthzRules map[string]AuthzRuleEntry`，供 IAM 服务内 AuthZ 中间件（`app/iam/service/internal/server/middleware/authz.go`）查表使用
 - 集成在 `make api` 流程中（通过 `buf.go.gen.yaml` 中的 `protoc-gen-servora-authz` 插件）
 

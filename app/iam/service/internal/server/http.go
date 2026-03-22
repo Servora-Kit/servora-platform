@@ -10,8 +10,8 @@ import (
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 	"github.com/zitadel/oidc/v3/pkg/op"
 
-	"github.com/Servora-Kit/servora/api/gen/go/conf/v1"
-	iamv1 "github.com/Servora-Kit/servora/api/gen/go/iam/service/v1"
+	"github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
+	iamv1 "github.com/Servora-Kit/servora/api/gen/go/servora/iam/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/assets"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/oidc"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/service"

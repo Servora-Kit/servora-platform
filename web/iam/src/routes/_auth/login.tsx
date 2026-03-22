@@ -127,11 +127,12 @@ function LoginPage() {
       let role = ''
       try {
         const userInfo = await iamClients.user.CurrentUserInfo({})
-        role = userInfo.role ?? ''
+        const currentUser = userInfo.user
+        role = currentUser?.role ?? ''
         setUser({
-          id: userInfo.id ?? '',
-          name: userInfo.username ?? userInfo.email ?? '',
-          email: userInfo.email ?? '',
+          id: currentUser?.id ?? '',
+          name: currentUser?.username ?? currentUser?.email ?? '',
+          email: currentUser?.email ?? '',
           role,
         })
       } catch {
