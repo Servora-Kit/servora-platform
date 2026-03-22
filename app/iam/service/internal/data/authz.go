@@ -26,7 +26,7 @@ func (r *authzRepo) WriteTuples(ctx context.Context, tuples ...biz.Tuple) error 
 	if err := r.fga.WriteTuples(ctx, fgaTuples...); err != nil {
 		return err
 	}
-	openfga.InvalidateForTuples(ctx, r.rdb, fgaTuples)
+	r.fga.InvalidateForTuples(ctx, r.rdb, fgaTuples)
 	return nil
 }
 
@@ -35,12 +35,13 @@ func (r *authzRepo) DeleteTuples(ctx context.Context, tuples ...biz.Tuple) error
 	if err := r.fga.DeleteTuples(ctx, fgaTuples...); err != nil {
 		return err
 	}
-	openfga.InvalidateForTuples(ctx, r.rdb, fgaTuples)
+	r.fga.InvalidateForTuples(ctx, r.rdb, fgaTuples)
 	return nil
 }
 
 func (r *authzRepo) Check(ctx context.Context, userID, relation, objectType, objectID string) (bool, error) {
-	return r.fga.CachedCheck(ctx, r.rdb, openfga.DefaultCheckCacheTTL, userID, relation, objectType, objectID)
+	allowed, _, err := r.fga.CachedCheck(ctx, r.rdb, openfga.DefaultCheckCacheTTL, userID, relation, objectType, objectID)
+	return allowed, err
 }
 
 func (r *authzRepo) ListObjects(ctx context.Context, userID, relation, objectType string) ([]string, error) {
