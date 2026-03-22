@@ -65,6 +65,7 @@ type(scope): description
 - `templates/`：通用部署模板，给使用框架的人作为参考
 - `docs/`：文档目录；当前包含 `design/`、`development/`、`knowledge/`、`reference/`
 - `openspec/`：OpenSpec 变更与归档
+- `web/`：前端工作区；当前包含 `web/iam/`（IAM 前端应用）、`web/pkg/`（共享请求/错误处理工具）、`web/ui/`（共享 UI 组件库）
 
 ## 关键文件
 
@@ -95,8 +96,9 @@ type(scope): description
 - 前端应用统一放在 `web/<service>/`（如 `web/iam/`），共用根目录 pnpm workspace
 - 所有服务的 TypeScript 生成代码统一输出到 `api/gen/ts/`（不按服务分子目录），通过 pnpm workspace 包 `@servora/api-client`（位于 `api/ts-client/`）引用
 - 前端应用通过 `import from '@servora/api-client/<namespace>/...'` 使用生成类型，无需关心物理路径
-- 共享前端工具库（请求处理、Token 管理等）放在 `web/pkg/`，包名 `@servora/web-pkg`；通过 `import from '@servora/web-pkg/<module>'` 使用
-- 新增前端应用只需在 `package.json` 加 `"@servora/api-client": "workspace:*"` 和 `"@servora/web-pkg": "workspace:*"`，在 `tsconfig.json` 加路径别名，详见 `web/iam/AGENTS.md`
+- 共享前端工具库（请求处理、Token 管理、Kratos 错误解析等）放在 `web/pkg/`，包名 `@servora/web-pkg`；通过 `import from '@servora/web-pkg/<module>'` 使用
+- 共享 UI 组件库放在 `web/ui/`，包名 `@servora/ui`；通过包导出复用组件、`styles.css` 与 `utils/*`
+- 新增前端应用只需在 `package.json` 加 `"@servora/api-client": "workspace:*"`、`"@servora/web-pkg": "workspace:*"`，按需接入 `@servora/ui`，并在 `tsconfig.json` 加路径别名，详见 `web/iam/AGENTS.md`
 
 ### 部署
 - K8s 基础设施：`manifests/k8s/base/`

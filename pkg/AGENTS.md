@@ -5,29 +5,35 @@
 
 ## 目录概览
 
-`pkg/` 提供跨服务复用的基础能力。当前子目录：`actor`、`audit`、`bootstrap`、`broker`、`ent/mixin`、`governance`、`health`、`helpers`、`jwks`、`jwt`、`k8s`、`logger`、`mapper`、`openfga`、`redis`、`transport`。
+`pkg/` 提供跨服务复用的基础能力。当前一级子目录：`actor`、`audit`、`authn`、`authz`、`bootstrap`、`broker`、`cap`、`ent`、`governance`、`health`、`helpers`、`jwks`、`jwt`、`k8s`、`logger`、`mail`、`mapper`、`openfga`、`pagination`、`redis`、`swagger`、`transport`。
 
 ## 模块速览
 
 | 目录 | 用途 |
 |------|------|
 | `actor/` | 请求 Actor v2（User/Service/System/Anonymous），含 Subject/Roles/Scopes/Attrs |
-| `audit/` | 审计事件运行时（Emitter接口、BrokerEmitter/LogEmitter/NoopEmitter、Recorder、Kratos middleware骨架） |
-| `bootstrap/` | 启动链路与配置加载 |
-| `broker/` | 消息代理抽象接口（Broker/Message/Event/Subscriber）|
-| `broker/kafka/` | franz-go 实现（KRaft，kzap日志桥接，kotel OTel hooks，SASL支持）|
-| `ent/mixin` | Ent schema 混入 |
+| `audit/` | 审计事件运行时（Emitter、Recorder、Kratos middleware 骨架与多种 emitter） |
+| `authn/` | 基于 JWT 的认证中间件，负责 token 解析、claims 映射与 actor 注入 |
+| `authz/` | 基于 OpenFGA 的授权中间件，消费 protoc 生成的 AuthzRule |
+| `bootstrap/` | 启动链路、配置加载、服务身份解析与 Runtime 生命周期 |
+| `broker/` | 消息代理抽象接口（Broker/Message/Subscriber） |
+| `broker/kafka/` | franz-go 实现（producer/consumer/config） |
+| `cap/` | 基于 Redis 的内嵌式 Cap PoW 人机验证服务端 |
+| `ent/` | Ent 驱动、scope 与 schema mixin |
 | `governance/` | 注册发现、配置中心、遥测 |
-| `health/` | 健康检查 |
-| `helpers/` | 通用辅助与 bcrypt 哈希 |
-| `jwks/` | JWKS 解析 |
-| `jwt/` | JWT 工具与 context 注入 |
-| `k8s/` | Kubernetes 客户端 |
-| `logger/` | Kratos + Zap，暴力重构版：`New(app)`、`For(l,module)`、`With(l,args...)`、`Zap()`、`Sync()` |
-| `mapper/` | 模型映射 |
-| `openfga/` | OpenFGA 客户端与授权 |
-| `redis/` | Redis 客户端与锁/Cache-aside |
-| `transport/` | 服务间 transport client |
+| `health/` | 健康检查 Handler / Checker / Pinger 组合 |
+| `helpers/` | 无状态通用辅助与 bcrypt 哈希 |
+| `jwks/` | JWKS 管理、响应生成与端点辅助 |
+| `jwt/` | JWT 签发、校验与 claims context 注入 |
+| `k8s/` | Kubernetes clientset 与运行时环境探测 |
+| `logger/` | Kratos + Zap，含 GORM / Ent 桥接 |
+| `mail/` | Mail Sender 抽象与 SMTP 发送实现 |
+| `mapper/` | 类型安全映射器、plan / preset / hook / converter |
+| `openfga/` | OpenFGA 客户端、check/list/tuple/cache 封装 |
+| `pagination/` | PaginationRequest / PaginationResponse 辅助 |
+| `redis/` | Redis 客户端与锁 / Cache-aside |
+| `swagger/` | Swagger UI 与 OpenAPI 文档挂载 |
+| `transport/` | 服务间 transport client / server / middleware |
 
 ## 当前事实
 

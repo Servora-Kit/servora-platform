@@ -28,6 +28,18 @@
 | `GormLoggerFrom(l, module)` | 创建 GORM 兼容 logger |
 | `EntLogFuncFrom(l, module)` | 创建 Ent debug log 函数 |
 
+## 边界约束
+
+- 本包负责日志抽象与桥接，不负责日志采集、存储或观测平台编排
+- 不在这里加入业务埋点语义、审计事件定义或 tracing 采样策略
+- module 命名约定应保持通用，不为单个服务定制私有格式
+
+## 常见反模式
+
+- 在共享 logger 包里硬编码业务字段名或领域事件名
+- 直接暴露底层 zap 给所有调用方并绕过 `For` / `With` 约定
+- 把 GORM / Ent 适配与具体 repository 逻辑耦合
+
 ## 使用示例
 
 ```go
@@ -59,3 +71,8 @@ zapLogger.Zap()
 ```bash
 go test ./pkg/logger/...
 ```
+
+## 维护提示
+
+- 若新增桥接器，优先保持 `ZapLogger` 与 `Helper` API 稳定
+- 若调整 module 命名习惯，需同步检查现有日志检索与监控面板依赖
