@@ -26,6 +26,7 @@ import (
 
 	authzpb "github.com/Servora-Kit/servora/api/gen/go/servora/authz/service/v1"
 	"github.com/Servora-Kit/servora/pkg/actor"
+	"github.com/Servora-Kit/servora/pkg/audit"
 	"github.com/Servora-Kit/servora/pkg/openfga"
 	"github.com/Servora-Kit/servora/pkg/redis"
 )
@@ -48,6 +49,7 @@ type authzConfig struct {
 	redis    *redis.Client
 	cacheTTL time.Duration
 	rules    map[string]AuthzRule
+	recorder *audit.Recorder
 }
 
 // WithFGAClient sets the OpenFGA client used for authorization checks.
@@ -66,6 +68,12 @@ func WithAuthzCache(rdb *redis.Client, ttl time.Duration) Option {
 		cfg.redis = rdb
 		cfg.cacheTTL = ttl
 	}
+}
+
+// WithAuditRecorder injects an audit recorder that emits authz.decision events
+// after each authorization check. Passing nil disables audit emission.
+func WithAuditRecorder(r *audit.Recorder) Option {
+	return func(cfg *authzConfig) { cfg.recorder = r }
 }
 
 // Authz returns a Kratos middleware that performs OpenFGA authorization checks.
@@ -123,19 +131,49 @@ func Authz(opts ...Option) middleware.Middleware {
 			if ttl == 0 {
 				ttl = openfga.DefaultCheckCacheTTL
 			}
-			allowed, err := cfg.fga.CachedCheck(ctx, cfg.redis, ttl,
-				userID, relation, objectType, objectID)
+			principal := "user:" + userID
+			allowed, cacheHit, err := cfg.fga.CachedCheck(ctx, cfg.redis, ttl,
+				principal, relation, objectType, objectID)
 			if err != nil {
+				cfg.emitAuthzDecision(ctx, operation, a, audit.AuthzDetail{
+					Relation:    relation,
+					ObjectType:  objectType,
+					ObjectID:    objectID,
+					Decision:    audit.AuthzDecisionError,
+					CacheHit:    cacheHit,
+					ErrorReason: err.Error(),
+				})
 				return nil, errors.ServiceUnavailable("AUTHZ_CHECK_FAILED",
 					fmt.Sprintf("authorization check failed: %v", err))
 			}
 			if !allowed {
+				cfg.emitAuthzDecision(ctx, operation, a, audit.AuthzDetail{
+					Relation:   relation,
+					ObjectType: objectType,
+					ObjectID:   objectID,
+					Decision:   audit.AuthzDecisionDenied,
+					CacheHit:   cacheHit,
+				})
 				return nil, errors.Forbidden("AUTHZ_DENIED", "insufficient permissions")
 			}
 
+			cfg.emitAuthzDecision(ctx, operation, a, audit.AuthzDetail{
+				Relation:   relation,
+				ObjectType: objectType,
+				ObjectID:   objectID,
+				Decision:   audit.AuthzDecisionAllowed,
+				CacheHit:   cacheHit,
+			})
 			return handler(ctx, req)
 		}
 	}
+}
+
+func (cfg *authzConfig) emitAuthzDecision(ctx context.Context, operation string, a actor.Actor, detail audit.AuthzDetail) {
+	if cfg.recorder == nil {
+		return
+	}
+	cfg.recorder.RecordAuthzDecision(ctx, operation, a, detail)
 }
 
 // resolveObject determines the FGA object type and ID for the given rule and request.
