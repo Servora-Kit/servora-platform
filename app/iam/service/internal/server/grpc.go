@@ -11,7 +11,9 @@ import (
 	userpb "github.com/Servora-Kit/servora/api/gen/go/servora/user/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/service"
 	"github.com/Servora-Kit/servora/pkg/authn"
+	authjwt "github.com/Servora-Kit/servora/pkg/authn/jwt"
 	"github.com/Servora-Kit/servora/pkg/authz"
+	authzopenfga "github.com/Servora-Kit/servora/pkg/authz/openfga"
 	"github.com/Servora-Kit/servora/pkg/governance/telemetry"
 	"github.com/Servora-Kit/servora/pkg/jwks"
 	"github.com/Servora-Kit/servora/pkg/logger"
@@ -42,16 +44,16 @@ func NewGRPCMiddleware(
 		authnpb.AuthnService_SignupByEmail_FullMethodName,
 	)
 
-	authnMw := authn.Authn(authn.WithVerifier(km.Verifier()))
+	authnMw := authn.Server(authjwt.NewAuthenticator(authjwt.WithVerifier(km.Verifier())))
 
-	authzOpts := []authz.Option{
-		authz.WithFGAClient(fga),
-		authz.WithAuthzRulesFunc(iamv1.AuthzRules),
-	}
+	fgaAuthorizerOpts := []authzopenfga.Option{}
 	if rdb != nil {
-		authzOpts = append(authzOpts, authz.WithAuthzCache(rdb, openfga.DefaultCheckCacheTTL))
+		fgaAuthorizerOpts = append(fgaAuthorizerOpts, authzopenfga.WithRedisCache(rdb, openfga.DefaultCheckCacheTTL))
 	}
-	authzMw := authz.Authz(authzOpts...)
+	authzMw := authz.Server(
+		authzopenfga.NewAuthorizer(fga, fgaAuthorizerOpts...),
+		authz.WithRulesFunc(iamv1.AuthzRules),
+	)
 
 	ms = append(ms,
 		selector.Server(authnMw).

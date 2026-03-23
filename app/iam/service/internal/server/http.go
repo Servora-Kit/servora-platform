@@ -16,7 +16,9 @@ import (
 	"github.com/Servora-Kit/servora/app/iam/service/internal/oidc"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/service"
 	"github.com/Servora-Kit/servora/pkg/authn"
+	authjwt "github.com/Servora-Kit/servora/pkg/authn/jwt"
 	"github.com/Servora-Kit/servora/pkg/authz"
+	authzopenfga "github.com/Servora-Kit/servora/pkg/authz/openfga"
 	"github.com/Servora-Kit/servora/pkg/cap"
 	"github.com/Servora-Kit/servora/pkg/governance/telemetry"
 	"github.com/Servora-Kit/servora/pkg/health"
@@ -56,16 +58,16 @@ func NewHTTPMiddleware(
 		cap.OperationCapRedeem,
 	)
 
-	authnMw := authn.Authn(authn.WithVerifier(km.Verifier()))
+	authnMw := authn.Server(authjwt.NewAuthenticator(authjwt.WithVerifier(km.Verifier())))
 
-	authzOpts := []authz.Option{
-		authz.WithFGAClient(fga),
-		authz.WithAuthzRulesFunc(iamv1.AuthzRules),
-	}
+	fgaAuthorizerOpts := []authzopenfga.Option{}
 	if rdb != nil {
-		authzOpts = append(authzOpts, authz.WithAuthzCache(rdb, openfga.DefaultCheckCacheTTL))
+		fgaAuthorizerOpts = append(fgaAuthorizerOpts, authzopenfga.WithRedisCache(rdb, openfga.DefaultCheckCacheTTL))
 	}
-	authzMw := authz.Authz(authzOpts...)
+	authzMw := authz.Server(
+		authzopenfga.NewAuthorizer(fga, fgaAuthorizerOpts...),
+		authz.WithRulesFunc(iamv1.AuthzRules),
+	)
 
 	ms = append(ms,
 		selector.Server(authnMw).
@@ -124,7 +126,7 @@ func NewHTTPServer(
 	return http.NewServer(opts...)
 }
 
-// forwardAuthVerify 注册 GET/HEAD /v1/auth/verify 供网关 ForwardAuth 调用。
+// forwardAuthVerify registers GET/HEAD /v1/auth/verify for gateway ForwardAuth.
 func forwardAuthVerify(authSvc *service.AuthnService) func(s *khttp.Server) {
 	return func(s *khttp.Server) {
 		s.Handle("/v1/auth/verify", nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
