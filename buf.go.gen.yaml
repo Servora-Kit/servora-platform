@@ -10,6 +10,8 @@ managed:
         - module: buf.build/bufbuild/protovalidate
         - module: buf.build/kratos/apis
         - module: buf.build/gnostic/gnostic
+        - module: buf.build/gogo/protobuf
+        - module: buf.build/menta2k-org/redact
         # 保留 conf proto 的原始 go_package 设置
         - file_option: go_package
           path: servora/conf/v1/conf.proto
