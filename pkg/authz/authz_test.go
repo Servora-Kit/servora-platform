@@ -164,7 +164,7 @@ func TestAuthz_NoTransport_Passthrough(t *testing.T) {
 // TestAuthz_IDField_Empty_UsesDefault checks that an empty IDField results in "default" object ID.
 func TestAuthz_IDField_Empty_UsesDefault(t *testing.T) {
 	rule := AuthzRule{Mode: authzpb.AuthzMode_AUTHZ_MODE_CHECK, ObjectType: "platform", IDField: ""}
-	objectType, objectID, err := resolveObject(rule, nil)
+	objectType, objectID, err := resolveObject(rule, nil, "default")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -176,12 +176,27 @@ func TestAuthz_IDField_Empty_UsesDefault(t *testing.T) {
 	}
 }
 
+// TestAuthz_IDField_Empty_CustomDefault checks WithDefaultObjectID option.
+func TestAuthz_IDField_Empty_CustomDefault(t *testing.T) {
+	rule := AuthzRule{Mode: authzpb.AuthzMode_AUTHZ_MODE_CHECK, ObjectType: "platform", IDField: ""}
+	objectType, objectID, err := resolveObject(rule, nil, "global")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if objectType != "platform" {
+		t.Errorf("objectType = %q, want platform", objectType)
+	}
+	if objectID != "global" {
+		t.Errorf("objectID = %q, want global", objectID)
+	}
+}
+
 // TestAuthz_IDField_Set_ExtractedFromProto checks that IDField is extracted from the proto request.
 func TestAuthz_IDField_Set_ExtractedFromProto(t *testing.T) {
 	rule := AuthzRule{Mode: authzpb.AuthzMode_AUTHZ_MODE_CHECK, ObjectType: "user", IDField: "id"}
 	req := &userpb.GetUserRequest{Id: "user-abc-123"}
 
-	objectType, objectID, err := resolveObject(rule, req)
+	objectType, objectID, err := resolveObject(rule, req, "default")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -198,7 +213,7 @@ func TestAuthz_IDField_NotFound_Error(t *testing.T) {
 	rule := AuthzRule{Mode: authzpb.AuthzMode_AUTHZ_MODE_CHECK, ObjectType: "user", IDField: "nonexistent_field"}
 	req := &userpb.GetUserRequest{Id: "user-abc-123"}
 
-	_, _, err := resolveObject(rule, req)
+	_, _, err := resolveObject(rule, req, "default")
 	if err == nil {
 		t.Fatal("expected error for nonexistent field")
 	}
@@ -207,7 +222,7 @@ func TestAuthz_IDField_NotFound_Error(t *testing.T) {
 // TestAuthz_ObjectType_Empty_Error checks that an empty ObjectType in the rule returns an error.
 func TestAuthz_ObjectType_Empty_Error(t *testing.T) {
 	rule := AuthzRule{Mode: authzpb.AuthzMode_AUTHZ_MODE_CHECK, ObjectType: ""}
-	_, _, err := resolveObject(rule, nil)
+	_, _, err := resolveObject(rule, nil, "default")
 	if err == nil {
 		t.Fatal("expected error for empty ObjectType")
 	}

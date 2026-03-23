@@ -2,28 +2,42 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
-	"github.com/google/uuid"
 
 	"github.com/Servora-Kit/servora/pkg/actor"
 )
 
-const (
-	TenantIDHeader       = "X-Tenant-ID"
-	OrganizationIDHeader = "X-Organization-ID"
-	ProjectIDHeader      = "X-Project-ID"
-)
+// ScopeBinding maps an HTTP request header to a UserActor scope key.
+// Validate is an optional validator function; a non-nil error causes a 400 response.
+type ScopeBinding struct {
+	Header   string            // HTTP header name (e.g. "X-Tenant-ID")
+	ScopeKey string            // actor scope key (e.g. "tenant_id")
+	Validate func(string) error // optional validator (e.g. uuid.Parse)
+}
 
-// ScopeFromHeaders creates a Kratos middleware that reads organization and
-// project scope from request headers and injects them into the UserActor.
+// ScopeFromHeaders creates a Kratos middleware that reads scope values from
+// configured HTTP request headers and injects them into the UserActor.
 //
 // Requires an authenticated UserActor in context (i.e. must run after Authn).
 // Headers are optional — absent headers are silently skipped.
-// Invalid UUID values result in a 400 error.
-func ScopeFromHeaders() middleware.Middleware {
+// If a Validate function is provided and returns an error, the request is rejected with 400.
+//
+// Example:
+//
+//	const ScopeKeyTenantID = "tenant_id"
+//
+//	ScopeFromHeaders(
+//	    middleware.ScopeBinding{
+//	        Header:   "X-Tenant-ID",
+//	        ScopeKey: ScopeKeyTenantID,
+//	        Validate: func(v string) error { _, err := uuid.Parse(v); return err },
+//	    },
+//	)
+func ScopeFromHeaders(bindings ...ScopeBinding) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req any) (any, error) {
 			tr, ok := transport.FromServerContext(ctx)
@@ -40,26 +54,20 @@ func ScopeFromHeaders() middleware.Middleware {
 				return handler(ctx, req)
 			}
 
-			if tenantID := tr.RequestHeader().Get(TenantIDHeader); tenantID != "" {
-				if _, err := uuid.Parse(tenantID); err != nil {
-					return nil, errors.BadRequest("INVALID_TENANT_ID",
-						"invalid X-Tenant-ID header")
+			for _, b := range bindings {
+				val := tr.RequestHeader().Get(b.Header)
+				if val == "" {
+					continue
 				}
-				ua.SetTenantID(tenantID)
-			}
-			if orgID := tr.RequestHeader().Get(OrganizationIDHeader); orgID != "" {
-				if _, err := uuid.Parse(orgID); err != nil {
-					return nil, errors.BadRequest("INVALID_ORGANIZATION_ID",
-						"invalid X-Organization-ID header")
+				if b.Validate != nil {
+					if err := b.Validate(val); err != nil {
+						return nil, errors.BadRequest(
+							fmt.Sprintf("INVALID_%s", b.ScopeKey),
+							fmt.Sprintf("invalid %s header: %v", b.Header, err),
+						)
+					}
 				}
-				ua.SetOrganizationID(orgID)
-			}
-			if projID := tr.RequestHeader().Get(ProjectIDHeader); projID != "" {
-				if _, err := uuid.Parse(projID); err != nil {
-					return nil, errors.BadRequest("INVALID_PROJECT_ID",
-						"invalid X-Project-ID header")
-				}
-				ua.SetProjectID(projID)
+				ua.SetScope(b.ScopeKey, val)
 			}
 
 			return handler(ctx, req)

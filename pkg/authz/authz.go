@@ -8,7 +8,7 @@
 //
 //	mw = append(mw, pkgauthz.Authz(
 //	    pkgauthz.WithFGAClient(fgaClient),
-//	    pkgauthz.WithAuthzRules(orderpb.AuthzRules),
+//	    pkgauthz.WithAuthzRulesFunc(orderpb.AuthzRules),
 //	    pkgauthz.WithAuthzCache(redisClient, 60*time.Second),
 //	))
 package authz
@@ -45,11 +45,12 @@ type AuthzRule struct {
 type Option func(*authzConfig)
 
 type authzConfig struct {
-	fga      *openfga.Client
-	redis    *redis.Client
-	cacheTTL time.Duration
-	rules    map[string]AuthzRule
-	recorder *audit.Recorder
+	fga             *openfga.Client
+	redis           *redis.Client
+	cacheTTL        time.Duration
+	rules           map[string]AuthzRule
+	defaultObjectID string
+	recorder        *audit.Recorder
 }
 
 // WithFGAClient sets the OpenFGA client used for authorization checks.
@@ -57,9 +58,25 @@ func WithFGAClient(c *openfga.Client) Option {
 	return func(cfg *authzConfig) { cfg.fga = c }
 }
 
-// WithAuthzRules sets the operation→rule mapping.
+// WithAuthzRules sets the operation→rule mapping directly.
 func WithAuthzRules(rules map[string]AuthzRule) Option {
 	return func(cfg *authzConfig) { cfg.rules = rules }
+}
+
+// WithAuthzRulesFunc sets the operation→rule mapping via a function (e.g. generated AuditRules()).
+// The function is called once during middleware construction.
+func WithAuthzRulesFunc(fn func() map[string]AuthzRule) Option {
+	return func(cfg *authzConfig) {
+		if fn != nil {
+			cfg.rules = fn()
+		}
+	}
+}
+
+// WithDefaultObjectID overrides the fallback object ID used when IDField is empty.
+// Defaults to "default".
+func WithDefaultObjectID(id string) Option {
+	return func(cfg *authzConfig) { cfg.defaultObjectID = id }
 }
 
 // WithAuthzCache enables Redis caching of authorization check results.
@@ -82,12 +99,14 @@ func WithAuditRecorder(r *audit.Recorder) Option {
 //   - No transport in context → passthrough (non-server calls)
 //   - No rule for operation → fail-closed (403 AUTHZ_NO_RULE)
 //   - AUTHZ_MODE_NONE → skip (public endpoint)
-//   - AUTHZ_MODE_CHECK, no actor or anonymous → 403 AUTHZ_DENIED
+//   - AUTHZ_MODE_CHECK, no actor or anonymous actor → 403 AUTHZ_DENIED
 //   - AUTHZ_MODE_CHECK, nil FGA client → 503 AUTHZ_UNAVAILABLE
 //   - AUTHZ_MODE_CHECK, allowed → handler called
 //   - AUTHZ_MODE_CHECK, denied → 403 AUTHZ_DENIED
+//
+// The OpenFGA principal is constructed as "<actor.Type()>:<actor.ID()>" (e.g. "user:abc", "service:my-svc").
 func Authz(opts ...Option) middleware.Middleware {
-	cfg := &authzConfig{}
+	cfg := &authzConfig{defaultObjectID: "default"}
 	for _, o := range opts {
 		o(cfg)
 	}
@@ -111,16 +130,15 @@ func Authz(opts ...Option) middleware.Middleware {
 			}
 
 			a, ok := actor.FromContext(ctx)
-			if !ok || a.Type() != actor.TypeUser {
+			if !ok || a.Type() == actor.TypeAnonymous {
 				return nil, errors.Forbidden("AUTHZ_DENIED", "authentication required")
 			}
-			userID := a.ID()
 
 			if cfg.fga == nil {
 				return nil, errors.ServiceUnavailable("AUTHZ_UNAVAILABLE", "authorization service not available")
 			}
 
-			objectType, objectID, err := resolveObject(rule, req)
+			objectType, objectID, err := resolveObject(rule, req, cfg.defaultObjectID)
 			if err != nil {
 				return nil, errors.BadRequest("AUTHZ_BAD_REQUEST",
 					fmt.Sprintf("cannot resolve authorization target: %v", err))
@@ -131,7 +149,7 @@ func Authz(opts ...Option) middleware.Middleware {
 			if ttl == 0 {
 				ttl = openfga.DefaultCheckCacheTTL
 			}
-			principal := "user:" + userID
+			principal := string(a.Type()) + ":" + a.ID()
 			allowed, cacheHit, err := cfg.fga.CachedCheck(ctx, cfg.redis, ttl,
 				principal, relation, objectType, objectID)
 			if err != nil {
@@ -180,15 +198,15 @@ func (cfg *authzConfig) emitAuthzDecision(ctx context.Context, operation string,
 // For AUTHZ_MODE_CHECK:
 //   - ObjectType is taken directly from rule.ObjectType (e.g. "platform")
 //   - ObjectID is extracted from the proto request field named by rule.IDField,
-//     or defaults to "default" when IDField is empty (e.g. platform-level checks).
-func resolveObject(rule AuthzRule, req any) (objectType, objectID string, err error) {
+//     or defaults to defaultObjectID when IDField is empty (e.g. platform-level checks).
+func resolveObject(rule AuthzRule, req any, defaultObjectID string) (objectType, objectID string, err error) {
 	objectType = rule.ObjectType
 	if objectType == "" {
 		return "", "", fmt.Errorf("object_type not specified in authz rule")
 	}
 
 	if rule.IDField == "" {
-		return objectType, "default", nil
+		return objectType, defaultObjectID, nil
 	}
 
 	objectID, err = extractProtoField(req, rule.IDField)

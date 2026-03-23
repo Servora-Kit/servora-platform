@@ -22,41 +22,16 @@ func MustFromContext(ctx context.Context) Actor {
 	return a
 }
 
-// TenantIDFromContext returns the tenant scope from the actor in context (uses Scope(ScopeKeyTenantID)).
-func TenantIDFromContext(ctx context.Context) (string, bool) {
+// ScopeFromContext returns a generic scope value from the actor in context.
+// Callers define their own scope key constants (e.g. const ScopeKeyTenantID = "tenant_id").
+func ScopeFromContext(ctx context.Context, key string) (string, bool) {
 	a, ok := FromContext(ctx)
 	if !ok {
 		return "", false
 	}
-	id := a.Scope(ScopeKeyTenantID)
-	if id == "" {
+	val := a.Scope(key)
+	if val == "" {
 		return "", false
 	}
-	return id, true
-}
-
-// OrganizationIDFromContext returns the organization scope from the actor in context.
-func OrganizationIDFromContext(ctx context.Context) (string, bool) {
-	a, ok := FromContext(ctx)
-	if !ok {
-		return "", false
-	}
-	id := a.Scope(ScopeKeyOrganizationID)
-	if id == "" {
-		return "", false
-	}
-	return id, true
-}
-
-// ProjectIDFromContext returns the project scope from the actor in context.
-func ProjectIDFromContext(ctx context.Context) (string, bool) {
-	a, ok := FromContext(ctx)
-	if !ok {
-		return "", false
-	}
-	id := a.Scope(ScopeKeyProjectID)
-	if id == "" {
-		return "", false
-	}
-	return id, true
+	return val, true
 }
