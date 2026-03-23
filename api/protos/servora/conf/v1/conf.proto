@@ -147,7 +147,7 @@ message Data {
     google.protobuf.Duration conn_max_lifetime = 9;
     bool tls = 10;                                   // 是否启用 TLS（默认 false）
     bool tls_skip_verify = 11;                       // 跳过 TLS 证书校验（仅用于开发，默认 false）
-    string compress = 12;                            // 压缩算法："lz4"（默认）| "zstd" | "" 不压缩
+    string compress = 12;                            // 压缩算法："lz4" | "zstd" | ""（默认，不压缩）
   }
 
   Database database = 1;

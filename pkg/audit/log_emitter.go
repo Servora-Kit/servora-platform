@@ -18,6 +18,9 @@ func NewLogEmitter(l logger.Logger) *LogEmitter {
 }
 
 func (e *LogEmitter) Emit(_ context.Context, event *AuditEvent) error {
+	if event == nil {
+		return nil
+	}
 	b, err := json.Marshal(event)
 	if err != nil {
 		e.log.Warnf("audit: marshal event: %v", err)

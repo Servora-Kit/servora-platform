@@ -17,6 +17,9 @@ type Rule struct {
 	Operation string
 	// TargetType is the resource type being operated on (e.g. "user").
 	TargetType string
+	// MutationType specifies the mutation kind (create/update/delete) for
+	// EventTypeResourceMutation rules. Defaults to ResourceMutationUpdate if unset.
+	MutationType ResourceMutationType
 	// RecordOnError controls whether to emit events even when the handler fails.
 	RecordOnError bool
 }
@@ -82,8 +85,12 @@ func Audit(opts ...AuditMiddlewareOption) middleware.Middleware {
 
 			switch rule.EventType {
 			case EventTypeResourceMutation:
+				mutType := rule.MutationType
+				if mutType == "" {
+					mutType = ResourceMutationUpdate
+				}
 				detail := ResourceMutationDetail{
-					MutationType: ResourceMutationUpdate,
+					MutationType: mutType,
 					ResourceType: rule.TargetType,
 				}
 				cfg.recorder.RecordResourceMutation(ctx, opName, a, TargetInfo{Type: rule.TargetType}, detail, err)
