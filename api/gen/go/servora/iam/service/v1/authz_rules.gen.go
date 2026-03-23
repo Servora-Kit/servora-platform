@@ -7,8 +7,8 @@ import (
 	authz "github.com/Servora-Kit/servora/pkg/authz"
 )
 
-// AuthzRules maps each annotated RPC operation to its authorization rule.
-var AuthzRules = map[string]authz.AuthzRule{
+// _authzRules is the immutable backing store for AuthzRules.
+var _authzRules = map[string]authz.AuthzRule{
 	"/servora.application.service.v1.ApplicationService/CreateApplication": {
 		Mode:       v1.AuthzMode_AUTHZ_MODE_CHECK,
 		Relation:   "admin",
@@ -193,4 +193,14 @@ var AuthzRules = map[string]authz.AuthzRule{
 	"/servora.user.service.v1.UserService/UpdateUser": {
 		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
 	},
+}
+
+// AuthzRules returns a copy of the authorization rules for this package.
+// Each call returns an independent map; callers may not modify the returned map.
+func AuthzRules() map[string]authz.AuthzRule {
+	m := make(map[string]authz.AuthzRule, len(_authzRules))
+	for k, v := range _authzRules {
+		m[k] = v
+	}
+	return m
 }

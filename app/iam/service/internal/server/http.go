@@ -60,7 +60,7 @@ func NewHTTPMiddleware(
 
 	authzOpts := []authz.Option{
 		authz.WithFGAClient(fga),
-		authz.WithAuthzRules(iamv1.AuthzRules),
+		authz.WithAuthzRulesFunc(iamv1.AuthzRules),
 	}
 	if rdb != nil {
 		authzOpts = append(authzOpts, authz.WithAuthzCache(rdb, openfga.DefaultCheckCacheTTL))

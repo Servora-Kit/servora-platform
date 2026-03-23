@@ -98,8 +98,8 @@ func generateFile(g *protogen.GeneratedFile, pkgName protogen.GoPackageName, rul
 
 	authzRule := g.QualifiedGoIdent(protogen.GoIdent{GoName: "AuthzRule", GoImportPath: pkgAuthzPkg})
 
-	g.P("// AuthzRules maps each annotated RPC operation to its authorization rule.")
-	g.P("var AuthzRules = map[string]", authzRule, "{")
+	g.P("// _authzRules is the immutable backing store for AuthzRules.")
+	g.P("var _authzRules = map[string]", authzRule, "{")
 	for _, r := range rules {
 		modeIdent := g.QualifiedGoIdent(protogen.GoIdent{
 			GoName:       "AuthzMode_" + r.Mode.String(),
@@ -118,5 +118,15 @@ func generateFile(g *protogen.GeneratedFile, pkgName protogen.GoPackageName, rul
 		}
 		g.P("	},")
 	}
+	g.P("}")
+	g.P()
+	g.P("// AuthzRules returns a copy of the authorization rules for this package.")
+	g.P("// Each call returns an independent map; callers may not modify the returned map.")
+	g.P("func AuthzRules() map[string]", authzRule, " {")
+	g.P("	m := make(map[string]", authzRule, ", len(_authzRules))")
+	g.P("	for k, v := range _authzRules {")
+	g.P("		m[k] = v")
+	g.P("	}")
+	g.P("	return m")
 	g.P("}")
 }
