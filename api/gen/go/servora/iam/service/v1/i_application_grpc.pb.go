@@ -31,6 +31,9 @@ const (
 // ApplicationServiceClient is the client API for ApplicationService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// ApplicationService exposes ApplicationService methods over HTTP.
+// Authorization rules are declared on the underlying servora.application.service.v1.ApplicationService.
 type ApplicationServiceClient interface {
 	// 创建应用需要平台管理员权限
 	CreateApplication(ctx context.Context, in *v1.CreateApplicationRequest, opts ...grpc.CallOption) (*v1.CreateApplicationResponse, error)
@@ -112,6 +115,9 @@ func (c *applicationServiceClient) RegenerateClientSecret(ctx context.Context, i
 // ApplicationServiceServer is the server API for ApplicationService service.
 // All implementations must embed UnimplementedApplicationServiceServer
 // for forward compatibility.
+//
+// ApplicationService exposes ApplicationService methods over HTTP.
+// Authorization rules are declared on the underlying servora.application.service.v1.ApplicationService.
 type ApplicationServiceServer interface {
 	// 创建应用需要平台管理员权限
 	CreateApplication(context.Context, *v1.CreateApplicationRequest) (*v1.CreateApplicationResponse, error)

@@ -5,6 +5,7 @@ package servora.user.service.v1;
 import "buf/validate/validate.proto";
 import "errors/errors.proto";
 import "google/protobuf/timestamp.proto";
+import "servora/authz/v1/authz.proto";
 import "servora/mapper/v1/mapper.proto";
 import "servora/pagination/v1/pagination.proto";
 
@@ -29,16 +30,57 @@ enum ErrorReason {
   CREATE_USER_FAILED = 4 [(errors.code) = 500];
 }
 
-// User gRPC 服务 - 纯 gRPC 接口
+// User gRPC 服务
 service UserService {
-  rpc CurrentUserInfo(CurrentUserInfoRequest) returns (CurrentUserInfoResponse);
-  rpc GetUser(GetUserRequest) returns (GetUserResponse);
-  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
-  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
-  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
-  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
-  rpc PurgeUser(PurgeUserRequest) returns (PurgeUserResponse);
-  rpc RestoreUser(RestoreUserRequest) returns (RestoreUserResponse);
+  rpc CurrentUserInfo(CurrentUserInfoRequest) returns (CurrentUserInfoResponse) {
+    option (servora.authz.v1.rule) = {mode: AUTHZ_MODE_NONE};
+  }
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "can_manage_users"
+    };
+  }
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "can_manage_users"
+    };
+  }
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse) {
+    option (servora.authz.v1.rule) = {mode: AUTHZ_MODE_NONE};
+  }
+  // 创建用户需要平台管理员权限
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "admin"
+    };
+  }
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "admin"
+    };
+  }
+  rpc PurgeUser(PurgeUserRequest) returns (PurgeUserResponse) {
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "admin"
+    };
+  }
+  rpc RestoreUser(RestoreUserRequest) returns (RestoreUserResponse) {
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "admin"
+    };
+  }
 }
 
 // UserProfile 对应 OIDC Standard Claims 中的 profile scope 字段。

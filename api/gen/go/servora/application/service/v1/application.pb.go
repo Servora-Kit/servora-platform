@@ -8,6 +8,7 @@ package apppb
 
 import (
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	_ "github.com/Servora-Kit/servora/api/gen/go/servora/authz/v1"
 	_ "github.com/Servora-Kit/servora/api/gen/go/servora/mapper/v1"
 	v1 "github.com/Servora-Kit/servora/api/gen/go/servora/pagination/v1"
 	_ "github.com/go-kratos/kratos/v2/errors"
@@ -774,7 +775,7 @@ var File_servora_application_service_v1_application_proto protoreflect.FileDescr
 
 const file_servora_application_service_v1_application_proto_rawDesc = "" +
 	"\n" +
-	"0servora/application/service/v1/application.proto\x12\x1eservora.application.service.v1\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1eservora/mapper/v1/mapper.proto\x1a&servora/pagination/v1/pagination.proto\"\xc3\x04\n" +
+	"0servora/application/service/v1/application.proto\x12\x1eservora.application.service.v1\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cservora/authz/v1/authz.proto\x1a\x1eservora/mapper/v1/mapper.proto\x1a&servora/pagination/v1/pagination.proto\"\xc3\x04\n" +
 	"\vApplication\x12\x1a\n" +
 	"\x02id\x18\x01 \x01(\tB\n" +
 	"\xca\xc1\x18\x06\n" +
@@ -836,14 +837,14 @@ const file_servora_application_service_v1_application_proto_rawDesc = "" +
 	"\x19APPLICATION_CREATE_FAILED\x10\x02\x1a\x04\xa8E\xf4\x03\x12#\n" +
 	"\x19APPLICATION_UPDATE_FAILED\x10\x03\x1a\x04\xa8E\xf4\x03\x12#\n" +
 	"\x19APPLICATION_DELETE_FAILED\x10\x04\x1a\x04\xa8E\xf4\x03\x12\x1f\n" +
-	"\x15INVALID_CLIENT_SECRET\x10\x05\x1a\x04\xa8E\x91\x03\x1a\x04\xa0E\xf4\x032\xd8\x06\n" +
-	"\x12ApplicationService\x12\x88\x01\n" +
-	"\x11CreateApplication\x128.servora.application.service.v1.CreateApplicationRequest\x1a9.servora.application.service.v1.CreateApplicationResponse\x12\x7f\n" +
-	"\x0eGetApplication\x125.servora.application.service.v1.GetApplicationRequest\x1a6.servora.application.service.v1.GetApplicationResponse\x12\x85\x01\n" +
-	"\x10ListApplications\x127.servora.application.service.v1.ListApplicationsRequest\x1a8.servora.application.service.v1.ListApplicationsResponse\x12\x88\x01\n" +
-	"\x11UpdateApplication\x128.servora.application.service.v1.UpdateApplicationRequest\x1a9.servora.application.service.v1.UpdateApplicationResponse\x12\x88\x01\n" +
-	"\x11DeleteApplication\x128.servora.application.service.v1.DeleteApplicationRequest\x1a9.servora.application.service.v1.DeleteApplicationResponse\x12\x97\x01\n" +
-	"\x16RegenerateClientSecret\x12=.servora.application.service.v1.RegenerateClientSecretRequest\x1a>.servora.application.service.v1.RegenerateClientSecretResponseB\xa1\x02\n" +
+	"\x15INVALID_CLIENT_SECRET\x10\x05\x1a\x04\xa8E\x91\x03\x1a\x04\xa0E\xf4\x032\xcd\a\n" +
+	"\x12ApplicationService\x12\xa1\x01\n" +
+	"\x11CreateApplication\x128.servora.application.service.v1.CreateApplicationRequest\x1a9.servora.application.service.v1.CreateApplicationResponse\"\x17\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatform\x12\x87\x01\n" +
+	"\x0eGetApplication\x125.servora.application.service.v1.GetApplicationRequest\x1a6.servora.application.service.v1.GetApplicationResponse\"\x06\xa2\xbb\x18\x02\b\x01\x12\x8d\x01\n" +
+	"\x10ListApplications\x127.servora.application.service.v1.ListApplicationsRequest\x1a8.servora.application.service.v1.ListApplicationsResponse\"\x06\xa2\xbb\x18\x02\b\x01\x12\xa1\x01\n" +
+	"\x11UpdateApplication\x128.servora.application.service.v1.UpdateApplicationRequest\x1a9.servora.application.service.v1.UpdateApplicationResponse\"\x17\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatform\x12\xa1\x01\n" +
+	"\x11DeleteApplication\x128.servora.application.service.v1.DeleteApplicationRequest\x1a9.servora.application.service.v1.DeleteApplicationResponse\"\x17\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatform\x12\xb0\x01\n" +
+	"\x16RegenerateClientSecret\x12=.servora.application.service.v1.RegenerateClientSecretRequest\x1a>.servora.application.service.v1.RegenerateClientSecretResponse\"\x17\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatformB\xa1\x02\n" +
 	"\"com.servora.application.service.v1B\x10ApplicationProtoP\x01ZNgithub.com/Servora-Kit/servora/api/gen/go/servora/application/service/v1;apppb\xa2\x02\x03SAS\xaa\x02\x1eServora.Application.Service.V1\xca\x02\x1eServora\\Application\\Service\\V1\xe2\x02*Servora\\Application\\Service\\V1\\GPBMetadata\xea\x02!Servora::Application::Service::V1b\x06proto3"
 
 var (

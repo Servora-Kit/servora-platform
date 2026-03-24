@@ -8,6 +8,7 @@ package userpb
 
 import (
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	_ "github.com/Servora-Kit/servora/api/gen/go/servora/authz/v1"
 	_ "github.com/Servora-Kit/servora/api/gen/go/servora/mapper/v1"
 	v1 "github.com/Servora-Kit/servora/api/gen/go/servora/pagination/v1"
 	_ "github.com/go-kratos/kratos/v2/errors"
@@ -1054,7 +1055,7 @@ var File_servora_user_service_v1_user_proto protoreflect.FileDescriptor
 
 const file_servora_user_service_v1_user_proto_rawDesc = "" +
 	"\n" +
-	"\"servora/user/service/v1/user.proto\x12\x17servora.user.service.v1\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1eservora/mapper/v1/mapper.proto\x1a&servora/pagination/v1/pagination.proto\"\x81\x02\n" +
+	"\"servora/user/service/v1/user.proto\x12\x17servora.user.service.v1\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cservora/authz/v1/authz.proto\x1a\x1eservora/mapper/v1/mapper.proto\x1a&servora/pagination/v1/pagination.proto\"\x81\x02\n" +
 	"\vUserProfile\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
@@ -1130,19 +1131,19 @@ const file_servora_user_service_v1_user_proto_rawDesc = "" +
 	"\x12DELETE_USER_FAILED\x10\x01\x1a\x04\xa8E\xf4\x03\x12\x1c\n" +
 	"\x12UPDATE_USER_FAILED\x10\x02\x1a\x04\xa8E\xf4\x03\x12\x1a\n" +
 	"\x10SAVE_USER_FAILED\x10\x03\x1a\x04\xa8E\xf4\x03\x12\x1c\n" +
-	"\x12CREATE_USER_FAILED\x10\x04\x1a\x04\xa8E\xf4\x03\x1a\x04\xa0E\xf4\x032\xc8\x06\n" +
-	"\vUserService\x12t\n" +
-	"\x0fCurrentUserInfo\x12/.servora.user.service.v1.CurrentUserInfoRequest\x1a0.servora.user.service.v1.CurrentUserInfoResponse\x12\\\n" +
-	"\aGetUser\x12'.servora.user.service.v1.GetUserRequest\x1a(.servora.user.service.v1.GetUserResponse\x12b\n" +
-	"\tListUsers\x12).servora.user.service.v1.ListUsersRequest\x1a*.servora.user.service.v1.ListUsersResponse\x12e\n" +
+	"\x12CREATE_USER_FAILED\x10\x04\x1a\x04\xa8E\xf4\x03\x1a\x04\xa0E\xf4\x032\x87\b\n" +
+	"\vUserService\x12|\n" +
+	"\x0fCurrentUserInfo\x12/.servora.user.service.v1.CurrentUserInfoRequest\x1a0.servora.user.service.v1.CurrentUserInfoResponse\"\x06\xa2\xbb\x18\x02\b\x01\x12\x80\x01\n" +
+	"\aGetUser\x12'.servora.user.service.v1.GetUserRequest\x1a(.servora.user.service.v1.GetUserResponse\"\"\xa2\xbb\x18\x1e\b\x02\x12\x10can_manage_users\x1a\bplatform\x12\x86\x01\n" +
+	"\tListUsers\x12).servora.user.service.v1.ListUsersRequest\x1a*.servora.user.service.v1.ListUsersResponse\"\"\xa2\xbb\x18\x1e\b\x02\x12\x10can_manage_users\x1a\bplatform\x12m\n" +
 	"\n" +
-	"UpdateUser\x12*.servora.user.service.v1.UpdateUserRequest\x1a+.servora.user.service.v1.UpdateUserResponse\x12e\n" +
+	"UpdateUser\x12*.servora.user.service.v1.UpdateUserRequest\x1a+.servora.user.service.v1.UpdateUserResponse\"\x06\xa2\xbb\x18\x02\b\x01\x12~\n" +
 	"\n" +
-	"CreateUser\x12*.servora.user.service.v1.CreateUserRequest\x1a+.servora.user.service.v1.CreateUserResponse\x12e\n" +
+	"CreateUser\x12*.servora.user.service.v1.CreateUserRequest\x1a+.servora.user.service.v1.CreateUserResponse\"\x17\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatform\x12~\n" +
 	"\n" +
-	"DeleteUser\x12*.servora.user.service.v1.DeleteUserRequest\x1a+.servora.user.service.v1.DeleteUserResponse\x12b\n" +
-	"\tPurgeUser\x12).servora.user.service.v1.PurgeUserRequest\x1a*.servora.user.service.v1.PurgeUserResponse\x12h\n" +
-	"\vRestoreUser\x12+.servora.user.service.v1.RestoreUserRequest\x1a,.servora.user.service.v1.RestoreUserResponseB\xf1\x01\n" +
+	"DeleteUser\x12*.servora.user.service.v1.DeleteUserRequest\x1a+.servora.user.service.v1.DeleteUserResponse\"\x17\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatform\x12{\n" +
+	"\tPurgeUser\x12).servora.user.service.v1.PurgeUserRequest\x1a*.servora.user.service.v1.PurgeUserResponse\"\x17\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatform\x12\x81\x01\n" +
+	"\vRestoreUser\x12+.servora.user.service.v1.RestoreUserRequest\x1a,.servora.user.service.v1.RestoreUserResponse\"\x17\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatformB\xf1\x01\n" +
 	"\x1bcom.servora.user.service.v1B\tUserProtoP\x01ZHgithub.com/Servora-Kit/servora/api/gen/go/servora/user/service/v1;userpb\xa2\x02\x03SUS\xaa\x02\x17Servora.User.Service.V1\xca\x02\x17Servora\\User\\Service\\V1\xe2\x02#Servora\\User\\Service\\V1\\GPBMetadata\xea\x02\x1aServora::User::Service::V1b\x06proto3"
 
 var (

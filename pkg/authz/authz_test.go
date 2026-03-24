@@ -6,8 +6,9 @@ import (
 
 	"github.com/go-kratos/kratos/v2/transport"
 
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
 	authzpb "github.com/Servora-Kit/servora/api/gen/go/servora/authz/v1"
-	userpb "github.com/Servora-Kit/servora/api/gen/go/servora/user/service/v1"
 	"github.com/Servora-Kit/servora/pkg/actor"
 )
 
@@ -267,8 +268,8 @@ func TestResolveObject_IDField_Empty_CustomDefault(t *testing.T) {
 
 // TestResolveObject_IDField_Set_ExtractedFromProto checks that IDField is extracted from the proto request.
 func TestResolveObject_IDField_Set_ExtractedFromProto(t *testing.T) {
-	rule := AuthzRule{Mode: authzpb.AuthzMode_AUTHZ_MODE_CHECK, ObjectType: "user", IDField: "id"}
-	req := &userpb.GetUserRequest{Id: "user-abc-123"}
+	rule := AuthzRule{Mode: authzpb.AuthzMode_AUTHZ_MODE_CHECK, ObjectType: "user", IDField: "value"}
+	req := &wrapperspb.StringValue{Value: "user-abc-123"}
 
 	objectType, objectID, err := resolveObject(rule, req, "default")
 	if err != nil {
@@ -285,7 +286,7 @@ func TestResolveObject_IDField_Set_ExtractedFromProto(t *testing.T) {
 // TestResolveObject_IDField_NotFound_Error checks that a missing proto field returns an error.
 func TestResolveObject_IDField_NotFound_Error(t *testing.T) {
 	rule := AuthzRule{Mode: authzpb.AuthzMode_AUTHZ_MODE_CHECK, ObjectType: "user", IDField: "nonexistent_field"}
-	req := &userpb.GetUserRequest{Id: "user-abc-123"}
+	req := &wrapperspb.StringValue{Value: "user-abc-123"}
 
 	_, _, err := resolveObject(rule, req, "default")
 	if err == nil {
@@ -312,8 +313,8 @@ func TestExtractProtoField_NonProtoRequest_Error(t *testing.T) {
 
 // TestExtractProtoField_EmptyFieldValue_Error checks that an empty field value returns an error.
 func TestExtractProtoField_EmptyFieldValue_Error(t *testing.T) {
-	req := &userpb.GetUserRequest{Id: ""} // empty ID
-	_, err := extractProtoField(req, "id")
+	req := &wrapperspb.StringValue{Value: ""} // empty value
+	_, err := extractProtoField(req, "value")
 	if err == nil {
 		t.Fatal("expected error for empty field value")
 	}

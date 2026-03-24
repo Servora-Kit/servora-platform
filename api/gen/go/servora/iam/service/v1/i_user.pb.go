@@ -7,7 +7,6 @@
 package iampb
 
 import (
-	_ "github.com/Servora-Kit/servora/api/gen/go/servora/authz/v1"
 	v1 "github.com/Servora-Kit/servora/api/gen/go/servora/user/service/v1"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -27,19 +26,19 @@ var File_servora_iam_service_v1_i_user_proto protoreflect.FileDescriptor
 
 const file_servora_iam_service_v1_i_user_proto_rawDesc = "" +
 	"\n" +
-	"#servora/iam/service/v1/i_user.proto\x12\x16servora.iam.service.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1cservora/authz/v1/authz.proto\x1a\"servora/user/service/v1/user.proto2\xc9\t\n" +
-	"\vUserService\x12\x91\x01\n" +
-	"\x0fCurrentUserInfo\x12/.servora.user.service.v1.CurrentUserInfoRequest\x1a0.servora.user.service.v1.CurrentUserInfoResponse\"\x1b\xa2\xbb\x18\x02\b\x01\x82\xd3\xe4\x93\x02\x0f\x12\r/v1/user/info\x12\x96\x01\n" +
-	"\aGetUser\x12'.servora.user.service.v1.GetUserRequest\x1a(.servora.user.service.v1.GetUserResponse\"8\xa2\xbb\x18\x1e\b\x02\x12\x10can_manage_users\x1a\bplatform\x82\xd3\xe4\x93\x02\x10\x12\x0e/v1/users/{id}\x12\x97\x01\n" +
-	"\tListUsers\x12).servora.user.service.v1.ListUsersRequest\x1a*.servora.user.service.v1.ListUsersResponse\"3\xa2\xbb\x18\x1e\b\x02\x12\x10can_manage_users\x1a\bplatform\x82\xd3\xe4\x93\x02\v\x12\t/v1/users\x12\x87\x01\n" +
+	"#servora/iam/service/v1/i_user.proto\x12\x16servora.iam.service.v1\x1a\x1cgoogle/api/annotations.proto\x1a\"servora/user/service/v1/user.proto2\x99\b\n" +
+	"\vUserService\x12\x8b\x01\n" +
+	"\x0fCurrentUserInfo\x12/.servora.user.service.v1.CurrentUserInfoRequest\x1a0.servora.user.service.v1.CurrentUserInfoResponse\"\x15\x82\xd3\xe4\x93\x02\x0f\x12\r/v1/user/info\x12t\n" +
+	"\aGetUser\x12'.servora.user.service.v1.GetUserRequest\x1a(.servora.user.service.v1.GetUserResponse\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/v1/users/{id}\x12u\n" +
+	"\tListUsers\x12).servora.user.service.v1.ListUsersRequest\x1a*.servora.user.service.v1.ListUsersResponse\"\x11\x82\xd3\xe4\x93\x02\v\x12\t/v1/users\x12\x81\x01\n" +
 	"\n" +
-	"UpdateUser\x12*.servora.user.service.v1.UpdateUserRequest\x1a+.servora.user.service.v1.UpdateUserResponse\" \xa2\xbb\x18\x02\b\x01\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/user/update\x12\x92\x01\n" +
+	"UpdateUser\x12*.servora.user.service.v1.UpdateUserRequest\x1a+.servora.user.service.v1.UpdateUserResponse\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/user/update\x12{\n" +
 	"\n" +
-	"CreateUser\x12*.servora.user.service.v1.CreateUserRequest\x1a+.servora.user.service.v1.CreateUserResponse\"+\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatform\x82\xd3\xe4\x93\x02\x0e:\x01*\"\t/v1/users\x12\x94\x01\n" +
+	"CreateUser\x12*.servora.user.service.v1.CreateUserRequest\x1a+.servora.user.service.v1.CreateUserResponse\"\x14\x82\xd3\xe4\x93\x02\x0e:\x01*\"\t/v1/users\x12}\n" +
 	"\n" +
-	"DeleteUser\x12*.servora.user.service.v1.DeleteUserRequest\x1a+.servora.user.service.v1.DeleteUserResponse\"-\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatform\x82\xd3\xe4\x93\x02\x10*\x0e/v1/users/{id}\x12\x97\x01\n" +
-	"\tPurgeUser\x12).servora.user.service.v1.PurgeUserRequest\x1a*.servora.user.service.v1.PurgeUserResponse\"3\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatform\x82\xd3\xe4\x93\x02\x16*\x14/v1/users/{id}/purge\x12\xa2\x01\n" +
-	"\vRestoreUser\x12+.servora.user.service.v1.RestoreUserRequest\x1a,.servora.user.service.v1.RestoreUserResponse\"8\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatform\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/v1/users/{id}/restoreB\xeb\x01\n" +
+	"DeleteUser\x12*.servora.user.service.v1.DeleteUserRequest\x1a+.servora.user.service.v1.DeleteUserResponse\"\x16\x82\xd3\xe4\x93\x02\x10*\x0e/v1/users/{id}\x12\x80\x01\n" +
+	"\tPurgeUser\x12).servora.user.service.v1.PurgeUserRequest\x1a*.servora.user.service.v1.PurgeUserResponse\"\x1c\x82\xd3\xe4\x93\x02\x16*\x14/v1/users/{id}/purge\x12\x8b\x01\n" +
+	"\vRestoreUser\x12+.servora.user.service.v1.RestoreUserRequest\x1a,.servora.user.service.v1.RestoreUserResponse\"!\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/v1/users/{id}/restoreB\xeb\x01\n" +
 	"\x1acom.servora.iam.service.v1B\n" +
 	"IUserProtoP\x01ZFgithub.com/Servora-Kit/servora/api/gen/go/servora/iam/service/v1;iampb\xa2\x02\x03SIS\xaa\x02\x16Servora.Iam.Service.V1\xca\x02\x16Servora\\Iam\\Service\\V1\xe2\x02\"Servora\\Iam\\Service\\V1\\GPBMetadata\xea\x02\x19Servora::Iam::Service::V1b\x06proto3"
 

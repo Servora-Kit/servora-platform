@@ -9,62 +9,6 @@ import (
 
 // _authzRules is the immutable backing store for AuthzRules.
 var _authzRules = map[string]authz.AuthzRule{
-	"/servora.application.service.v1.ApplicationService/CreateApplication": {
-		Mode:       v1.AuthzMode_AUTHZ_MODE_CHECK,
-		Relation:   "admin",
-		ObjectType: "platform",
-	},
-	"/servora.application.service.v1.ApplicationService/DeleteApplication": {
-		Mode:       v1.AuthzMode_AUTHZ_MODE_CHECK,
-		Relation:   "admin",
-		ObjectType: "platform",
-	},
-	"/servora.application.service.v1.ApplicationService/GetApplication": {
-		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
-	},
-	"/servora.application.service.v1.ApplicationService/ListApplications": {
-		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
-	},
-	"/servora.application.service.v1.ApplicationService/RegenerateClientSecret": {
-		Mode:       v1.AuthzMode_AUTHZ_MODE_CHECK,
-		Relation:   "admin",
-		ObjectType: "platform",
-	},
-	"/servora.application.service.v1.ApplicationService/UpdateApplication": {
-		Mode:       v1.AuthzMode_AUTHZ_MODE_CHECK,
-		Relation:   "admin",
-		ObjectType: "platform",
-	},
-	"/servora.authn.service.v1.AuthnService/ChangePassword": {
-		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
-	},
-	"/servora.authn.service.v1.AuthnService/LoginByEmailPassword": {
-		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
-	},
-	"/servora.authn.service.v1.AuthnService/Logout": {
-		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
-	},
-	"/servora.authn.service.v1.AuthnService/LogoutAllDevices": {
-		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
-	},
-	"/servora.authn.service.v1.AuthnService/RefreshToken": {
-		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
-	},
-	"/servora.authn.service.v1.AuthnService/RequestEmailVerification": {
-		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
-	},
-	"/servora.authn.service.v1.AuthnService/RequestPasswordReset": {
-		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
-	},
-	"/servora.authn.service.v1.AuthnService/ResetPassword": {
-		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
-	},
-	"/servora.authn.service.v1.AuthnService/SignupByEmail": {
-		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
-	},
-	"/servora.authn.service.v1.AuthnService/VerifyEmail": {
-		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
-	},
 	"/servora.iam.service.v1.ApplicationService/CreateApplication": {
 		Mode:       v1.AuthzMode_AUTHZ_MODE_CHECK,
 		Relation:   "admin",
@@ -155,42 +99,6 @@ var _authzRules = map[string]authz.AuthzRule{
 		ObjectType: "platform",
 	},
 	"/servora.iam.service.v1.UserService/UpdateUser": {
-		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
-	},
-	"/servora.user.service.v1.UserService/CreateUser": {
-		Mode:       v1.AuthzMode_AUTHZ_MODE_CHECK,
-		Relation:   "admin",
-		ObjectType: "platform",
-	},
-	"/servora.user.service.v1.UserService/CurrentUserInfo": {
-		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
-	},
-	"/servora.user.service.v1.UserService/DeleteUser": {
-		Mode:       v1.AuthzMode_AUTHZ_MODE_CHECK,
-		Relation:   "admin",
-		ObjectType: "platform",
-	},
-	"/servora.user.service.v1.UserService/GetUser": {
-		Mode:       v1.AuthzMode_AUTHZ_MODE_CHECK,
-		Relation:   "can_manage_users",
-		ObjectType: "platform",
-	},
-	"/servora.user.service.v1.UserService/ListUsers": {
-		Mode:       v1.AuthzMode_AUTHZ_MODE_CHECK,
-		Relation:   "can_manage_users",
-		ObjectType: "platform",
-	},
-	"/servora.user.service.v1.UserService/PurgeUser": {
-		Mode:       v1.AuthzMode_AUTHZ_MODE_CHECK,
-		Relation:   "admin",
-		ObjectType: "platform",
-	},
-	"/servora.user.service.v1.UserService/RestoreUser": {
-		Mode:       v1.AuthzMode_AUTHZ_MODE_CHECK,
-		Relation:   "admin",
-		ObjectType: "platform",
-	},
-	"/servora.user.service.v1.UserService/UpdateUser": {
 		Mode: v1.AuthzMode_AUTHZ_MODE_NONE,
 	},
 }

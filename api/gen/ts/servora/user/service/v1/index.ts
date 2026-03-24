@@ -146,7 +146,7 @@ export type UpdateUserResponse = {
   user: User | undefined;
 };
 
-// User gRPC 服务 - 纯 gRPC 接口
+// User gRPC 服务
 export interface UserService {
 }
 

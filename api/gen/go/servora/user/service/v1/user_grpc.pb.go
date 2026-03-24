@@ -33,12 +33,13 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// User gRPC 服务 - 纯 gRPC 接口
+// User gRPC 服务
 type UserServiceClient interface {
 	CurrentUserInfo(ctx context.Context, in *CurrentUserInfoRequest, opts ...grpc.CallOption) (*CurrentUserInfoResponse, error)
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
 	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
 	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UpdateUserResponse, error)
+	// 创建用户需要平台管理员权限
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*CreateUserResponse, error)
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
 	PurgeUser(ctx context.Context, in *PurgeUserRequest, opts ...grpc.CallOption) (*PurgeUserResponse, error)
@@ -137,12 +138,13 @@ func (c *userServiceClient) RestoreUser(ctx context.Context, in *RestoreUserRequ
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
 //
-// User gRPC 服务 - 纯 gRPC 接口
+// User gRPC 服务
 type UserServiceServer interface {
 	CurrentUserInfo(context.Context, *CurrentUserInfoRequest) (*CurrentUserInfoResponse, error)
 	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
 	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
 	UpdateUser(context.Context, *UpdateUserRequest) (*UpdateUserResponse, error)
+	// 创建用户需要平台管理员权限
 	CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error)
 	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
 	PurgeUser(context.Context, *PurgeUserRequest) (*PurgeUserResponse, error)

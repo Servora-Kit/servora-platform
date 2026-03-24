@@ -7,7 +7,6 @@ import (
 
 	authnpb "github.com/Servora-Kit/servora/api/gen/go/servora/authn/service/v1"
 	"github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
-	iamv1 "github.com/Servora-Kit/servora/api/gen/go/servora/iam/service/v1"
 	userpb "github.com/Servora-Kit/servora/api/gen/go/servora/user/service/v1"
 	"github.com/Servora-Kit/servora/app/iam/service/internal/service"
 	"github.com/Servora-Kit/servora/pkg/authn"
@@ -52,7 +51,7 @@ func NewGRPCMiddleware(
 	}
 	authzMw := authz.Server(
 		authzopenfga.NewAuthorizer(fga, fgaAuthorizerOpts...),
-		authz.WithRulesFunc(iamv1.AuthzRules),
+		authz.WithRulesFuncs(userpb.AuthzRules, authnpb.AuthzRules),
 	)
 
 	ms = append(ms,

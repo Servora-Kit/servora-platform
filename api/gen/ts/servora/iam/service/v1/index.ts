@@ -2,6 +2,8 @@
 /* eslint-disable camelcase */
 // @ts-nocheck
 
+// ApplicationService exposes ApplicationService methods over HTTP.
+// Authorization rules are declared on the underlying servora.application.service.v1.ApplicationService.
 export interface ApplicationService {
   // 创建应用需要平台管理员权限
   CreateApplication(request: servoraapplicationservicev1_CreateApplicationRequest): Promise<servoraapplicationservicev1_CreateApplicationResponse>;
@@ -256,6 +258,8 @@ export type servoraapplicationservicev1_RegenerateClientSecretResponse = {
   clientSecret: string | undefined;
 };
 
+// AuthnService exposes AuthnService methods over HTTP.
+// Authorization rules are declared on the underlying servora.authn.service.v1.AuthnService.
 export interface AuthnService {
   SignupByEmail(request: servoraauthnservicev1_SignupByEmailRequest): Promise<servoraauthnservicev1_SignupByEmailResponse>;
   LoginByEmailPassword(request: servoraauthnservicev1_LoginByEmailPasswordRequest): Promise<servoraauthnservicev1_LoginByEmailPasswordResponse>;
@@ -540,6 +544,8 @@ export type servoraauthnservicev1_ResetPasswordResponse = {
   success: boolean | undefined;
 };
 
+// UserService exposes UserService methods over HTTP.
+// Authorization rules are declared on the underlying servora.user.service.v1.UserService.
 export interface UserService {
   CurrentUserInfo(request: servorauserservicev1_CurrentUserInfoRequest): Promise<servorauserservicev1_CurrentUserInfoResponse>;
   GetUser(request: servorauserservicev1_GetUserRequest): Promise<servorauserservicev1_GetUserResponse>;

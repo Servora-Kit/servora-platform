@@ -8,7 +8,6 @@ package iampb
 
 import (
 	v1 "github.com/Servora-Kit/servora/api/gen/go/servora/application/service/v1"
-	_ "github.com/Servora-Kit/servora/api/gen/go/servora/authz/v1"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -27,14 +26,14 @@ var File_servora_iam_service_v1_i_application_proto protoreflect.FileDescriptor
 
 const file_servora_iam_service_v1_i_application_proto_rawDesc = "" +
 	"\n" +
-	"*servora/iam/service/v1/i_application.proto\x12\x16servora.iam.service.v1\x1a\x1cgoogle/api/annotations.proto\x1a0servora/application/service/v1/application.proto\x1a\x1cservora/authz/v1/authz.proto2\x8c\t\n" +
-	"\x12ApplicationService\x12\xbc\x01\n" +
-	"\x11CreateApplication\x128.servora.application.service.v1.CreateApplicationRequest\x1a9.servora.application.service.v1.CreateApplicationResponse\"2\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatform\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/v1/applications\x12\xa4\x01\n" +
-	"\x0eGetApplication\x125.servora.application.service.v1.GetApplicationRequest\x1a6.servora.application.service.v1.GetApplicationResponse\"#\xa2\xbb\x18\x02\b\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/applications/{id}\x12\xa5\x01\n" +
-	"\x10ListApplications\x127.servora.application.service.v1.ListApplicationsRequest\x1a8.servora.application.service.v1.ListApplicationsResponse\"\x1e\xa2\xbb\x18\x02\b\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/applications\x12\xc1\x01\n" +
-	"\x11UpdateApplication\x128.servora.application.service.v1.UpdateApplicationRequest\x1a9.servora.application.service.v1.UpdateApplicationResponse\"7\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatform\x82\xd3\xe4\x93\x02\x1a:\x01*\x1a\x15/v1/applications/{id}\x12\xbe\x01\n" +
-	"\x11DeleteApplication\x128.servora.application.service.v1.DeleteApplicationRequest\x1a9.servora.application.service.v1.DeleteApplicationResponse\"4\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatform\x82\xd3\xe4\x93\x02\x17*\x15/v1/applications/{id}\x12\xe2\x01\n" +
-	"\x16RegenerateClientSecret\x12=.servora.application.service.v1.RegenerateClientSecretRequest\x1a>.servora.application.service.v1.RegenerateClientSecretResponse\"I\xa2\xbb\x18\x13\b\x02\x12\x05admin\x1a\bplatform\x82\xd3\xe4\x93\x02,:\x01*\"'/v1/applications/{id}/regenerate-secretB\xf2\x01\n" +
+	"*servora/iam/service/v1/i_application.proto\x12\x16servora.iam.service.v1\x1a\x1cgoogle/api/annotations.proto\x1a0servora/application/service/v1/application.proto2\xa4\b\n" +
+	"\x12ApplicationService\x12\xa5\x01\n" +
+	"\x11CreateApplication\x128.servora.application.service.v1.CreateApplicationRequest\x1a9.servora.application.service.v1.CreateApplicationResponse\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/v1/applications\x12\x9e\x01\n" +
+	"\x0eGetApplication\x125.servora.application.service.v1.GetApplicationRequest\x1a6.servora.application.service.v1.GetApplicationResponse\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/applications/{id}\x12\x9f\x01\n" +
+	"\x10ListApplications\x127.servora.application.service.v1.ListApplicationsRequest\x1a8.servora.application.service.v1.ListApplicationsResponse\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/applications\x12\xaa\x01\n" +
+	"\x11UpdateApplication\x128.servora.application.service.v1.UpdateApplicationRequest\x1a9.servora.application.service.v1.UpdateApplicationResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\x1a\x15/v1/applications/{id}\x12\xa7\x01\n" +
+	"\x11DeleteApplication\x128.servora.application.service.v1.DeleteApplicationRequest\x1a9.servora.application.service.v1.DeleteApplicationResponse\"\x1d\x82\xd3\xe4\x93\x02\x17*\x15/v1/applications/{id}\x12\xcb\x01\n" +
+	"\x16RegenerateClientSecret\x12=.servora.application.service.v1.RegenerateClientSecretRequest\x1a>.servora.application.service.v1.RegenerateClientSecretResponse\"2\x82\xd3\xe4\x93\x02,:\x01*\"'/v1/applications/{id}/regenerate-secretB\xf2\x01\n" +
 	"\x1acom.servora.iam.service.v1B\x11IApplicationProtoP\x01ZFgithub.com/Servora-Kit/servora/api/gen/go/servora/iam/service/v1;iampb\xa2\x02\x03SIS\xaa\x02\x16Servora.Iam.Service.V1\xca\x02\x16Servora\\Iam\\Service\\V1\xe2\x02\"Servora\\Iam\\Service\\V1\\GPBMetadata\xea\x02\x19Servora::Iam::Service::V1b\x06proto3"
 
 var file_servora_iam_service_v1_i_application_proto_goTypes = []any{

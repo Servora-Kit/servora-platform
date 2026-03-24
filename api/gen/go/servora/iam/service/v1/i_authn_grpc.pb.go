@@ -35,6 +35,9 @@ const (
 // AuthnServiceClient is the client API for AuthnService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// AuthnService exposes AuthnService methods over HTTP.
+// Authorization rules are declared on the underlying servora.authn.service.v1.AuthnService.
 type AuthnServiceClient interface {
 	SignupByEmail(ctx context.Context, in *v1.SignupByEmailRequest, opts ...grpc.CallOption) (*v1.SignupByEmailResponse, error)
 	LoginByEmailPassword(ctx context.Context, in *v1.LoginByEmailPasswordRequest, opts ...grpc.CallOption) (*v1.LoginByEmailPasswordResponse, error)
@@ -159,6 +162,9 @@ func (c *authnServiceClient) ResetPassword(ctx context.Context, in *v1.ResetPass
 // AuthnServiceServer is the server API for AuthnService service.
 // All implementations must embed UnimplementedAuthnServiceServer
 // for forward compatibility.
+//
+// AuthnService exposes AuthnService methods over HTTP.
+// Authorization rules are declared on the underlying servora.authn.service.v1.AuthnService.
 type AuthnServiceServer interface {
 	SignupByEmail(context.Context, *v1.SignupByEmailRequest) (*v1.SignupByEmailResponse, error)
 	LoginByEmailPassword(context.Context, *v1.LoginByEmailPasswordRequest) (*v1.LoginByEmailPasswordResponse, error)

@@ -5,6 +5,7 @@ package servora.application.service.v1;
 import "buf/validate/validate.proto";
 import "errors/errors.proto";
 import "google/protobuf/timestamp.proto";
+import "servora/authz/v1/authz.proto";
 import "servora/mapper/v1/mapper.proto";
 import "servora/pagination/v1/pagination.proto";
 
@@ -25,12 +26,40 @@ enum ErrorReason {
 
 service ApplicationService {
   // 创建应用需要平台管理员权限
-  rpc CreateApplication(CreateApplicationRequest) returns (CreateApplicationResponse);
-  rpc GetApplication(GetApplicationRequest) returns (GetApplicationResponse);
-  rpc ListApplications(ListApplicationsRequest) returns (ListApplicationsResponse);
-  rpc UpdateApplication(UpdateApplicationRequest) returns (UpdateApplicationResponse);
-  rpc DeleteApplication(DeleteApplicationRequest) returns (DeleteApplicationResponse);
-  rpc RegenerateClientSecret(RegenerateClientSecretRequest) returns (RegenerateClientSecretResponse);
+  rpc CreateApplication(CreateApplicationRequest) returns (CreateApplicationResponse) {
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "admin"
+    };
+  }
+  rpc GetApplication(GetApplicationRequest) returns (GetApplicationResponse) {
+    option (servora.authz.v1.rule) = {mode: AUTHZ_MODE_NONE};
+  }
+  rpc ListApplications(ListApplicationsRequest) returns (ListApplicationsResponse) {
+    option (servora.authz.v1.rule) = {mode: AUTHZ_MODE_NONE};
+  }
+  rpc UpdateApplication(UpdateApplicationRequest) returns (UpdateApplicationResponse) {
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "admin"
+    };
+  }
+  rpc DeleteApplication(DeleteApplicationRequest) returns (DeleteApplicationResponse) {
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "admin"
+    };
+  }
+  rpc RegenerateClientSecret(RegenerateClientSecretRequest) returns (RegenerateClientSecretResponse) {
+    option (servora.authz.v1.rule) = {
+      mode: AUTHZ_MODE_CHECK
+      object_type: "platform"
+      relation: "admin"
+    };
+  }
 }
 
 // Application 资源 message — 不含 client_secret_hash 等敏感字段

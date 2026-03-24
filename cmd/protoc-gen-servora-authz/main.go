@@ -15,66 +15,109 @@ func main() {
 	protogen.Options{}.Run(func(gen *protogen.Plugin) error {
 		gen.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 
-		// Build an index of serviceName → []fullServiceName across ALL proto
-		// files (including non-generated dependencies). This lets us discover
-		// that e.g. "UserService" exists in both iam.service.v1 and
-		// user.service.v1, so we can emit rules for both operation namespaces.
-		svcAliases := map[string][]string{}
-		for _, f := range gen.Files {
-			for _, svc := range f.Services {
-				name := string(svc.Desc.Name())
-				full := string(svc.Desc.FullName())
-				svcAliases[name] = append(svcAliases[name], full)
-			}
+		// ruleParams holds the authorization parameters extracted from a proto annotation.
+		type ruleParams struct {
+			Mode       authzpb.AuthzMode
+			Relation   string
+			ObjectType string
+			IDField    string
 		}
 
-		var rules []ruleEntry
-		var targetFile *protogen.File
-
+		// Build a rule-template index: shortServiceName → methodName → params.
+		//
+		// Scanning ALL files (including non-generated dependencies) makes authz
+		// annotations on pure-RPC protos (e.g. user.proto) visible when the plugin
+		// processes their HTTP-gateway counterparts (e.g. i_user.proto), which import
+		// the pure-RPC protos as dependencies.  This allows annotations to live on the
+		// canonical gRPC definition rather than being duplicated on the gateway file.
+		templates := map[string]map[string]ruleParams{}
 		for _, f := range gen.Files {
-			if !f.Generate {
-				continue
-			}
 			for _, svc := range f.Services {
+				shortName := string(svc.Desc.Name())
 				for _, m := range svc.Methods {
 					ext := proto.GetExtension(m.Desc.Options(), authzpb.E_Rule)
-					if ext == nil {
-						continue
-					}
 					r, ok := ext.(*authzpb.AuthzRule)
 					if !ok || r == nil || r.Mode == authzpb.AuthzMode_AUTHZ_MODE_UNSPECIFIED {
 						continue
 					}
-					if targetFile == nil {
-						targetFile = f
+					if templates[shortName] == nil {
+						templates[shortName] = map[string]ruleParams{}
 					}
-					methodName := string(m.Desc.Name())
-					svcName := string(svc.Desc.Name())
-
-					for _, fullSvc := range svcAliases[svcName] {
-						rules = append(rules, ruleEntry{
-							Operation:  fmt.Sprintf("/%s/%s", fullSvc, methodName),
-							Mode:       r.Mode,
-							Relation:   r.Relation,
-							ObjectType: r.ObjectType,
-							IDField:    r.IdField,
-						})
+					templates[shortName][string(m.Desc.Name())] = ruleParams{
+						Mode:       r.Mode,
+						Relation:   r.Relation,
+						ObjectType: r.ObjectType,
+						IDField:    r.IdField,
 					}
 				}
 			}
 		}
 
-		if len(rules) == 0 || targetFile == nil {
+		if len(templates) == 0 {
 			return nil
 		}
 
-		sort.Slice(rules, func(i, j int) bool {
-			return rules[i].Operation < rules[j].Operation
-		})
+		// Group generated files by output directory.
+		// Each directory receives exactly one authz_rules.gen.go that covers every
+		// service defined in that directory, resolved via the template index above.
+		//
+		// Example outcome for the IAM module:
+		//   user/service/v1/authz_rules.gen.go       — user.service.v1.UserService rules
+		//   authn/service/v1/authz_rules.gen.go       — authn.service.v1.AuthnService rules
+		//   application/service/v1/authz_rules.gen.go — application.service.v1.ApplicationService rules
+		//   iam/service/v1/authz_rules.gen.go         — iam.service.v1.{User,Authn,Application}Service rules
+		type dirGroup struct {
+			targetFile *protogen.File
+			seen       map[string]bool // deduplicate by operation key
+			rules      []ruleEntry
+		}
+		groups := map[string]*dirGroup{}
 
-		dir := path.Dir(targetFile.GeneratedFilenamePrefix)
-		g := gen.NewGeneratedFile(path.Join(dir, "authz_rules.gen.go"), targetFile.GoImportPath)
-		generateFile(g, targetFile.GoPackageName, rules)
+		for _, f := range gen.Files {
+			if !f.Generate {
+				continue
+			}
+			dir := path.Dir(f.GeneratedFilenamePrefix)
+			for _, svc := range f.Services {
+				methods, ok := templates[string(svc.Desc.Name())]
+				if !ok {
+					continue
+				}
+				if groups[dir] == nil {
+					groups[dir] = &dirGroup{
+						targetFile: f,
+						seen:       map[string]bool{},
+					}
+				}
+				fullName := string(svc.Desc.FullName())
+				for methodName, p := range methods {
+					op := fmt.Sprintf("/%s/%s", fullName, methodName)
+					if groups[dir].seen[op] {
+						continue
+					}
+					groups[dir].seen[op] = true
+					groups[dir].rules = append(groups[dir].rules, ruleEntry{
+						Operation:  op,
+						Mode:       p.Mode,
+						Relation:   p.Relation,
+						ObjectType: p.ObjectType,
+						IDField:    p.IDField,
+					})
+				}
+			}
+		}
+
+		for dir, group := range groups {
+			sort.Slice(group.rules, func(i, j int) bool {
+				return group.rules[i].Operation < group.rules[j].Operation
+			})
+			g := gen.NewGeneratedFile(
+				path.Join(dir, "authz_rules.gen.go"),
+				group.targetFile.GoImportPath,
+			)
+			generateFile(g, group.targetFile.GoPackageName, group.rules)
+		}
+
 		return nil
 	})
 }

@@ -8,6 +8,7 @@ package authnpb
 
 import (
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	_ "github.com/Servora-Kit/servora/api/gen/go/servora/authz/v1"
 	_ "github.com/go-kratos/kratos/v2/errors"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1109,7 +1110,7 @@ var File_servora_authn_service_v1_authn_proto protoreflect.FileDescriptor
 
 const file_servora_authn_service_v1_authn_proto_rawDesc = "" +
 	"\n" +
-	"$servora/authn/service/v1/authn.proto\x12\x18servora.authn.service.v1\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\"\xcc\x01\n" +
+	"$servora/authn/service/v1/authn.proto\x12\x18servora.authn.service.v1\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\x1a\x1cservora/authz/v1/authz.proto\"\xcc\x01\n" +
 	"\x14SignupByEmailRequest\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x05R\x04name\x12%\n" +
 	"\bpassword\x18\x02 \x01(\tB\t\xbaH\x06r\x04\x10\x06\x18\x14R\bpassword\x124\n" +
@@ -1182,18 +1183,19 @@ const file_servora_authn_service_v1_authn_proto_rawDesc = "" +
 	"\x1a\x04\xa8E\x90\x03\x12\x1d\n" +
 	"\x13INVALID_RESET_TOKEN\x10\v\x1a\x04\xa8E\x90\x03\x12\x1c\n" +
 	"\x12EMAIL_NOT_VERIFIED\x10\f\x1a\x04\xa8E\x93\x03\x12\x19\n" +
-	"\x0fINVALID_CAPTCHA\x10\r\x1a\x04\xa8E\x90\x03\x1a\x04\xa0E\xf4\x032\xbe\t\n" +
-	"\fAuthnService\x12p\n" +
-	"\rSignupByEmail\x12..servora.authn.service.v1.SignupByEmailRequest\x1a/.servora.authn.service.v1.SignupByEmailResponse\x12\x85\x01\n" +
-	"\x14LoginByEmailPassword\x125.servora.authn.service.v1.LoginByEmailPasswordRequest\x1a6.servora.authn.service.v1.LoginByEmailPasswordResponse\x12m\n" +
-	"\fRefreshToken\x12-.servora.authn.service.v1.RefreshTokenRequest\x1a..servora.authn.service.v1.RefreshTokenResponse\x12[\n" +
-	"\x06Logout\x12'.servora.authn.service.v1.LogoutRequest\x1a(.servora.authn.service.v1.LogoutResponse\x12s\n" +
-	"\x0eChangePassword\x12/.servora.authn.service.v1.ChangePasswordRequest\x1a0.servora.authn.service.v1.ChangePasswordResponse\x12y\n" +
-	"\x10LogoutAllDevices\x121.servora.authn.service.v1.LogoutAllDevicesRequest\x1a2.servora.authn.service.v1.LogoutAllDevicesResponse\x12\x91\x01\n" +
-	"\x18RequestEmailVerification\x129.servora.authn.service.v1.RequestEmailVerificationRequest\x1a:.servora.authn.service.v1.RequestEmailVerificationResponse\x12j\n" +
-	"\vVerifyEmail\x12,.servora.authn.service.v1.VerifyEmailRequest\x1a-.servora.authn.service.v1.VerifyEmailResponse\x12\x85\x01\n" +
-	"\x14RequestPasswordReset\x125.servora.authn.service.v1.RequestPasswordResetRequest\x1a6.servora.authn.service.v1.RequestPasswordResetResponse\x12p\n" +
-	"\rResetPassword\x12..servora.authn.service.v1.ResetPasswordRequest\x1a/.servora.authn.service.v1.ResetPasswordResponseB\xf9\x01\n" +
+	"\x0fINVALID_CAPTCHA\x10\r\x1a\x04\xa8E\x90\x03\x1a\x04\xa0E\xf4\x032\x8f\n" +
+	"\n" +
+	"\fAuthnService\x12x\n" +
+	"\rSignupByEmail\x12..servora.authn.service.v1.SignupByEmailRequest\x1a/.servora.authn.service.v1.SignupByEmailResponse\"\x06\xa2\xbb\x18\x02\b\x01\x12\x8d\x01\n" +
+	"\x14LoginByEmailPassword\x125.servora.authn.service.v1.LoginByEmailPasswordRequest\x1a6.servora.authn.service.v1.LoginByEmailPasswordResponse\"\x06\xa2\xbb\x18\x02\b\x01\x12u\n" +
+	"\fRefreshToken\x12-.servora.authn.service.v1.RefreshTokenRequest\x1a..servora.authn.service.v1.RefreshTokenResponse\"\x06\xa2\xbb\x18\x02\b\x01\x12c\n" +
+	"\x06Logout\x12'.servora.authn.service.v1.LogoutRequest\x1a(.servora.authn.service.v1.LogoutResponse\"\x06\xa2\xbb\x18\x02\b\x01\x12{\n" +
+	"\x0eChangePassword\x12/.servora.authn.service.v1.ChangePasswordRequest\x1a0.servora.authn.service.v1.ChangePasswordResponse\"\x06\xa2\xbb\x18\x02\b\x01\x12\x81\x01\n" +
+	"\x10LogoutAllDevices\x121.servora.authn.service.v1.LogoutAllDevicesRequest\x1a2.servora.authn.service.v1.LogoutAllDevicesResponse\"\x06\xa2\xbb\x18\x02\b\x01\x12\x99\x01\n" +
+	"\x18RequestEmailVerification\x129.servora.authn.service.v1.RequestEmailVerificationRequest\x1a:.servora.authn.service.v1.RequestEmailVerificationResponse\"\x06\xa2\xbb\x18\x02\b\x01\x12r\n" +
+	"\vVerifyEmail\x12,.servora.authn.service.v1.VerifyEmailRequest\x1a-.servora.authn.service.v1.VerifyEmailResponse\"\x06\xa2\xbb\x18\x02\b\x01\x12\x8d\x01\n" +
+	"\x14RequestPasswordReset\x125.servora.authn.service.v1.RequestPasswordResetRequest\x1a6.servora.authn.service.v1.RequestPasswordResetResponse\"\x06\xa2\xbb\x18\x02\b\x01\x12x\n" +
+	"\rResetPassword\x12..servora.authn.service.v1.ResetPasswordRequest\x1a/.servora.authn.service.v1.ResetPasswordResponse\"\x06\xa2\xbb\x18\x02\b\x01B\xf9\x01\n" +
 	"\x1ccom.servora.authn.service.v1B\n" +
 	"AuthnProtoP\x01ZJgithub.com/Servora-Kit/servora/api/gen/go/servora/authn/service/v1;authnpb\xa2\x02\x03SAS\xaa\x02\x18Servora.Authn.Service.V1\xca\x02\x18Servora\\Authn\\Service\\V1\xe2\x02$Servora\\Authn\\Service\\V1\\GPBMetadata\xea\x02\x1bServora::Authn::Service::V1b\x06proto3"
 

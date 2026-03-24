@@ -33,6 +33,9 @@ const (
 // UserServiceClient is the client API for UserService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// UserService exposes UserService methods over HTTP.
+// Authorization rules are declared on the underlying servora.user.service.v1.UserService.
 type UserServiceClient interface {
 	CurrentUserInfo(ctx context.Context, in *v1.CurrentUserInfoRequest, opts ...grpc.CallOption) (*v1.CurrentUserInfoResponse, error)
 	GetUser(ctx context.Context, in *v1.GetUserRequest, opts ...grpc.CallOption) (*v1.GetUserResponse, error)
@@ -136,6 +139,9 @@ func (c *userServiceClient) RestoreUser(ctx context.Context, in *v1.RestoreUserR
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
+//
+// UserService exposes UserService methods over HTTP.
+// Authorization rules are declared on the underlying servora.user.service.v1.UserService.
 type UserServiceServer interface {
 	CurrentUserInfo(context.Context, *v1.CurrentUserInfoRequest) (*v1.CurrentUserInfoResponse, error)
 	GetUser(context.Context, *v1.GetUserRequest) (*v1.GetUserResponse, error)

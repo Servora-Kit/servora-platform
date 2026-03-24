@@ -17,10 +17,10 @@ func ApplicationMapperPlan() *mapper.MapperPlan {
 			"IDTokenLifetime": "IdTokenLifetime",
 		},
 		FieldConverters: map[string]mapper.ConverterKind{
-			"CreatedAt":       mapper.ConverterTimestampTime,
-			"UpdatedAt":       mapper.ConverterTimestampTime,
 			"Id":              mapper.ConverterUUIDString,
 			"IdTokenLifetime": mapper.ConverterIntInt32,
+			"CreatedAt":       mapper.ConverterTimestampTime,
+			"UpdatedAt":       mapper.ConverterTimestampTime,
 		},
 	}
 }

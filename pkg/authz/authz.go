@@ -15,6 +15,7 @@
 package authz
 
 import (
+	"maps"
 	"context"
 	"fmt"
 
@@ -72,14 +73,49 @@ func WithRules(rules map[string]AuthzRule) Option {
 	return func(cfg *serverConfig) { cfg.rules = rules }
 }
 
-// WithRulesFunc sets the operation→rule mapping via a function (e.g. generated AuthzRules()).
+// WithRulesFunc sets the operation→rule mapping via a single function (e.g. generated AuthzRules()).
 // The function is called once during middleware construction.
+// To merge rules from multiple packages, prefer WithRulesFuncs.
 func WithRulesFunc(fn func() map[string]AuthzRule) Option {
 	return func(cfg *serverConfig) {
 		if fn != nil {
 			cfg.rules = fn()
 		}
 	}
+}
+
+// WithRulesFuncs merges the rule maps returned by one or more generator functions
+// (e.g. userpb.AuthzRules, authnpb.AuthzRules) into a single rule set.
+// Later entries take precedence on key conflicts (which should not occur in practice).
+// This is the preferred alternative to combining WithRules + MergeRules.
+func WithRulesFuncs(fns ...func() map[string]AuthzRule) Option {
+	return func(cfg *serverConfig) {
+		merged := make(map[string]AuthzRule)
+		for _, fn := range fns {
+			if fn == nil {
+				continue
+			}
+			maps.Copy(merged, fn())
+		}
+		cfg.rules = merged
+	}
+}
+
+// MergeRules merges multiple AuthzRule maps into one new map.
+// Later maps take precedence on key conflicts (which should not occur in practice).
+// Useful when a server registers services from multiple generated packages.
+func MergeRules(maps ...map[string]AuthzRule) map[string]AuthzRule {
+	total := 0
+	for _, m := range maps {
+		total += len(m)
+	}
+	merged := make(map[string]AuthzRule, total)
+	for _, m := range maps {
+		for k, v := range m {
+			merged[k] = v
+		}
+	}
+	return merged
 }
 
 // WithDefaultObjectID overrides the fallback object ID used when IDField is empty.
