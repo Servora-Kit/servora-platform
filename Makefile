@@ -92,7 +92,7 @@ endef
 # MAIN TARGETS
 # ============================================================================
 
-.PHONY: help env init plugin cli dep vendor test cover vet lint lint.go lint.proto lint.ts web.dev buf-update
+.PHONY: help env init plugin cli dep vendor tidy test cover vet lint lint.go lint.proto lint.ts web.dev buf-update
 .PHONY: wire ent gen api api-go api-ts openapi build all clean
 .PHONY: compose.build compose.up compose.rebuild compose.stop compose.down compose.reset compose.ps compose.logs compose.init
 .PHONY: compose.dev compose.dev.build compose.dev.up compose.dev.restart compose.dev.ps compose.dev.stop compose.dev.down compose.dev.reset compose.dev.logs
@@ -149,6 +149,14 @@ dep:
 # create vendor
 vendor:
 	@go mod vendor
+
+# tidy all workspace modules and sync go.work
+tidy:
+	@echo "$(CYAN)Tidying Go modules...$(RESET)"
+	@go mod tidy
+	@$(foreach mod,$(GO_WORKSPACE_MODULES),echo "  $(mod)" && (cd $(ROOT_DIR)$(mod) && go mod tidy) && ) true
+	@go work sync
+	@echo "$(GREEN)✓ All modules tidied and workspace synced$(RESET)"
 
 # run tests
 test:
