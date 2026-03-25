@@ -1,71 +1,52 @@
-# Servora
+# Servora Platform
 
 简体中文
 
-`servora` 是一个微服务快速开发框架，**Proto First** 开发方式，覆盖 API 定义、代码生成、服务实现、前端联调、可观测性与容器化开发链路。
+> 本项目是 [Servora](https://github.com/Servora-Kit/servora) 框架的**示例项目**，提供平台级基础微服务实现。
 
-## 核心能力
+`servora-platform` 当前包含审计（Audit）微服务，后续将持续扩展更多平台级基础服务。
 
-- **Go workspace + 多模块**：根目录 `go.work` 统一纳管根模块与各服务模块
-- **Proto First**：使用 Buf v2 workspace 管理共享 proto 与服务私有 proto
-- **双协议接口**：支持 gRPC、HTTP 与 OpenAPI 产物生成
-- **DDD 分层**：服务遵循 `service -> biz -> data` 分层
-- **依赖注入**：使用 Wire 管理服务依赖图
-- **数据访问**：Ent 为主，GORM GEN 作为并行工具链保留
-- **可插拔认证**：`pkg/authn` 接口驱动，内置 JWT 引擎与 Keycloak claims 映射
-- **细粒度授权**：`pkg/authz` 接口驱动，内置 OpenFGA 引擎
-- **全链路审计**：`pkg/audit` 经 Kafka 投递审计事件
-- **服务治理**：支持注册发现、配置中心与基础遥测能力
-- **可观测性**：集成 OTel / Jaeger / Loki / Prometheus / Grafana
+## 包含内容
+
+### 微服务
+
+- **Audit 服务**（`app/audit/service/`）：全链路审计日志服务
+  - 基于 Kafka 消费审计事件
+  - ClickHouse 持久化存储
+  - 审计日志查询 API
+
+### 部署
+
+- OpenFGA model：`manifests/openfga/`
 
 ## 技术栈
 
-- 框架：Kratos v2
-- API：Protobuf + Buf v2
+- 框架：[servora](https://github.com/Servora-Kit/servora)（Kratos v2）
+- API：Protobuf + Buf v2（业务 proto 依赖 [buf.build/servora/servora](https://buf.build/servora/servora)）
 - DI：Google Wire
-- ORM：Ent（主）+ GORM GEN（并行）
-- 认证：Keycloak（OIDC）/ JWT / JWKS
+- 消息：Kafka（franz-go）
+- 存储：ClickHouse（审计日志）
 - 授权：OpenFGA
-- 存储：PostgreSQL + Redis
-- 观测：OTel Collector / Jaeger / Loki / Prometheus / Grafana
 
 ## 项目结构
 
 ```text
 .
-├── api/                             # 共享 proto 与统一生成产物
-│   ├── gen/go/                      # Go 生成代码
-│   └── protos/                      # 共享 proto（conf、pagination、authz 注解）
-├── app/                             # 服务实现（示例服务）
-├── cmd/
-│   ├── svr/                         # CLI 工具（svr gen gorm / svr openfga）
-│   └── protoc-gen-servora-authz/    # 自定义 protoc 插件
-├── pkg/                             # 共享基础库
-│   ├── actor/                       # 通用 principal 模型
-│   ├── authn/                       # 可插拔认证中间件（JWT / Header / Noop）
-│   ├── authz/                       # 可插拔授权中间件（OpenFGA / Noop）
-│   ├── audit/                       # 全链路审计
-│   ├── bootstrap/                   # 服务启动引导
-│   ├── broker/                      # 消息代理抽象（Kafka 实现）
-│   ├── db/ent/                      # Ent schema mixin 与 scope 工具
-│   ├── governance/                  # 服务治理（注册发现、配置中心）
-│   ├── health/                      # 健康检查
-│   ├── helpers/                     # 通用工具函数
-│   ├── jwt/ & jwks/                 # JWT 签发与 JWKS 验证
-│   ├── logger/                      # 日志封装
-│   ├── mapper/                      # 对象映射
-│   ├── openfga/                     # OpenFGA 客户端封装与缓存
-│   ├── redis/                       # Redis 客户端封装
-│   └── transport/                   # HTTP/gRPC 传输层工具
-├── manifests/                       # 部署清单（k8s / openfga）
-├── templates/                       # 通用部署模板
-├── docs/                            # 设计文档与参考资料
-├── openspec/                        # OpenSpec 变更与归档
-├── app.mk                           # 服务级通用 Makefile 模板
-├── buf.yaml                         # Buf v2 workspace
-├── buf.go.gen.yaml                  # Go 代码生成模板（含 authz + mapper 插件）
-├── go.work                          # Go workspace
-└── Makefile                         # 根目录统一入口
+├── api/
+│   └── gen/go/                      # Go 生成代码（业务 proto，勿手改）
+├── app/
+│   └── audit/service/               # Audit 微服务
+│       ├── api/protos/              # 审计业务 proto
+│       ├── cmd/                     # 服务入口
+│       ├── configs/                 # 配置文件
+│       └── internal/                # 业务实现（service/biz/data/server）
+├── manifests/
+│   └── openfga/                     # OpenFGA model 与测试
+├── buf.yaml                         # Buf v2 workspace（依赖 buf.build/servora/servora）
+├── buf.go.gen.yaml                  # Go 代码生成模板
+├── docker-compose.yaml              # 基础设施
+├── docker-compose.dev.yaml          # 开发环境（audit）
+└── Makefile                         # 构建入口
 ```
 
 ## 快速开始
@@ -76,117 +57,72 @@
 - Make
 - Docker / Docker Compose
 
-### 克隆仓库
+### 安装工具
 
 ```bash
-git clone https://github.com/Servora-Kit/servora.git
-cd servora
+make init    # 安装 protoc 插件与 CLI 工具
 ```
 
-### 配置环境
+### 生成代码
 
 ```bash
-cp .env .env.local
-# 编辑 .env.local，填入数据库密码、API 密钥等
+make gen     # 统一生成（api + wire）
 ```
 
-### 安装工具并生成代码
+### 启动开发环境
 
 ```bash
-make init
-make gen
-```
-
-`make gen` 会统一执行：`api + openapi + wire + ent`。
-
-### 启动容器化开发环境
-
-```bash
-# 仅启动基础设施（Consul、Postgres、Redis、OpenFGA、OTel、Jaeger 等）
+# 仅启动基础设施（Kafka、ClickHouse）
 make compose.up
 
-# 构建开发镜像（首次或 Dockerfile.air / Go 版本变更后需执行，否则 compose.dev 可能因镜像过旧报错）
-make compose.dev.build
-
-# 启动基础设施 + Air 热重载开发容器
+# 启动基础设施 + 微服务
 make compose.dev
 ```
 
-Compose 管理命令：
-
-```bash
-make compose.ps            # 查看基础设施状态
-make compose.stop          # 停止基础设施容器
-make compose.logs          # 查看基础设施日志
-make compose.down          # 移除容器/网络（保留数据卷）
-make compose.reset         # 移除容器/网络/数据卷
-
-make compose.dev.ps        # 查看完整开发栈状态
-make compose.dev.stop      # 停止完整开发栈容器
-make compose.dev.logs      # 查看日志
-make compose.dev.restart   # 重启服务
-make compose.dev.down      # 移除完整开发栈容器/网络（保留数据卷）
-make compose.dev.reset     # 移除完整开发栈容器/网络/数据卷
-```
-
-## 开发工作流
-
-1. 修改共享 proto 或服务私有 proto
-2. 在仓库根目录执行 `make gen`
-3. 在服务目录实现业务代码：`internal/service -> internal/biz -> internal/data`
-4. 修改 Wire 依赖图后执行 `make wire`
-5. 运行测试与 lint
-
-## 常用命令
+### 常用命令
 
 ```bash
 # 代码生成
-make gen                    # 统一生成（api + openapi + wire + ent）
-make api                    # 仅生成 API（Go + AuthZ）
-make openapi                # 仅生成 OpenAPI
+make gen                    # 统一生成
+make api                    # 仅生成 proto Go 代码
 make wire                   # 仅生成 Wire
-make ent                    # 仅生成 Ent
-make build                  # 生成 + 构建所有服务
 
 # 质量检查
 make test                   # 运行测试
-make cover                  # 测试覆盖率
-make lint                   # lint.go + lint.ts（不含 proto；需要时单独 `make lint.proto`）
-make lint.go                # Go：根模块 + 各服务子模块（GO_WORKSPACE_MODULES；不含 api/gen 生成代码）
-make lint.ts                # TS：`WEB_APPS` 对应 web/* + `api/ts-client`（无对应 script 的包会跳过）
-make lint.proto             # Buf proto lint
-# 单服务仅扫本模块：cd app/<svc>/service && make lint.go
-# 单前端：cd web/<app> && make lint.ts（web-app.mk）
+make lint                   # Go lint
+make lint.proto             # Proto lint
 
-# CLI 工具
-svr gen gorm <service...>   # GORM GEN 代码生成
-svr openfga init            # 初始化 OpenFGA store
-svr openfga model apply     # 更新 OpenFGA model
+# Compose
+make compose.up             # 启动基础设施
+make compose.dev            # 启动开发环境
+make compose.stop           # 停止基础设施
+make compose.down           # 移除容器/网络（保留数据卷）
+make compose.reset          # 移除容器/网络/数据卷
 
-# OpenFGA 运维
-make openfga.init           # 初始化 OpenFGA store
-make openfga.model.validate # 验证 model 语法
-make openfga.model.test     # 运行 model 测试
+# OpenFGA
+make openfga.init           # 初始化 store
+make openfga.model.validate # 验证 model
+make openfga.model.test     # 测试 model
 make openfga.model.apply    # 应用 model 更新
 ```
 
-## 可观测性
+## 依赖关系
 
-默认观测组件（Compose 栈）：
+本项目依赖 servora 核心框架：
 
-- Grafana: `http://localhost:3001`
-- Prometheus: `http://localhost:9090`
-- Jaeger: `http://localhost:16686`
-- Loki: `http://localhost:3100`
-- OTel Collector: `4317/4318`
+- **Go 依赖**：`github.com/Servora-Kit/servora`（基础库）、`github.com/Servora-Kit/servora/api/gen`（框架 proto 生成代码）
+- **Proto 依赖**：`buf.build/servora/servora`（框架公共 proto）
+- **CLI 工具**：`svr`、`protoc-gen-servora-authz`、`protoc-gen-servora-audit`、`protoc-gen-servora-mapper`
+
+本地联合开发时通过顶层 `go.work` 实现跨仓库引用。
 
 ## 质量约束
 
-- 不要手动编辑生成代码：`api/gen/go/`、`wire_gen.go`、`openapi.yaml`、`authz_rules.gen.go`
-- 修改 proto 后务必执行 `make gen`
-- 修改 Wire 依赖图后务必执行 `make wire`
-- 提交前建议通过 `make lint`（或分项 `make lint.go` / `make lint.ts` / `make lint.proto`）与 `make test`（`WEB_APPS` 与 pnpm 一致；`GO_WORKSPACE_MODULES` 为各服务 Go 模块，**不含** `api/gen`）
+- 不要手动编辑生成代码：`api/gen/go/`、`wire_gen.go`
+- 修改 proto 后执行 `make gen`
+- 修改 Wire 依赖图后执行 `make wire`
 - 修改 OpenFGA model 后执行 `make openfga.model.apply`
+- 提交前通过 `make lint` 与 `make test`
 
 ## License
 
