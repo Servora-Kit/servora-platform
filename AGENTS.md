@@ -55,7 +55,7 @@ type(scope): description
 
 - `Makefile`：构建入口（gen / api / wire / lint / test / compose / openfga）
 - `buf.yaml`：Buf v2 workspace，包含 `app/audit/service/api/protos`（名为 `buf.build/servora/servora-platform`）；依赖 `buf.build/servora/servora`
-- `buf.go.gen.yaml`：Go 代码生成模板（含 servora 自定义插件）
+- `buf.go.gen.yaml`：Go 代码生成模板（含 servora 自定义插件：authz、mapper、audit）
 - `docker-compose.yaml`：基础设施（Kafka、ClickHouse）
 - `docker-compose.dev.yaml`：开发环境（audit 服务）
 - `.env.example`：环境变量模板

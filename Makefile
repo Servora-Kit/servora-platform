@@ -18,9 +18,8 @@ endif
 CURRENT_DIR := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 ROOT_DIR    := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 
-BUF_GO_GEN_TEMPLATE    := buf.go.gen.yaml
-BUF_AUDIT_GEN_TEMPLATE := buf.audit.gen.yaml
-BUF_TS_GEN_TEMPLATE    := buf.typescript.gen.yaml
+BUF_GO_GEN_TEMPLATE := buf.go.gen.yaml
+BUF_TS_GEN_TEMPLATE := buf.typescript.gen.yaml
 
 SRCS_MK := $(foreach dir, app, $(wildcard $(dir)/*/*/Makefile))
 SERVICE_DIRS := $(dir $(realpath $(SRCS_MK)))
@@ -193,10 +192,6 @@ api: api-go api-ts
 api-go:
 	@echo "$(CYAN)Generating protobuf Go code via $(BUF_GO_GEN_TEMPLATE)...$(RESET)"
 	@buf generate --template $(BUF_GO_GEN_TEMPLATE)
-ifneq (,$(wildcard $(BUF_AUDIT_GEN_TEMPLATE)))
-	@echo "$(CYAN)Generating audit rules via $(BUF_AUDIT_GEN_TEMPLATE)...$(RESET)"
-	@buf generate --template $(BUF_AUDIT_GEN_TEMPLATE)
-endif
 
 # generate protobuf api typescript code
 api-ts:
