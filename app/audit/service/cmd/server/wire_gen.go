@@ -8,15 +8,16 @@ package main
 
 import (
 	"context"
-	"github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 	"github.com/Servora-Kit/servora-platform/app/audit/service/internal/biz"
 	"github.com/Servora-Kit/servora-platform/app/audit/service/internal/data"
 	"github.com/Servora-Kit/servora-platform/app/audit/service/internal/server"
 	"github.com/Servora-Kit/servora-platform/app/audit/service/internal/service"
+	"github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 	"github.com/Servora-Kit/servora/pkg/bootstrap"
 	"github.com/Servora-Kit/servora/pkg/broker"
 	"github.com/Servora-Kit/servora/pkg/broker/kafka"
 	"github.com/Servora-Kit/servora/pkg/governance/registry"
+	"github.com/Servora-Kit/servora/pkg/governance/telemetry"
 	"github.com/Servora-Kit/servora/pkg/logger"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
@@ -28,8 +29,12 @@ import (
 
 // Injectors from wire.go:
 
-func wireApp(confServer *conf.Server, confRegistry *conf.Registry, confData *conf.Data, app *conf.App, trace *conf.Trace, svcIdentity bootstrap.SvcIdentity, logger log.Logger) (*kratos.App, func(), error) {
+func wireApp(confServer *conf.Server, confRegistry *conf.Registry, confData *conf.Data, app *conf.App, trace *conf.Trace, metrics *conf.Metrics, svcIdentity bootstrap.SvcIdentity, logger log.Logger) (*kratos.App, func(), error) {
 	registrar := registry.NewRegistrar(confRegistry)
+	telemetryMetrics, err := telemetry.NewMetrics(metrics, app, logger)
+	if err != nil {
+		return nil, nil, err
+	}
 	conn, err := data.NewClickHouseClient(confData, logger)
 	if err != nil {
 		return nil, nil, err
@@ -41,8 +46,8 @@ func wireApp(confServer *conf.Server, confRegistry *conf.Registry, confData *con
 	auditRepo := data.NewAuditRepo(dataData, logger)
 	auditUsecase := biz.NewAuditUsecase(auditRepo)
 	auditService := service.NewAuditService(auditUsecase)
-	grpcServer := server.NewGRPCServer(confServer, trace, logger, auditService)
-	httpServer := server.NewHTTPServer(confServer, trace, logger, auditService)
+	grpcServer := server.NewGRPCServer(confServer, trace, telemetryMetrics, logger, auditService)
+	httpServer := server.NewHTTPServer(confServer, trace, telemetryMetrics, logger, auditService)
 	broker := newKafkaBroker(confData, logger)
 	batchWriter := data.NewBatchWriter(dataData, app, logger)
 	consumer := data.NewConsumer(broker, batchWriter, confData, app, logger)

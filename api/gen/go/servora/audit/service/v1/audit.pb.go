@@ -527,9 +527,9 @@ const file_servora_audit_service_v1_audit_proto_rawDesc = "" +
 	"totalCount2\x86\x02\n" +
 	"\x11AuditQueryService\x12v\n" +
 	"\x0fListAuditEvents\x120.servora.audit.service.v1.ListAuditEventsRequest\x1a1.servora.audit.service.v1.ListAuditEventsResponse\x12y\n" +
-	"\x10CountAuditEvents\x121.servora.audit.service.v1.CountAuditEventsRequest\x1a2.servora.audit.service.v1.CountAuditEventsResponseB\xfc\x01\n" +
+	"\x10CountAuditEvents\x121.servora.audit.service.v1.CountAuditEventsRequest\x1a2.servora.audit.service.v1.CountAuditEventsResponseB\x85\x02\n" +
 	"\x1ccom.servora.audit.service.v1B\n" +
-	"AuditProtoP\x01ZMgithub.com/Servora-Kit/servora/api/gen/go/servora/audit/service/v1;auditsvcpb\xa2\x02\x03SAS\xaa\x02\x18Servora.Audit.Service.V1\xca\x02\x18Servora\\Audit\\Service\\V1\xe2\x02$Servora\\Audit\\Service\\V1\\GPBMetadata\xea\x02\x1bServora::Audit::Service::V1b\x06proto3"
+	"AuditProtoP\x01ZVgithub.com/Servora-Kit/servora-platform/api/gen/go/servora/audit/service/v1;auditsvcpb\xa2\x02\x03SAS\xaa\x02\x18Servora.Audit.Service.V1\xca\x02\x18Servora\\Audit\\Service\\V1\xe2\x02$Servora\\Audit\\Service\\V1\\GPBMetadata\xea\x02\x1bServora::Audit::Service::V1b\x06proto3"
 
 var (
 	file_servora_audit_service_v1_audit_proto_rawDescOnce sync.Once

@@ -49,7 +49,7 @@ func main() {
 
 	err := bootstrap.BootstrapAndRun(flagconf, Name, Version, func(runtime *bootstrap.Runtime) (*kratos.App, func(), error) {
 		bc := runtime.Bootstrap
-		return wireApp(bc.Server, bc.Registry, bc.Data, bc.App, bc.Trace, runtime.Identity, runtime.Logger)
+		return wireApp(bc.Server, bc.Registry, bc.Data, bc.App, bc.Trace, bc.Metrics, runtime.Identity, runtime.Logger)
 	})
 	if err != nil {
 		panic(err)

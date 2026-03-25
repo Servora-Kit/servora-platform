@@ -7,10 +7,12 @@ services:
       dockerfile: Dockerfile.air
     working_dir: /workspace/app/audit/service
     command: ["air", "-c", ".air.toml"]
+    env_file: .env
     environment:
       TZ: Asia/Shanghai
       GOMODCACHE: /go/pkg/mod
       GOCACHE: /go/cache
+      GOWORK: /workspace/go.work
     volumes:
       - ./:/workspace
       - ./.cache/go-mod:/go/pkg/mod
@@ -21,12 +23,14 @@ services:
       - "10000:8000"
       - "10001:8001"
     depends_on:
+      consul:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       clickhouse:
         condition: service_healthy
     networks:
-      - servora-network
+      - platform-network
 
 volumes:
   audit-logs:

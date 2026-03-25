@@ -6,17 +6,19 @@ import (
 	auditsvcpb "github.com/Servora-Kit/servora-platform/api/gen/go/servora/audit/service/v1"
 	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 	"github.com/Servora-Kit/servora-platform/app/audit/service/internal/service"
+	"github.com/Servora-Kit/servora/pkg/governance/telemetry"
 	"github.com/Servora-Kit/servora/pkg/logger"
 	"github.com/Servora-Kit/servora/pkg/transport/server/middleware"
 	svrgrpc "github.com/Servora-Kit/servora/pkg/transport/server/grpc"
 )
 
 // NewGRPCServer creates the gRPC server for the audit service.
-func NewGRPCServer(c *conf.Server, trace *conf.Trace, l logger.Logger, svc *service.AuditService) *kgrpc.Server {
+func NewGRPCServer(c *conf.Server, trace *conf.Trace, m *telemetry.Metrics, l logger.Logger, svc *service.AuditService) *kgrpc.Server {
 	glog := logger.With(l, "audit/server/grpc")
 
 	ms := middleware.NewChainBuilder(glog).
 		WithTrace(trace).
+		WithMetrics(m).
 		Build()
 
 	opts := []svrgrpc.ServerOption{

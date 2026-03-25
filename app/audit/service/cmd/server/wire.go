@@ -26,7 +26,7 @@ func newKafkaBroker(cfg *conf.Data, l logger.Logger) broker.Broker {
 	return brokerkafka.NewBrokerOptional(context.Background(), cfg, l)
 }
 
-func wireApp(*conf.Server, *conf.Registry, *conf.Data, *conf.App, *conf.Trace, bootstrap.SvcIdentity, log.Logger) (*kratos.App, func(), error) {
+func wireApp(*conf.Server, *conf.Registry, *conf.Data, *conf.App, *conf.Trace, *conf.Metrics, bootstrap.SvcIdentity, log.Logger) (*kratos.App, func(), error) {
 	panic(wire.Build(
 		newKafkaBroker,
 		data.ProviderSet,
