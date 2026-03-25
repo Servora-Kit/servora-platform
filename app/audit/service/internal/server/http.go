@@ -3,9 +3,9 @@ package server
 import (
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 
-	auditsvcpb "github.com/Servora-Kit/servora/api/gen/go/servora/audit/service/v1"
+	auditsvcpb "github.com/Servora-Kit/servora-platform/api/gen/go/servora/audit/service/v1"
 	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
-	"github.com/Servora-Kit/servora/app/audit/service/internal/service"
+	"github.com/Servora-Kit/servora-platform/app/audit/service/internal/service"
 	"github.com/Servora-Kit/servora/pkg/logger"
 	"github.com/Servora-Kit/servora/pkg/transport/server/middleware"
 	svrhttp "github.com/Servora-Kit/servora/pkg/transport/server/http"

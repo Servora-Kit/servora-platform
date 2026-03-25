@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	auditsvcpb "github.com/Servora-Kit/servora/api/gen/go/servora/audit/service/v1"
-	"github.com/Servora-Kit/servora/app/audit/service/internal/biz"
+	auditsvcpb "github.com/Servora-Kit/servora-platform/api/gen/go/servora/audit/service/v1"
+	"github.com/Servora-Kit/servora-platform/app/audit/service/internal/biz"
 )
 
 // AuditService implements both AuditQueryService (gRPC) and AuditHTTPService (HTTP).

@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 
-	"github.com/Servora-Kit/servora/app/audit/service/internal/data"
+	"github.com/Servora-Kit/servora-platform/app/audit/service/internal/data"
 	"github.com/Servora-Kit/servora/pkg/bootstrap"
 
 	"github.com/go-kratos/kratos/v2"

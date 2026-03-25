@@ -4,7 +4,7 @@ package servora.audit.service.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/Servora-Kit/servora/api/gen/go/servora/audit/service/v1;auditsvcpb";
+option go_package = "github.com/Servora-Kit/servora-platform/api/gen/go/servora/audit/service/v1;auditsvcpb";
 
 // AuditQueryService provides read-only access to persisted audit events.
 service AuditQueryService {
