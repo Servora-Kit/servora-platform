@@ -1,10 +1,12 @@
 server:
   http:
-    addr: "0.0.0.0:8000"
-    timeout: 30s
+    listen:
+      addr: "0.0.0.0:8000"
+      timeout: 30s
   grpc:
-    addr: "0.0.0.0:8001"
-    timeout: 30s
+    listen:
+      addr: "0.0.0.0:8001"
+      timeout: 30s
 
 data:
   kafka:
