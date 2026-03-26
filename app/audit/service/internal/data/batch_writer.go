@@ -7,8 +7,8 @@ import (
 
 	auditv1 "github.com/Servora-Kit/servora/api/gen/go/servora/audit/v1"
 	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
-	"github.com/Servora-Kit/servora/pkg/broker"
-	"github.com/Servora-Kit/servora/pkg/logger"
+	"github.com/Servora-Kit/servora/infra/broker"
+	"github.com/Servora-Kit/servora/obs/logging"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 

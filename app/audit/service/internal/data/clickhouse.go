@@ -7,8 +7,8 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
-	pkgch "github.com/Servora-Kit/servora/pkg/db/clickhouse"
-	"github.com/Servora-Kit/servora/pkg/logger"
+	pkgch "github.com/Servora-Kit/servora/infra/db/clickhouse"
+	"github.com/Servora-Kit/servora/obs/logging"
 )
 
 // NewClickHouseClient opens a ClickHouse connection via pkg/db/clickhouse.

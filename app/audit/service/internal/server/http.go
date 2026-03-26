@@ -6,10 +6,10 @@ import (
 	auditsvcpb "github.com/Servora-Kit/servora-platform/api/gen/go/servora/audit/service/v1"
 	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
 	"github.com/Servora-Kit/servora-platform/app/audit/service/internal/service"
-	"github.com/Servora-Kit/servora/pkg/governance/telemetry"
-	"github.com/Servora-Kit/servora/pkg/logger"
-	"github.com/Servora-Kit/servora/pkg/transport/server/middleware"
-	svrhttp "github.com/Servora-Kit/servora/pkg/transport/server/http"
+	"github.com/Servora-Kit/servora/obs/telemetry"
+	"github.com/Servora-Kit/servora/obs/logging"
+	"github.com/Servora-Kit/servora/transport/server/middleware"
+	svrhttp "github.com/Servora-Kit/servora/transport/server/http"
 )
 
 // NewHTTPServer creates the HTTP server for the audit service.

@@ -9,7 +9,7 @@ import (
 
 	auditsvcpb "github.com/Servora-Kit/servora-platform/api/gen/go/servora/audit/service/v1"
 	"github.com/Servora-Kit/servora-platform/app/audit/service/internal/biz"
-	"github.com/Servora-Kit/servora/pkg/logger"
+	"github.com/Servora-Kit/servora/obs/logging"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -94,7 +94,11 @@ LIMIT %d
 	if err != nil {
 		return nil, "", fmt.Errorf("query audit events: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			r.log.Warnf("failed to close rows: %v", closeErr)
+		}
+	}()
 
 	var items []*auditsvcpb.AuditEventItem
 	for rows.Next() {

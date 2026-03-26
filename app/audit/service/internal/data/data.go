@@ -6,7 +6,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	conf "github.com/Servora-Kit/servora/api/gen/go/servora/conf/v1"
-	"github.com/Servora-Kit/servora/pkg/logger"
+	"github.com/Servora-Kit/servora/obs/logging"
 	"github.com/google/wire"
 )
 
