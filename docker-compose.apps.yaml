@@ -1,0 +1,32 @@
+services:
+    audit:
+        image: servora-audit:latest
+        container_name: platform_audit
+        restart: unless-stopped
+        environment:
+            TZ: Asia/Shanghai
+        volumes:
+            - ./app/audit/service/configs/docker:/app/configs:ro
+            - audit-logs:/app/logs
+        ports:
+            - "10000:8000"
+            - "10001:8001"
+        depends_on:
+            consul:
+                condition: service_healthy
+            kafka:
+                condition: service_healthy
+            clickhouse:
+                condition: service_healthy
+        networks:
+            - platform-network
+
+volumes:
+    audit-logs:
+        external: true
+        name: servora-platform_audit-logs
+
+networks:
+    platform-network:
+        external: true
+        name: servora-platform_platform-network

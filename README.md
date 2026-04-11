@@ -38,14 +38,17 @@
 │   └── audit/service/               # Audit 微服务
 │       ├── api/protos/              # 审计业务 proto
 │       ├── cmd/                     # 服务入口
-│       ├── configs/                 # 配置文件
+│       ├── configs/
+│       │   ├── local/               # 本地开发配置（air 热重载读取）
+│       │   └── docker/              # 容器部署配置
 │       └── internal/                # 业务实现（service/biz/data/server）
 ├── manifests/
 │   └── openfga/                     # OpenFGA model 与测试
 ├── buf.yaml                         # Buf v2 workspace（依赖 buf.build/servora/servora）
 ├── buf.go.gen.yaml                  # Go 代码生成模板
-├── docker-compose.yaml              # 基础设施
-├── docker-compose.dev.yaml          # 开发环境（audit）
+├── docker-compose.yaml              # 基础设施（Kafka、ClickHouse、Consul 等）
+├── docker-compose.apps.yaml         # 应用容器（audit 生产镜像）
+├── docker-compose.dev.yaml          # 开发环境（audit 容器化开发）
 └── Makefile                         # 构建入口
 ```
 
@@ -71,11 +74,28 @@ make gen     # 统一生成（api + wire）
 
 ### 启动开发环境
 
+两种工作流，按需选择：
+
+**方式一：本地热重载（推荐日常开发）**
+
 ```bash
-# 仅启动基础设施（Kafka、ClickHouse）
+# 启动基础设施
 make compose.up
 
-# 启动基础设施 + 微服务
+# 在服务目录用 air 热重载启动
+cd app/audit/service && make dev
+```
+
+**方式二：全容器化**
+
+```bash
+# 构建应用镜像
+make compose.build
+
+# 启动基础设施 + 应用容器
+make compose.up.all
+
+# 或仅启动开发环境（带容器内服务）
 make compose.dev
 ```
 
@@ -92,12 +112,28 @@ make test                   # 运行测试
 make lint                   # Go lint
 make lint.proto             # Proto lint
 
-# Compose
+# 服务目录（app/audit/service/）
+make dev                    # air 热重载启动（读 configs/local/）
+make run                    # 直接运行（读 configs/local/）
+make build                  # 编译二进制
+
+# Compose - 基础设施
 make compose.up             # 启动基础设施
-make compose.dev            # 启动开发环境
 make compose.stop           # 停止基础设施
 make compose.down           # 移除容器/网络（保留数据卷）
 make compose.reset          # 移除容器/网络/数据卷
+
+# Compose - 应用镜像
+make compose.build          # 构建应用镜像（同时打 :latest tag）
+make compose.up.all         # 启动基础设施 + 应用容器
+
+# Compose - 开发环境（容器化）
+make compose.dev            # 启动开发环境并 tail 日志
+make compose.dev.up         # 启动开发环境（后台）
+make compose.dev.restart    # 重启微服务容器
+make compose.dev.stop       # 停止微服务容器
+make compose.dev.down       # 移除开发环境容器/网络
+make compose.dev.reset      # 移除开发环境容器/网络/数据卷
 
 # OpenFGA
 make openfga.init           # 初始化 store

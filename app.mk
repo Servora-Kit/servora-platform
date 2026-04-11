@@ -64,7 +64,7 @@ OPENAPI_CONFIG := buf.$(SERVICE_NAME).openapi.gen.yaml
 CONF ?= ./configs/local/
 RUN_DEPS ?= api openapi
 
-.PHONY: build _build clean gen wire api openapi run app help env gen.gorm gen.ent lint.go
+.PHONY: build _build clean gen wire api openapi run dev app help env gen.gorm gen.ent lint.go
 
 # show environment variables
 env:
@@ -95,6 +95,10 @@ endif
 # run application
 run: $(RUN_DEPS)
 	-@go run $(GOFLAGS) -ldflags "$(LDFLAGS)" ./cmd/server -conf $(CONF)
+
+## dev: run application with Air hot-reload
+dev: $(RUN_DEPS)
+	@air
 
 # build service app
 app: build

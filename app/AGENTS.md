@@ -1,13 +1,12 @@
 # AGENTS.md - app/
 
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-03-15 | Updated: 2026-03-15 -->
+<!-- Generated: 2026-03-15 | Updated: 2026-04-12 -->
 
 ## 目录概览
 
-`app/` 存放可运行服务。当前仓库内有两个服务模块：
-- `app/iam/service/`：IAM 主服务（认证、授权、组织、项目），含后端与可选前端
-- `app/sayhello/service/`：独立示例服务
+`app/` 存放可运行服务。当前仓库内包含平台级基础服务模块：
+- `app/audit/service/`：审计微服务
 
 每个服务目录都是独立 Go module，并通过根 `go.work` 纳管。
 
@@ -39,15 +38,25 @@ app/{service}/service/
 ## 常用命令
 
 ```bash
-cd app/iam/service && make run
-cd app/iam/service && make build
-cd app/iam/service && make wire
-cd app/iam/service && make gen.ent
-cd app/iam/service && make gen.gorm
-cd app/sayhello/service && make run
+cd app/audit/service && make run      # 本地运行 (需提前启动 infra)
+cd app/audit/service && make dev      # 本地热重载 (Air 自动编译运行，读 configs/local/)
+cd app/audit/service && make build    # 构建服务
+cd app/audit/service && make wire     # 重新生成依赖注入
+cd app/audit/service && make gen.ent  # 生成 Ent 模型代码
+cd app/audit/service && make gen.gorm # 生成 GORM 模型代码
 ```
+
+## 配置约定
+
+每个服务的 `configs/` 目录下默认区分两种配置环境：
+- `configs/local/`：**本地开发环境**。数据库、消息队列地址指向 `127.0.0.1`。
+  - 使用 `make dev` 或 `make run` 启动时，服务读取此目录。
+- `configs/docker/`：**容器化环境**。数据库地址指向 Docker Compose network 中的服务名（如 `kafka:9092`）。
+  - 当通过 `docker-compose.apps.yaml` 或 `docker-compose.dev.yaml` 启动容器时，服务读取此目录。
+
+在 `configs/` 中定义的 `.yaml` 在代码中通过 `conf.Bootstrap` 结构体映射，使用 Protobuf 结构定义在各自的 `api/` 目录下。
 
 ## 维护提示
 
 - 部署清单以根 `manifests/` 为主；各服务可带 `manifests/` 补充资源
-- 若新增服务，优先参考 `app/sayhello/service/` 的最小结构，再按需要补齐 `api/` 与 `internal/`
+- 若新增服务，优先参考 `app/audit/service/` 的最小结构，再按需要补齐 `api/` 与 `internal/`

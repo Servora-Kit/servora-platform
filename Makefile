@@ -32,6 +32,9 @@ VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev
 BUILD_TIME := $(shell date +%Y-%m-%dT%H:%M:%S)
 GIT_COMMIT := $(shell git rev-parse HEAD 2>/dev/null || echo "unknown")
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+# Docker image tags disallow "/" and many symbols. Normalize git-derived version for image tags.
+DOCKER_TAG_VERSION_RAW := $(shell printf '%s' "$(VERSION)" | sed -E 's/[^[:alnum:]_.-]+/-/g; s/^[.-]+//; s/-+/-/g; s/[.-]+$$//')
+DOCKER_TAG_VERSION := $(if $(DOCKER_TAG_VERSION_RAW),$(DOCKER_TAG_VERSION_RAW),dev)
 
 LDFLAGS := -X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -X main.GitCommit=$(GIT_COMMIT) -X main.GitBranch=$(GIT_BRANCH)
 
@@ -44,6 +47,7 @@ RESET := \033[0m
 COMPOSE := docker compose
 COMPOSE_FILES := -f docker-compose.yaml
 COMPOSE_DEV_FILES := -f docker-compose.yaml -f docker-compose.dev.yaml
+COMPOSE_APPS_FILES := -f docker-compose.yaml -f docker-compose.apps.yaml
 MICROSERVICES := audit
 
 WEB_APPS :=
@@ -52,7 +56,7 @@ WEB_DEV_APP ?=
 GO_WORKSPACE_MODULES := app/audit/service
 
 WEB_PNPM_FILTERS := $(foreach app,$(WEB_APPS),--filter "./web/$(app)")
-INFRA_SERVICES := consul db redis openfga kafka clickhouse otel-collector jaeger loki prometheus grafana traefik
+INFRA_SERVICES := consul kafka clickhouse otel-collector jaeger loki prometheus grafana traefik
 COMPOSE_STACK_SERVICES := $(INFRA_SERVICES) $(MICROSERVICES)
 COMPOSE_STACK_DOWN := $(COMPOSE) $(COMPOSE_DEV_FILES) down --remove-orphans
 COMPOSE_STACK_RESET := $(COMPOSE) $(COMPOSE_DEV_FILES) down --remove-orphans --volumes
@@ -69,7 +73,7 @@ endef
 
 .PHONY: help env init plugin cli dep tidy test cover vet lint lint.go lint.proto lint.ts web.dev buf-update buf-push tag
 .PHONY: wire ent gen api api-go api-ts openapi build clean
-.PHONY: compose.build compose.up compose.rebuild compose.stop compose.down compose.reset compose.ps compose.logs
+.PHONY: compose.build compose.up compose.up.infra compose.up.all compose.rebuild compose.stop compose.down compose.reset compose.ps compose.logs
 .PHONY: compose.dev compose.dev.build compose.dev.up compose.dev.restart compose.dev.ps compose.dev.stop compose.dev.down compose.dev.reset compose.dev.logs
 .PHONY: openfga.init openfga.model.validate openfga.model.test openfga.model.apply
 
@@ -113,7 +117,9 @@ cli:
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	@go install github.com/google/wire/cmd/wire@latest
 	@go install entgo.io/ent/cmd/ent@latest
+	@go install github.com/air-verse/air@latest
 	@go install $(SERVORA_PKG)/cmd/svr@latest
+
 	@echo "$(GREEN)✓ CLI tools installed$(RESET)"
 
 # download dependencies of module
@@ -266,15 +272,25 @@ buf-push:
 
 # build production images for microservices
 compose.build:
-	@echo "$(CYAN)Build production images: $(MICROSERVICES) (version: $(VERSION))$(RESET)"
-	@$(foreach svc,$(MICROSERVICES),docker build --build-arg SERVICE_NAME=$(svc) --build-arg VERSION=$(VERSION) -t servora-$(svc):$(VERSION) . &&) true
+	@echo "$(CYAN)Build production images: $(MICROSERVICES) (version: $(DOCKER_TAG_VERSION))$(RESET)"
+	@$(foreach svc,$(MICROSERVICES),docker build --build-arg SERVICE_NAME=$(svc) --build-arg VERSION=$(VERSION) -t servora-$(svc):$(DOCKER_TAG_VERSION) . &&) true
+	@$(foreach svc,$(MICROSERVICES),docker tag servora-$(svc):$(DOCKER_TAG_VERSION) servora-$(svc):latest &&) true
 	@echo "$(GREEN)✓ Production images built$(RESET)"
 
 # start infrastructure compose stack
-compose.up:
+compose.up: compose.up.infra
+
+# start only infrastructure services
+compose.up.infra:
 	@echo "$(CYAN)Compose infra up: $(INFRA_SERVICES)$(RESET)"
 	@$(COMPOSE) $(COMPOSE_FILES) up -d $(INFRA_SERVICES)
 	@echo "$(GREEN)✓ Infrastructure services started$(RESET)"
+
+# start infrastructure + app services
+compose.up.all:
+	@echo "$(CYAN)Compose up: infra + apps$(RESET)"
+	@$(COMPOSE) $(COMPOSE_APPS_FILES) up -d
+	@echo "$(GREEN)✓ All services started$(RESET)"
 
 # rebuild production images and ensure infrastructure is running
 compose.rebuild:
@@ -302,36 +318,36 @@ compose.ps:
 compose.logs:
 	@$(COMPOSE) $(COMPOSE_FILES) logs -f $(INFRA_SERVICES)
 
-# build Air-based development images for microservices
+# build development images for microservices
 compose.dev.build:
 	@echo "$(CYAN)Compose dev build: $(MICROSERVICES)$(RESET)"
 	@$(COMPOSE) $(COMPOSE_DEV_FILES) build $(MICROSERVICES)
 	@echo "$(GREEN)✓ Compose dev images built$(RESET)"
 
-# start full development compose stack (infra + Air microservices) and tail logs
+# start full development compose stack (infra + microservices) and tail logs
 compose.dev:
 	@echo "$(CYAN)Compose dev start: $(COMPOSE_STACK_SERVICES)$(RESET)"
 	@$(COMPOSE) $(COMPOSE_DEV_FILES) up -d $(COMPOSE_STACK_SERVICES)
 	@echo "$(GREEN)✓ Compose dev stack started, tailing logs...$(RESET)"
 	@$(COMPOSE) $(COMPOSE_DEV_FILES) logs -f $(COMPOSE_STACK_SERVICES)
 
-# start Air-based development stack in background
+# start development stack in background
 compose.dev.up:
 	@echo "$(CYAN)Compose dev up: $(COMPOSE_STACK_SERVICES)$(RESET)"
 	@$(COMPOSE) $(COMPOSE_DEV_FILES) up -d $(COMPOSE_STACK_SERVICES)
 	@echo "$(GREEN)✓ Compose dev stack started$(RESET)"
 
-# restart Air-based development containers to force fresh startup build
+# restart development containers to force fresh startup build
 compose.dev.restart:
-	@echo "$(CYAN)Compose dev restart (Air): $(MICROSERVICES)$(RESET)"
+	@echo "$(CYAN)Compose dev restart: $(MICROSERVICES)$(RESET)"
 	@$(COMPOSE) $(COMPOSE_DEV_FILES) restart $(MICROSERVICES)
 	@echo "$(GREEN)✓ Compose dev services restarted$(RESET)"
 
-# tail logs for Air-based development stack
+# tail logs for development stack
 compose.dev.logs:
 	@$(COMPOSE) $(COMPOSE_DEV_FILES) logs -f $(MICROSERVICES)
 
-# show Air-based development stack status
+# show development stack status
 compose.dev.ps:
 	@$(COMPOSE) $(COMPOSE_DEV_FILES) ps $(COMPOSE_STACK_SERVICES)
 
