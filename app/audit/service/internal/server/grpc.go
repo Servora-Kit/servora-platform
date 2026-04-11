@@ -21,15 +21,16 @@ func NewGRPCServer(c *conf.Server, trace *conf.Trace, m *telemetry.Metrics, l lo
 		WithMetrics(m).
 		Build()
 
-	builder := svrgrpc.NewBuilder().
-		WithLogger(glog).
-		WithMiddleware(ms...).
-		WithServices(func(s *kgrpc.Server) {
+	opts := []svrgrpc.ServerOption{
+		svrgrpc.WithLogger(glog),
+		svrgrpc.WithMiddleware(ms...),
+		svrgrpc.WithServices(func(s *kgrpc.Server) {
 			auditsvcpb.RegisterAuditQueryServiceServer(s, svc)
-		})
+		}),
+	}
 	if c != nil && c.Grpc != nil {
-		builder.WithConfig(c.Grpc)
+		opts = append(opts, svrgrpc.WithConfig(c.Grpc))
 	}
 
-	return builder.MustBuild()
+	return svrgrpc.NewServer(opts...)
 }

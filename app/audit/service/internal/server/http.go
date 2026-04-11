@@ -21,17 +21,18 @@ func NewHTTPServer(c *conf.Server, trace *conf.Trace, m *telemetry.Metrics, l lo
 		WithMetrics(m).
 		Build()
 
-	builder := svrhttp.NewBuilder().
-		WithLogger(hlog).
-		WithMiddleware(ms...).
-		WithMetrics(m).
-		WithServices(func(s *khttp.Server) {
+	opts := []svrhttp.ServerOption{
+		svrhttp.WithLogger(hlog),
+		svrhttp.WithMiddleware(ms...),
+		svrhttp.WithMetrics(m),
+		svrhttp.WithServices(func(s *khttp.Server) {
 			auditsvcpb.RegisterAuditHTTPServiceHTTPServer(s, svc)
-		})
+		}),
+	}
 	if c != nil && c.Http != nil {
-		builder.WithConfig(c.Http)
-		builder.WithCORS(c.Http.Cors)
+		opts = append(opts, svrhttp.WithConfig(c.Http))
+		opts = append(opts, svrhttp.WithCORS(c.Http.Cors))
 	}
 
-	return builder.MustBuild()
+	return svrhttp.NewServer(opts...)
 }
