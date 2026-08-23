@@ -1,1 +1,4 @@
 import "../../../just/service.just"
+
+# IAM uses the shared service lifecycle; keep an explicit Ent alias at the leaf.
+ent: gen-ent

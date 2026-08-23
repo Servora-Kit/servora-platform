@@ -26,7 +26,7 @@ shift
 
 api_url=""
 model_file="manifests/openfga/fga.mod"
-store_name="${OPENFGA_STORE_NAME:-plateau}"
+store_name="plateau"
 store_id=""
 env_file=".env"
 

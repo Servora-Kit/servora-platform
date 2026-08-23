@@ -46,7 +46,7 @@ if ([string]::IsNullOrWhiteSpace($ApiUrl)) {
     if ([string]::IsNullOrWhiteSpace($ApiUrl)) { $ApiUrl = 'http://localhost:18080' }
 }
 if ([string]::IsNullOrWhiteSpace($StoreName)) {
-    $StoreName = if ($env:OPENFGA_STORE_NAME) { $env:OPENFGA_STORE_NAME } else { 'plateau' }
+    $StoreName = 'plateau'
 }
 
 $storeIdExplicit = -not [string]::IsNullOrWhiteSpace($StoreId)

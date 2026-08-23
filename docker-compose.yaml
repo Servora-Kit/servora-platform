@@ -8,6 +8,9 @@ services:
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-postgres}"
       POSTGRES_DB: "${POSTGRES_DB:-plateau}"
       POSTGRES_SERVICE_DATABASES: "${POSTGRES_SERVICE_DATABASES:-plateau_iam}"
+      IAM_DATABASE_NAME: "${IAM_DATABASE_NAME:-plateau_iam}"
+      IAM_DATABASE_ROLE: "${IAM_DATABASE_ROLE:-plateau_iam_app}"
+      IAM_DATABASE_PASSWORD: "${IAM_DATABASE_PASSWORD:-plateau_iam_pwd}"
     healthcheck:
       test:
         [
@@ -37,12 +40,51 @@ services:
       PGPASSWORD: "${POSTGRES_PASSWORD:-postgres}"
       PGDATABASE: postgres
       POSTGRES_SERVICE_DATABASES: "${POSTGRES_SERVICE_DATABASES:-plateau_iam}"
+      IAM_DATABASE_NAME: "${IAM_DATABASE_NAME:-plateau_iam}"
+      IAM_DATABASE_ROLE: "${IAM_DATABASE_ROLE:-plateau_iam_app}"
+      IAM_DATABASE_PASSWORD: "${IAM_DATABASE_PASSWORD:-plateau_iam_pwd}"
     depends_on:
       postgres:
         condition: service_healthy
     entrypoint: ["/bin/sh", "/provision/create-databases.sh"]
     volumes:
       - ./manifests/scripts/postgres:/provision:ro
+    networks:
+      - plateau-network
+
+  openfga-migrate:
+    image: openfga/openfga:latest
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      - migrate
+      - --datastore-engine
+      - postgres
+      - --datastore-uri
+      - "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-plateau}?sslmode=disable"
+    networks:
+      - plateau-network
+
+  openfga:
+    image: openfga/openfga:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      openfga-migrate:
+        condition: service_completed_successfully
+    command:
+      - run
+      - --datastore-engine
+      - postgres
+      - --datastore-uri
+      - "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-plateau}?sslmode=disable"
+    ports:
+      - "127.0.0.1:${OPENFGA_HTTP_PORT:-18080}:8080"
+      - "127.0.0.1:${OPENFGA_GRPC_PORT:-18081}:8081"
+      - "127.0.0.1:${OPENFGA_PLAYGROUND_PORT:-3002}:3000"
     networks:
       - plateau-network
 
