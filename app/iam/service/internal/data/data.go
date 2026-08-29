@@ -10,7 +10,7 @@ import (
 	"github.com/Servora-Kit/plateau/app/iam/service/internal/biz"
 	entmodel "github.com/Servora-Kit/plateau/app/iam/service/internal/data/ent"
 	_ "github.com/Servora-Kit/plateau/app/iam/service/internal/data/ent/runtime"
-	capservice "github.com/Servora-Kit/plateau/security/cap"
+	"github.com/Servora-Kit/plateau/security/cap"
 	redispb "github.com/Servora-Kit/servora/api/gen/go/servora/contrib/db/redis/v1"
 	corepb "github.com/Servora-Kit/servora/api/gen/go/servora/core/v1"
 	entdriver "github.com/Servora-Kit/servora/contrib/db/entgo"
@@ -18,22 +18,22 @@ import (
 	"github.com/google/wire"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	fgaclient "github.com/openfga/go-sdk/client"
-	goredis "github.com/redis/go-redis/v9"
+	"github.com/redis/go-redis/v9"
 )
 
 // ProviderSet provides the IAM database driver, generated client, and data layer.
-var ProviderSet = wire.NewSet(NewData, NewCAP, NewCAPVerifier, NewUserRepository, NewCredentialRepository, NewSessionRepository, NewTokenSessionRepository, NewVerificationTokenRepo, NewPasswordResetTokenRepository, NewInitialAdminCreator, NewAdminRelationWriter, NewEntDriver, NewDBClient, NewRedisClient, NewFGAClient)
+var ProviderSet = wire.NewSet(NewData, cap.New, NewCAPVerifier, NewUserRepository, NewCredentialRepository, NewSessionRepository, NewTokenSessionRepository, NewVerificationTokenRepo, NewPasswordResetTokenRepository, NewInitialAdminCreator, NewAdminRelationWriter, NewEntDriver, NewDBClient, NewRedisClient, NewFGAClient)
 
 // Data owns the IAM Ent client and repository-scoped persistence resources.
 type Data struct {
 	ent   *entmodel.Client
-	redis *goredis.Client
+	redis *redis.Client
 	fga   *fgaclient.OpenFgaClient
 	log   *slog.Logger
 }
 
 // NewData installs the generated database, Redis and official OpenFGA clients.
-func NewData(client *entmodel.Client, redis *goredis.Client, openFGA *fgaclient.OpenFgaClient, l *slog.Logger) (*Data, error) {
+func NewData(client *entmodel.Client, redis *redis.Client, openFGA *fgaclient.OpenFgaClient, l *slog.Logger) (*Data, error) {
 	if client == nil {
 		return nil, fmt.Errorf("Ent client is nil")
 	}
@@ -73,13 +73,8 @@ func (data *Data) InTx(ctx context.Context, fn func(*entmodel.Tx) error) (err er
 	return nil
 }
 
-// NewCAP binds the shared CAP implementation to IAM's required Redis client.
-func NewCAP(data *Data) *capservice.Cap {
-	return capservice.New(data.redis)
-}
-
 // NewCAPVerifier exposes CAP token validation through the biz-owned capability port.
-func NewCAPVerifier(captcha *capservice.Cap) biz.CAPVerifier {
+func NewCAPVerifier(captcha *cap.Cap) biz.CAPVerifier {
 	return captcha
 }
 
@@ -103,7 +98,7 @@ func NewDBClient(driver dialect.Driver) (*entmodel.Client, func(), error) {
 }
 
 // NewRedisClient creates and verifies the shared Redis client.
-func NewRedisClient(config *redispb.Redis, l *slog.Logger) (*goredis.Client, func(), error) {
+func NewRedisClient(config *redispb.Redis, l *slog.Logger) (*redis.Client, func(), error) {
 	client, cleanup, err := rediscontrib.New(config, l)
 	if err != nil {
 		return nil, nil, err

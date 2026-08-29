@@ -11,6 +11,7 @@ import (
 	"github.com/Servora-Kit/plateau/api/gen/go/iam/oidc/conf/v1"
 	"github.com/Servora-Kit/plateau/api/gen/go/plateau/infra/mail/v1"
 	"github.com/Servora-Kit/plateau/api/gen/go/plateau/infra/openfga/v1"
+	"github.com/Servora-Kit/plateau/api/gen/go/plateau/security/cap/v1"
 	"github.com/Servora-Kit/plateau/app/iam/service/internal/authn"
 	"github.com/Servora-Kit/plateau/app/iam/service/internal/authz"
 	"github.com/Servora-Kit/plateau/app/iam/service/internal/biz"
@@ -20,6 +21,7 @@ import (
 	"github.com/Servora-Kit/plateau/app/iam/service/internal/server"
 	"github.com/Servora-Kit/plateau/app/iam/service/internal/service"
 	"github.com/Servora-Kit/plateau/app/iam/service/internal/startup"
+	cap2 "github.com/Servora-Kit/plateau/security/cap"
 	"github.com/Servora-Kit/servora/api/gen/go/servora/contrib/db/redis/v1"
 	"github.com/Servora-Kit/servora/core/bootstrap"
 	"github.com/Servora-Kit/servora/core/registry"
@@ -33,7 +35,7 @@ import (
 
 // Injectors from wire.go:
 
-func wireApp(runtime *bootstrap.Runtime, iam *iamconfv1.IAM, oidcconfv1OIDC *oidcconfv1.OIDC, redis *redispb.Redis, mailpbMail *mailpb.Mail, openFGA *openfgaconfpb.OpenFGA) (*kratos.App, func(), error) {
+func wireApp(runtime *bootstrap.Runtime, iam *iamconfv1.IAM, oidcconfv1OIDC *oidcconfv1.OIDC, capv1CAP *capv1.CAP, redis *redispb.Redis, mailpbMail *mailpb.Mail, openFGA *openfgaconfpb.OpenFGA) (*kratos.App, func(), error) {
 	corev1Bootstrap := runtime.Bootstrap
 	corev1Registry := corev1Bootstrap.Registry
 	registrar := registry.NewRegistrar(corev1Registry)
@@ -160,7 +162,13 @@ func wireApp(runtime *bootstrap.Runtime, iam *iamconfv1.IAM, oidcconfv1OIDC *oid
 		cleanup()
 		return nil, nil, err
 	}
-	capCap := data.NewCAP(dataData)
+	capCap, err := cap2.New(capv1CAP, redisClient)
+	if err != nil {
+		cleanup3()
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
 	capVerifier := data.NewCAPVerifier(capCap)
 	sender, err := mail.NewSender(mailpbMail)
 	if err != nil {

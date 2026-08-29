@@ -19,3 +19,11 @@
   - 基于 Kafka 消费审计事件
   - ClickHouse 持久化存储
   - 审计日志查询 API
+
+## CAP 人机验证
+
+`security/cap` 是可由 IAM 或其他微服务直接挂载的 Go 模块，公开 `/cap/challenge` 与 `/cap/redeem`，不依赖外部 Cap Standalone 服务。使用方在组合根把生成的 `*capv1.CAP` 配置和共享 Redis client 传入 `cap.New(capConfig, redisClient)`。
+
+CAP 配置的 `signing_secret` 必须由部署环境提供，至少 16 字节，并在所有实例间保持一致；其余 PoW、TTL 和 Redis namespace 使用生成配置中的默认值。当前实现跟进 `capjs-core` 的基础 HS256 challenge JWT、SHA-256 PoW、可选 scope 与 Redis replay nonce 语义，不实现 instrumentation、headless 检测、RSW 或 format-2。
+
+从旧状态型实现切换时不读取旧 `cap:challenge:*` 和 `cap:token:*` 数据；切换前签发的 challenge token 与一次性 verification token 将失效。后端与固定版本 widget 应协调发布，客户端收到失败结果后重新获取 challenge。

@@ -8,6 +8,7 @@ import (
 	oidcconfpb "github.com/Servora-Kit/plateau/api/gen/go/iam/oidc/conf/v1"
 	mailpb "github.com/Servora-Kit/plateau/api/gen/go/plateau/infra/mail/v1"
 	openfgapb "github.com/Servora-Kit/plateau/api/gen/go/plateau/infra/openfga/v1"
+	capv1 "github.com/Servora-Kit/plateau/api/gen/go/plateau/security/cap/v1"
 	"github.com/Servora-Kit/plateau/app/iam/service/internal/biz"
 	"github.com/Servora-Kit/plateau/app/iam/service/internal/data"
 	mailservice "github.com/Servora-Kit/plateau/app/iam/service/internal/mail"
@@ -25,6 +26,7 @@ func wireApp(
 	*bootstrap.Runtime,
 	*iamconfpb.IAM,
 	*oidcconfpb.OIDC,
+	*capv1.CAP,
 	*redispb.Redis,
 	*mailpb.Mail,
 	*openfgapb.OpenFGA,

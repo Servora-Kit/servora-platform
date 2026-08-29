@@ -1,42 +1,80 @@
-// Package cap 实现了内嵌式 Cap 工作量证明（PoW）人机验证服务端。
-// 算法移植自 Cap 官方 JS 实现（https://github.com/tiagozip/cap），
-// 使用项目现有的 Redis 客户端替代文件系统存储。
+// Package cap implements an embedded, Redis-backed Cap proof-of-work server.
+//
+// Its basic SHA-256 wire protocol and signed challenge semantics follow
+// capjs-core 0.1.x. The package intentionally excludes instrumentation, RSW,
+// format-2 challenges, Cap Standalone, and siteverify. Protocol v2 does not
+// read challenge or verification records produced by the legacy stateful
+// implementation.
 package cap
 
 import (
+	"bytes"
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	nethttp "net/http"
+	"io"
+	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
+	pb "github.com/Servora-Kit/plateau/api/gen/go/plateau/security/cap/v1"
 	khttp "github.com/go-kratos/kratos/v3/transport/http"
-
-	goredis "github.com/redis/go-redis/v9"
+	"github.com/redis/go-redis/v9"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 const (
-	challengeKeyPrefix = "cap:challenge:"
-	tokenKeyPrefix     = "cap:token:"
+	defaultChallengeTTL        = 10 * time.Minute
+	defaultTokenTTL            = 20 * time.Minute
+	defaultKeyPrefix           = "cap:v2:"
 
-	defaultChallengeCount      = 50
-	defaultChallengeSize       = 32
-	defaultChallengeDifficulty = 4
-	defaultExpiresMs           = 600_000 // 10 minutes
-	tokenTTL                   = 20 * time.Minute
+	maxChallengeCount      = 1000
+	maxChallengeSize       = 256
+	maxChallengeDifficulty = 16
+	minSigningSecretBytes  = 16
+
+	challengeJWTHeader = `{"alg":"HS256","typ":"JWT"}`
 )
 
-// ChallengeConfig holds configuration for challenge creation.
+var (
+	challengeJWTHeaderEncoded = base64.RawURLEncoding.EncodeToString([]byte(challengeJWTHeader))
+
+	issueVerificationScript = redis.NewScript(`
+if redis.call("EXISTS", KEYS[1]) == 1 then
+  return 0
+end
+if redis.call("EXISTS", KEYS[2]) == 1 then
+  return -1
+end
+redis.call("PSETEX", KEYS[1], ARGV[1], "1")
+redis.call("PSETEX", KEYS[2], ARGV[2], ARGV[3])
+return 1
+`)
+
+	consumeScopedTokenScript = redis.NewScript(`
+local scope = redis.call("GET", KEYS[1])
+if not scope or scope ~= ARGV[1] then
+  return 0
+end
+redis.call("DEL", KEYS[1])
+return 1
+`)
+)
+
+// ChallengeConfig overrides one challenge's server-controlled policy.
 type ChallengeConfig struct {
 	ChallengeCount      int
 	ChallengeSize       int
 	ChallengeDifficulty int
 	ExpiresMs           int64
+	Scope               string
 }
 
 // ChallengeResponse is returned by CreateChallenge.
@@ -46,7 +84,7 @@ type ChallengeResponse struct {
 	Expires   int64           `json:"expires"`
 }
 
-// ChallengeParams are the c/s/d fields stored in Redis and returned to the client.
+// ChallengeParams are the public c/s/d proof-of-work parameters.
 type ChallengeParams struct {
 	C int `json:"c"`
 	S int `json:"s"`
@@ -55,262 +93,477 @@ type ChallengeParams struct {
 
 // RedeemResponse is returned by RedeemChallenge.
 type RedeemResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message,omitempty"`
-	Token   string `json:"token,omitempty"`
-	Expires int64  `json:"expires,omitempty"`
+	Success  bool   `json:"success"`
+	Message  string `json:"message,omitempty"`
+	Token    string `json:"token,omitempty"`
+	Expires  int64  `json:"expires,omitempty"`
+	Scope    string `json:"scope,omitempty"`
+	IssuedAt int64  `json:"iat,omitempty"`
 }
 
-// challengeRecord is the JSON structure stored in Redis for a challenge.
-type challengeRecord struct {
-	Challenge ChallengeParams `json:"challenge"`
-	Expires   int64           `json:"expires"`
+type challengeClaims struct {
+	Nonce      string `json:"n"`
+	Count      int    `json:"c"`
+	Size       int    `json:"s"`
+	Difficulty int    `json:"d"`
+	Expires    int64  `json:"exp"`
+	IssuedAt   int64  `json:"iat"`
+	Scope      string `json:"sk,omitempty"`
 }
 
-// Cap is the embedded Cap CAPTCHA server backed by Redis.
+// Cap is the embedded Cap server backed by Redis for one-time state.
 type Cap struct {
-	rdb *goredis.Client
+	rdb             *redis.Client
+	signingSecret   []byte
+	keyPrefix       string
+	challengeParams ChallengeParams
+	challengeTTL    time.Duration
+	tokenTTL        time.Duration
+	defaultScope    string
+	now             func() time.Time
 }
 
-// New creates a new Cap instance backed by the given Redis client.
-func New(rdb *goredis.Client) *Cap {
-	return &Cap{rdb: rdb}
-}
-
-// prng generates a deterministic hex string of the given length from a string seed.
-// This is a direct port of the JS prng() function using FNV-1a + xorshift32.
-func prng(seed string, length int) string {
-	// FNV-1a 32-bit
-	h := uint32(2166136261)
-	for i := 0; i < len(seed); i++ {
-		h ^= uint32(seed[i])
-		h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24)
+// New creates a Cap instance from its generated protobuf configuration and
+// shared Redis client. Configuration precedes runtime dependencies by project
+// convention.
+func New(config *pb.CAP, rdb *redis.Client) (*Cap, error) {
+	if config == nil {
+		return nil, fmt.Errorf("cap: config is nil")
 	}
-	state := h
+	if rdb == nil {
+		return nil, fmt.Errorf("cap: Redis client is nil")
+	}
 
-	next := func() uint32 {
+	config.ApplyDefaults()
+	if err := config.CheckRequired(); err != nil {
+		return nil, fmt.Errorf("cap: invalid config: %w", err)
+	}
+	if len([]byte(config.GetSigningSecret())) < minSigningSecretBytes {
+		return nil, fmt.Errorf("cap: signing_secret must be at least %d bytes", minSigningSecretBytes)
+	}
+
+	challengeTTL, err := validDuration("challenge_ttl", config.GetChallengeTtl(), defaultChallengeTTL)
+	if err != nil {
+		return nil, err
+	}
+	tokenTTL, err := validDuration("token_ttl", config.GetTokenTtl(), defaultTokenTTL)
+	if err != nil {
+		return nil, err
+	}
+	params := ChallengeParams{
+		C: int(config.GetChallengeCount()),
+		S: int(config.GetChallengeSize()),
+		D: int(config.GetChallengeDifficulty()),
+	}
+	if err := validateChallengeParams(params); err != nil {
+		return nil, fmt.Errorf("cap: invalid config: %w", err)
+	}
+
+	prefix := config.GetRedisKeyPrefix()
+	if prefix == "" {
+		prefix = defaultKeyPrefix
+	}
+
+	return &Cap{
+		rdb:             rdb,
+		signingSecret:   []byte(config.GetSigningSecret()),
+		keyPrefix:       prefix,
+		challengeParams: params,
+		challengeTTL:    challengeTTL,
+		tokenTTL:        tokenTTL,
+		defaultScope:    config.GetDefaultScope(),
+		now:             time.Now,
+	}, nil
+}
+
+func validDuration(name string, value *durationpb.Duration, fallback time.Duration) (time.Duration, error) {
+	if value == nil {
+		return fallback, nil
+	}
+	if !value.IsValid() {
+		return 0, fmt.Errorf("cap: invalid config: %s is invalid", name)
+	}
+	duration := value.AsDuration()
+	if duration <= 0 {
+		return 0, fmt.Errorf("cap: invalid config: %s must be positive", name)
+	}
+	return duration, nil
+}
+
+func validateChallengeParams(params ChallengeParams) error {
+	if params.C < 1 || params.C > maxChallengeCount {
+		return fmt.Errorf("challenge_count must be in [1, %d]", maxChallengeCount)
+	}
+	if params.S < 1 || params.S > maxChallengeSize {
+		return fmt.Errorf("challenge_size must be in [1, %d]", maxChallengeSize)
+	}
+	if params.D < 1 || params.D > maxChallengeDifficulty {
+		return fmt.Errorf("challenge_difficulty must be in [1, %d]", maxChallengeDifficulty)
+	}
+	return nil
+}
+
+func fnv1a(value string) uint32 {
+	return fnv1aResume(2166136261, value)
+}
+
+func fnv1aResume(state uint32, value string) uint32 {
+	for i := range len(value) {
+		state ^= uint32(value[i])
+		state += (state << 1) + (state << 4) + (state << 7) + (state << 8) + (state << 24)
+	}
+	return state
+}
+
+func prng(seed string, length int) string {
+	return prngFromHash(fnv1a(seed), length)
+}
+
+func prngFromHash(state uint32, length int) string {
+	const digits = "0123456789abcdef"
+	buffer := make([]byte, ((length+7)/8)*8)
+	for offset := 0; offset < len(buffer); offset += 8 {
 		state ^= state << 13
 		state ^= state >> 17
 		state ^= state << 5
-		return state
+		for digit := range 8 {
+			buffer[offset+digit] = digits[state>>uint(28-digit*4)&0xf]
+		}
 	}
-
-	var result strings.Builder
-	for result.Len() < length {
-		rnd := next()
-		result.WriteString(fmt.Sprintf("%08x", rnd))
-	}
-	return result.String()[:length]
+	return string(buffer[:length])
 }
 
-// randomHex generates a cryptographically secure random hex string of the given byte count.
 func randomHex(byteCount int) (string, error) {
-	b := make([]byte, byteCount)
-	if _, err := rand.Read(b); err != nil {
+	value := make([]byte, byteCount)
+	if _, err := rand.Read(value); err != nil {
 		return "", err
 	}
-	return hex.EncodeToString(b), nil
+	return hex.EncodeToString(value), nil
 }
 
-// hashSHA256 returns the hex SHA-256 digest of the input string.
-func hashSHA256(s string) string {
-	h := sha256.Sum256([]byte(s))
-	return hex.EncodeToString(h[:])
+func hashSHA256(value string) string {
+	digest := sha256.Sum256([]byte(value))
+	return hex.EncodeToString(digest[:])
 }
 
-// CreateChallenge generates a new PoW challenge, stores it in Redis, and returns it.
-func (c *Cap) CreateChallenge(ctx context.Context, conf *ChallengeConfig) (*ChallengeResponse, error) {
-	params := ChallengeParams{
-		C: defaultChallengeCount,
-		S: defaultChallengeSize,
-		D: defaultChallengeDifficulty,
-	}
-	expiresMs := int64(defaultExpiresMs)
-
-	if conf != nil {
-		if conf.ChallengeCount > 0 {
-			params.C = conf.ChallengeCount
-		}
-		if conf.ChallengeSize > 0 {
-			params.S = conf.ChallengeSize
-		}
-		if conf.ChallengeDifficulty > 0 {
-			params.D = conf.ChallengeDifficulty
-		}
-		if conf.ExpiresMs > 0 {
-			expiresMs = conf.ExpiresMs
-		}
+// CreateChallenge creates a signed, stateless challenge token.
+func (c *Cap) CreateChallenge(ctx context.Context, override *ChallengeConfig) (*ChallengeResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 
-	// randomHex(25) => 50 hex chars, matching JS behavior
-	token, err := randomHex(25)
+	params := c.challengeParams
+	ttl := c.challengeTTL
+	scope := c.defaultScope
+	if override != nil {
+		if override.ChallengeCount > 0 {
+			params.C = override.ChallengeCount
+		}
+		if override.ChallengeSize > 0 {
+			params.S = override.ChallengeSize
+		}
+		if override.ChallengeDifficulty > 0 {
+			params.D = override.ChallengeDifficulty
+		}
+		if override.ExpiresMs > 0 {
+			ttl = time.Duration(override.ExpiresMs) * time.Millisecond
+		}
+		if override.Scope != "" {
+			scope = override.Scope
+		}
+	}
+	if err := validateChallengeParams(params); err != nil {
+		return nil, fmt.Errorf("cap: create challenge: %w", err)
+	}
+	if ttl <= 0 {
+		return nil, fmt.Errorf("cap: create challenge: expiration must be positive")
+	}
+
+	nonce, err := randomHex(25)
 	if err != nil {
-		return nil, fmt.Errorf("cap: generate token: %w", err)
+		return nil, fmt.Errorf("cap: generate challenge nonce: %w", err)
 	}
-
-	expires := time.Now().UnixMilli() + expiresMs
-
-	record := challengeRecord{
-		Challenge: params,
-		Expires:   expires,
+	now := c.now().UnixMilli()
+	expires := now + ttl.Milliseconds()
+	claims := challengeClaims{
+		Nonce:      nonce,
+		Count:      params.C,
+		Size:       params.S,
+		Difficulty: params.D,
+		Expires:    expires,
+		IssuedAt:   now,
+		Scope:      scope,
 	}
-	data, err := json.Marshal(record)
+	token, err := c.signChallenge(claims)
 	if err != nil {
-		return nil, fmt.Errorf("cap: marshal challenge: %w", err)
+		return nil, fmt.Errorf("cap: sign challenge: %w", err)
 	}
 
-	ttl := time.Duration(expiresMs) * time.Millisecond
-	key := challengeKeyPrefix + token
-	if err := c.rdb.Set(ctx, key, string(data), ttl).Err(); err != nil {
-		return nil, fmt.Errorf("cap: store challenge: %w", err)
-	}
-
-	return &ChallengeResponse{
-		Challenge: params,
-		Token:     token,
-		Expires:   expires,
-	}, nil
+	return &ChallengeResponse{Challenge: params, Token: token, Expires: expires}, nil
 }
 
-// RedeemChallenge validates a PoW solution and, if valid, returns a one-time verification token.
+func (c *Cap) signChallenge(claims challengeClaims) (string, error) {
+	payload, err := json.Marshal(claims)
+	if err != nil {
+		return "", err
+	}
+	body := base64.RawURLEncoding.EncodeToString(payload)
+	signingInput := challengeJWTHeaderEncoded + "." + body
+	mac := hmac.New(sha256.New, c.signingSecret)
+	_, _ = mac.Write([]byte(signingInput))
+	return signingInput + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil)), nil
+}
+
+func (c *Cap) verifyChallenge(token string) (challengeClaims, string, error) {
+	var claims challengeClaims
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 || parts[0] != challengeJWTHeaderEncoded || parts[1] == "" || parts[2] == "" {
+		return claims, "", errors.New("invalid token")
+	}
+
+	signature, err := base64.RawURLEncoding.DecodeString(parts[2])
+	if err != nil {
+		return claims, "", errors.New("invalid token")
+	}
+	mac := hmac.New(sha256.New, c.signingSecret)
+	_, _ = mac.Write([]byte(parts[0] + "." + parts[1]))
+	if !hmac.Equal(signature, mac.Sum(nil)) {
+		return claims, "", errors.New("invalid token")
+	}
+
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return claims, "", errors.New("invalid token")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(payload))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&claims); err != nil {
+		return claims, "", errors.New("invalid token")
+	}
+	if err := requireJSONEOF(decoder); err != nil {
+		return claims, "", errors.New("invalid token")
+	}
+	if !isLowerHex(claims.Nonce, 50) || claims.IssuedAt <= 0 || claims.Expires <= claims.IssuedAt {
+		return claims, "", errors.New("invalid token")
+	}
+	if err := validateChallengeParams(ChallengeParams{C: claims.Count, S: claims.Size, D: claims.Difficulty}); err != nil {
+		return claims, "", errors.New("invalid token")
+	}
+	if claims.Expires < c.now().UnixMilli() {
+		return claims, "", errors.New("expired token")
+	}
+	return claims, hex.EncodeToString(signature), nil
+}
+
+// RedeemChallenge validates a proof and consumes the configured handler scope.
 func (c *Cap) RedeemChallenge(ctx context.Context, token string, solutions []int) (*RedeemResponse, error) {
-	if token == "" || solutions == nil {
-		return &RedeemResponse{Success: false, Message: "Invalid body"}, nil
-	}
-
-	key := challengeKeyPrefix + token
-	raw, err := c.rdb.GetDel(ctx, key).Result()
-	if errors.Is(err, goredis.Nil) {
-		return &RedeemResponse{Success: false, Message: "Challenge invalid or expired"}, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("cap: consume challenge: %w", err)
-	}
-
-	var record challengeRecord
-	if err := json.Unmarshal([]byte(raw), &record); err != nil {
-		return &RedeemResponse{Success: false, Message: "Challenge invalid or expired"}, nil
-	}
-
-	if record.Expires < time.Now().UnixMilli() {
-		return &RedeemResponse{Success: false, Message: "Challenge invalid or expired"}, nil
-	}
-
-	if len(solutions) != record.Challenge.C {
-		return &RedeemResponse{Success: false, Message: "Invalid solution count"}, nil
-	}
-
-	// Validate each solution: sha256(salt + solution) must start with target.
-	for i := 0; i < record.Challenge.C; i++ {
-		idx := i + 1 // 1-indexed, matching JS: i = i + 1
-		salt := prng(fmt.Sprintf("%s%d", token, idx), record.Challenge.S)
-		target := prng(fmt.Sprintf("%s%dd", token, idx), record.Challenge.D)
-		digest := hashSHA256(fmt.Sprintf("%s%d", salt, solutions[i]))
-		if !strings.HasPrefix(digest, target) {
-			return &RedeemResponse{Success: false, Message: "Invalid solution"}, nil
-		}
-	}
-
-	// Generate verification token: id:vertoken, store id:hash in Redis.
-	vertoken, err := randomHex(15)
-	if err != nil {
-		return nil, fmt.Errorf("cap: generate vertoken: %w", err)
-	}
-	id, err := randomHex(8)
-	if err != nil {
-		return nil, fmt.Errorf("cap: generate id: %w", err)
-	}
-
-	hash := hashSHA256(vertoken)
-	tokenKey := tokenKeyPrefix + id + ":" + hash
-
-	expires := time.Now().UnixMilli() + int64(tokenTTL/time.Millisecond)
-	// Store empty marker with TTL; the key itself encodes the validity.
-	if err := c.rdb.Set(ctx, tokenKey, "1", tokenTTL).Err(); err != nil {
-		return nil, fmt.Errorf("cap: store token: %w", err)
-	}
-
-	return &RedeemResponse{
-		Success: true,
-		Token:   id + ":" + vertoken,
-		Expires: expires,
-	}, nil
+	return c.RedeemChallengeWithScope(ctx, token, solutions, c.defaultScope)
 }
 
-// ValidateToken consumes a one-time verification token.
-// Returns true if the token is valid and has not been used before.
+// RedeemChallengeWithScope validates a proof against a server-controlled scope.
+func (c *Cap) RedeemChallengeWithScope(ctx context.Context, token string, solutions []int, expectedScope string) (*RedeemResponse, error) {
+	if token == "" || solutions == nil {
+		return failedRedeem("Invalid body"), nil
+	}
+
+	claims, signatureHex, err := c.verifyChallenge(token)
+	if err != nil {
+		return failedRedeem("Challenge invalid or expired"), nil
+	}
+	if expectedScope != "" && claims.Scope != expectedScope {
+		return failedRedeem("Challenge invalid or expired"), nil
+	}
+	if len(solutions) != claims.Count {
+		return failedRedeem("Invalid solution"), nil
+	}
+	if !validSolutions(token, claims, solutions) {
+		return failedRedeem("Invalid solution"), nil
+	}
+
+	remainingTTL := time.Duration(claims.Expires-c.now().UnixMilli()) * time.Millisecond
+	if remainingTTL <= 0 {
+		return failedRedeem("Challenge invalid or expired"), nil
+	}
+
+	for range 3 {
+		verificationSecret, randomErr := randomHex(15)
+		if randomErr != nil {
+			return nil, fmt.Errorf("cap: generate verification token: %w", randomErr)
+		}
+		id, randomErr := randomHex(8)
+		if randomErr != nil {
+			return nil, fmt.Errorf("cap: generate verification id: %w", randomErr)
+		}
+		tokenKey := c.keyPrefix + "token:" + id + ":" + hashSHA256(verificationSecret)
+		nonceKey := c.keyPrefix + "nonce:" + signatureHex
+		result, scriptErr := issueVerificationScript.Run(
+			ctx,
+			c.rdb,
+			[]string{nonceKey, tokenKey},
+			remainingTTL.Milliseconds(),
+			c.tokenTTL.Milliseconds(),
+			claims.Scope,
+		).Int64()
+		if scriptErr != nil {
+			return nil, fmt.Errorf("cap: issue verification token: %w", scriptErr)
+		}
+		switch result {
+		case 0:
+			return failedRedeem("Challenge invalid or expired"), nil
+		case -1:
+			continue
+		case 1:
+			now := c.now().UnixMilli()
+			return &RedeemResponse{
+				Success:  true,
+				Token:    id + ":" + verificationSecret,
+				Expires:  now + c.tokenTTL.Milliseconds(),
+				Scope:    claims.Scope,
+				IssuedAt: claims.IssuedAt,
+			}, nil
+		default:
+			return nil, fmt.Errorf("cap: issue verification token: unexpected Redis result %d", result)
+		}
+	}
+	return nil, fmt.Errorf("cap: issue verification token: repeated token collision")
+}
+
+func validSolutions(token string, claims challengeClaims, solutions []int) bool {
+	tokenHash := fnv1a(token)
+	for index, solution := range solutions {
+		if solution < 0 {
+			return false
+		}
+		indexText := strconv.Itoa(index + 1)
+		saltHash := fnv1aResume(tokenHash, indexText)
+		targetHash := fnv1aResume(saltHash, "d")
+		salt := prngFromHash(saltHash, claims.Size)
+		target := prngFromHash(targetHash, claims.Difficulty)
+		digest := sha256.Sum256([]byte(salt + strconv.Itoa(solution)))
+		if !matchesHexPrefix(digest, target) {
+			return false
+		}
+	}
+	return true
+}
+
+func matchesHexPrefix(digest [sha256.Size]byte, target string) bool {
+	fullBytes := len(target) / 2
+	for index := range fullBytes {
+		want, err := strconv.ParseUint(target[index*2:index*2+2], 16, 8)
+		if err != nil || digest[index] != byte(want) {
+			return false
+		}
+	}
+	if len(target)%2 == 1 {
+		want, err := strconv.ParseUint(target[len(target)-1:], 16, 4)
+		if err != nil || digest[fullBytes]>>4 != byte(want) {
+			return false
+		}
+	}
+	return true
+}
+
+func failedRedeem(message string) *RedeemResponse {
+	return &RedeemResponse{Success: false, Message: message}
+}
+
+// ValidateToken atomically consumes any valid one-time verification token.
 func (c *Cap) ValidateToken(ctx context.Context, token string) (bool, error) {
-	if token == "" {
+	key, ok := c.verificationKey(token)
+	if !ok {
 		return false, nil
 	}
-
-	parts := strings.SplitN(token, ":", 2)
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return false, nil
-	}
-
-	id, vertoken := parts[0], parts[1]
-	hash := hashSHA256(vertoken)
-	tokenKey := tokenKeyPrefix + id + ":" + hash
-
-	// GetDel atomically reads and deletes the key (one-time use).
-	val, err := c.rdb.GetDel(ctx, tokenKey).Result()
-	if errors.Is(err, goredis.Nil) {
+	_, err := c.rdb.GetDel(ctx, key).Result()
+	if errors.Is(err, redis.Nil) {
 		return false, nil
 	}
 	if err != nil {
 		return false, fmt.Errorf("cap: consume verification token: %w", err)
 	}
-	if val == "" {
-		return false, nil
-	}
-
 	return true, nil
 }
 
-// Cap 路由使用的 Kratos operation 常量，供外部白名单引用。
+// ValidateTokenWithScope atomically consumes a token only when its server-side
+// scope matches expectedScope. A mismatch leaves the token available.
+func (c *Cap) ValidateTokenWithScope(ctx context.Context, token, expectedScope string) (bool, error) {
+	key, ok := c.verificationKey(token)
+	if !ok {
+		return false, nil
+	}
+	result, err := consumeScopedTokenScript.Run(ctx, c.rdb, []string{key}, expectedScope).Int64()
+	if err != nil {
+		return false, fmt.Errorf("cap: consume scoped verification token: %w", err)
+	}
+	return result == 1, nil
+}
+
+func (c *Cap) verificationKey(token string) (string, bool) {
+	id, secret, ok := strings.Cut(token, ":")
+	if !ok || strings.Contains(secret, ":") || !isLowerHex(id, 16) || !isLowerHex(secret, 30) {
+		return "", false
+	}
+	return c.keyPrefix + "token:" + id + ":" + hashSHA256(secret), true
+}
+
+func isLowerHex(value string, length int) bool {
+	if len(value) != length {
+		return false
+	}
+	for index := range len(value) {
+		if (value[index] < '0' || value[index] > '9') && (value[index] < 'a' || value[index] > 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+// Cap route operation names are exported for authentication allowlists.
 const (
 	OperationCapChallenge = "/cap/challenge"
 	OperationCapRedeem    = "/cap/redeem"
 )
 
-// Register 将 Cap 人机验证 HTTP 路由挂载到 Kratos HTTP 服务器，风格与其他服务注册一致。
-//
-// 注册路由（均无需认证，需将 OperationCapChallenge/OperationCapRedeem 加入白名单）：
-//
-//	POST /cap/challenge — 生成 PoW challenge，返回 {challenge, token, expires}
-//	POST /cap/redeem   — 提交 PoW 解答，换取一次性验证 token
-func Register(s *khttp.Server, c *Cap) {
-	r := s.Route("/cap")
-
-	// POST /cap/challenge — 客户端请求新的 PoW 挑战
-	r.POST("/challenge", func(ctx khttp.Context) error {
+// Register mounts the embedded Cap routes on a Kratos HTTP server.
+func Register(server *khttp.Server, captcha *Cap) {
+	route := server.Route("/cap")
+	route.POST("/challenge", func(ctx khttp.Context) error {
 		khttp.SetOperation(ctx, OperationCapChallenge)
-		resp, err := c.CreateChallenge(ctx, nil)
+		response, err := captcha.CreateChallenge(ctx, nil)
 		if err != nil {
-			return ctx.JSON(nethttp.StatusInternalServerError, map[string]string{"error": "internal error"})
+			return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "internal error"})
 		}
-		return ctx.JSON(nethttp.StatusOK, resp)
+		return ctx.JSON(http.StatusOK, response)
 	})
-
-	// POST /cap/redeem — 客户端提交 PoW 答案，服务端验证后返回验证 token
-	r.POST("/redeem", func(ctx khttp.Context) error {
+	route.POST("/redeem", func(ctx khttp.Context) error {
 		khttp.SetOperation(ctx, OperationCapRedeem)
 		var body struct {
 			Token     string `json:"token"`
 			Solutions []int  `json:"solutions"`
 		}
-		if err := json.NewDecoder(ctx.Request().Body).Decode(&body); err != nil {
-			return ctx.JSON(nethttp.StatusBadRequest, map[string]string{"error": "invalid body"})
+		decoder := json.NewDecoder(ctx.Request().Body)
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&body); err != nil || requireJSONEOF(decoder) != nil {
+			return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "invalid body"})
 		}
-		resp, err := c.RedeemChallenge(ctx, body.Token, body.Solutions)
+		response, err := captcha.RedeemChallenge(ctx, body.Token, body.Solutions)
 		if err != nil {
-			return ctx.JSON(nethttp.StatusInternalServerError, map[string]string{"error": "internal error"})
+			return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "internal error"})
 		}
-		httpStatus := nethttp.StatusOK
-		if !resp.Success {
-			httpStatus = nethttp.StatusBadRequest
+		status := http.StatusOK
+		if !response.Success {
+			status = http.StatusBadRequest
 		}
-		return ctx.JSON(httpStatus, resp)
+		return ctx.JSON(status, response)
 	})
+}
+
+func requireJSONEOF(decoder *json.Decoder) error {
+	var extra json.RawMessage
+	if err := decoder.Decode(&extra); errors.Is(err, io.EOF) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	return errors.New("multiple JSON values")
 }
