@@ -36,7 +36,7 @@ func runPluginScenario(t *testing.T, files []fileSpec) (*protogen.Plugin, error)
 	t.Helper()
 	request := &pluginpb.CodeGeneratorRequest{
 		ProtoFile: plugintest.DescriptorClosure(authnpb.File_plateau_security_authn_v1_annotations_proto),
-		Parameter: proto.String("paths=source_relative"),
+		Parameter: new("paths=source_relative"),
 	}
 	for _, file := range files {
 		request.ProtoFile = append(request.ProtoFile, authnFileDescriptor(file))
@@ -53,17 +53,17 @@ func runPluginScenario(t *testing.T, files []fileSpec) (*protogen.Plugin, error)
 
 func authnFileDescriptor(file fileSpec) *descriptorpb.FileDescriptorProto {
 	descriptor := &descriptorpb.FileDescriptorProto{
-		Name:       proto.String(file.name),
-		Package:    proto.String(file.protoPkg),
-		Syntax:     proto.String(protoreflect.Proto3.String()),
+		Name:       new(file.name),
+		Package:    new(file.protoPkg),
+		Syntax:     new(protoreflect.Proto3.String()),
 		Dependency: []string{"google/protobuf/descriptor.proto", "plateau/security/authn/v1/annotations.proto"},
-		Options:    &descriptorpb.FileOptions{GoPackage: proto.String(file.goPkg)},
+		Options:    &descriptorpb.FileOptions{GoPackage: new(file.goPkg)},
 		MessageType: []*descriptorpb.DescriptorProto{{
-			Name: proto.String("Empty"),
+			Name: new("Empty"),
 		}},
 	}
 	for _, service := range file.services {
-		serviceDescriptor := &descriptorpb.ServiceDescriptorProto{Name: proto.String(service.name)}
+		serviceDescriptor := &descriptorpb.ServiceDescriptorProto{Name: new(service.name)}
 		if service.serviceDefault != nil {
 			options := &descriptorpb.ServiceOptions{}
 			proto.SetExtension(options, authnpb.E_ServiceDefault, service.serviceDefault)
@@ -71,9 +71,9 @@ func authnFileDescriptor(file fileSpec) *descriptorpb.FileDescriptorProto {
 		}
 		for _, method := range service.methods {
 			methodDescriptor := &descriptorpb.MethodDescriptorProto{
-				Name:       proto.String(method.name),
-				InputType:  proto.String("." + file.protoPkg + ".Empty"),
-				OutputType: proto.String("." + file.protoPkg + ".Empty"),
+				Name:       new(method.name),
+				InputType:  new("." + file.protoPkg + ".Empty"),
+				OutputType: new("." + file.protoPkg + ".Empty"),
 			}
 			if method.rule != nil {
 				options := &descriptorpb.MethodOptions{}

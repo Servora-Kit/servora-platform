@@ -2,7 +2,7 @@ package oidc
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -178,9 +178,13 @@ func (provider *IAMProvider) serveDiscovery(response http.ResponseWriter) {
 		RequestParameterSupported:     false,
 	}
 	response.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(response).Encode(metadata); err != nil {
+	data, err := json.Marshal(metadata)
+	if err != nil {
 		http.Error(response, "encode discovery metadata", http.StatusInternalServerError)
+		return
 	}
+	data = append(data, '\n')
+	_, _ = response.Write(data)
 }
 
 func (provider *IAMProvider) completeAuthorization(response http.ResponseWriter, request *http.Request) {

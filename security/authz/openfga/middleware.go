@@ -160,8 +160,7 @@ func apiError(err error) error {
 		return securityerrorspb.ErrorSecurityErrorReasonInvalidArgument("invalid authorization argument").WithCause(err)
 	}
 
-	var networkError net.Error
-	if errors.As(err, &networkError) {
+	if _, ok := errors.AsType[net.Error](err); ok {
 		return securityerrorspb.ErrorSecurityErrorReasonUnavailable("authorization service unavailable").WithCause(err)
 	}
 	return securityerrorspb.ErrorSecurityErrorReasonInternal("internal authorization error").WithCause(err)

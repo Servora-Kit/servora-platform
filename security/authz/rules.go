@@ -1,5 +1,7 @@
 package authz
 
+import "maps"
+
 import authzpb "github.com/Servora-Kit/plateau/api/gen/go/plateau/security/authz/v1"
 
 // Option configures generated AuthZ route rules.
@@ -31,9 +33,7 @@ func NewRules(opts ...Option) map[string]*authzpb.AuthzRule {
 		if provider == nil {
 			continue
 		}
-		for operation, rule := range provider() {
-			rules[operation] = rule
-		}
+		maps.Copy(rules, provider())
 	}
 	return rules
 }

@@ -8,17 +8,15 @@
 package cap
 
 import (
-	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -31,9 +29,9 @@ import (
 )
 
 const (
-	defaultChallengeTTL        = 10 * time.Minute
-	defaultTokenTTL            = 20 * time.Minute
-	defaultKeyPrefix           = "cap:v2:"
+	defaultChallengeTTL = 10 * time.Minute
+	defaultTokenTTL     = 20 * time.Minute
+	defaultKeyPrefix    = "cap:v2:"
 
 	maxChallengeCount      = 1000
 	maxChallengeSize       = 256
@@ -335,12 +333,7 @@ func (c *Cap) verifyChallenge(token string) (challengeClaims, string, error) {
 	if err != nil {
 		return claims, "", errors.New("invalid token")
 	}
-	decoder := json.NewDecoder(bytes.NewReader(payload))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&claims); err != nil {
-		return claims, "", errors.New("invalid token")
-	}
-	if err := requireJSONEOF(decoder); err != nil {
+	if err := json.Unmarshal(payload, &claims, json.RejectUnknownMembers(true)); err != nil {
 		return claims, "", errors.New("invalid token")
 	}
 	if !isLowerHex(claims.Nonce, 50) || claims.IssuedAt <= 0 || claims.Expires <= claims.IssuedAt {
@@ -541,9 +534,7 @@ func Register(server *khttp.Server, captcha *Cap) {
 			Token     string `json:"token"`
 			Solutions []int  `json:"solutions"`
 		}
-		decoder := json.NewDecoder(ctx.Request().Body)
-		decoder.DisallowUnknownFields()
-		if err := decoder.Decode(&body); err != nil || requireJSONEOF(decoder) != nil {
+		if err := json.UnmarshalRead(ctx.Request().Body, &body, json.RejectUnknownMembers(true)); err != nil {
 			return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "invalid body"})
 		}
 		response, err := captcha.RedeemChallenge(ctx, body.Token, body.Solutions)
@@ -556,14 +547,4 @@ func Register(server *khttp.Server, captcha *Cap) {
 		}
 		return ctx.JSON(status, response)
 	})
-}
-
-func requireJSONEOF(decoder *json.Decoder) error {
-	var extra json.RawMessage
-	if err := decoder.Decode(&extra); errors.Is(err, io.EOF) {
-		return nil
-	} else if err != nil {
-		return err
-	}
-	return errors.New("multiple JSON values")
 }

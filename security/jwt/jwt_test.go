@@ -42,10 +42,8 @@ func TestSignerAcceptsPKCS1AndPKCS8WithStableKID(t *testing.T) {
 	}
 
 	tokenString, err := first.Sign(&customClaims{
-		Tenant: "tenant-a",
-		RegisteredClaims: jwtlib.RegisteredClaims{
-			ExpiresAt: jwtlib.NewNumericDate(time.Now().Add(time.Hour)),
-		},
+		Tenant:    "tenant-a",
+		ExpiresAt: jwtlib.NewNumericDate(time.Now().Add(time.Hour)),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -101,7 +99,7 @@ func TestVerifierAcceptsOnlyRS256AndKnownStringKID(t *testing.T) {
 	key := newRSAKey(t)
 	signer := signerFromKey(t, key)
 	claims := func() *customClaims {
-		return &customClaims{RegisteredClaims: jwtlib.RegisteredClaims{ExpiresAt: jwtlib.NewNumericDate(time.Now().Add(time.Hour))}}
+		return &customClaims{ExpiresAt: jwtlib.NewNumericDate(time.Now().Add(time.Hour))}
 	}
 	valid, err := signer.Sign(claims())
 	if err != nil {
@@ -173,7 +171,7 @@ func TestVerifierSnapshotsKeySet(t *testing.T) {
 	}
 	keys[signer.KID()] = &rsa.PublicKey{N: new(big.Int), E: 3}
 	delete(keys, signer.KID())
-	claims := &customClaims{RegisteredClaims: jwtlib.RegisteredClaims{ExpiresAt: jwtlib.NewNumericDate(time.Now().Add(time.Hour))}}
+	claims := &customClaims{ExpiresAt: jwtlib.NewNumericDate(time.Now().Add(time.Hour))}
 	token, err := signer.Sign(claims)
 	if err != nil {
 		t.Fatal(err)
@@ -203,7 +201,7 @@ func TestNewVerifierRejectsInvalidKeySets(t *testing.T) {
 func TestVerifierRejectsInvalidSignature(t *testing.T) {
 	first := signerFromKey(t, newRSAKey(t))
 	second := signerFromKey(t, newRSAKey(t))
-	claims := &customClaims{RegisteredClaims: jwtlib.RegisteredClaims{ExpiresAt: jwtlib.NewNumericDate(time.Now().Add(time.Hour))}}
+	claims := &customClaims{ExpiresAt: jwtlib.NewNumericDate(time.Now().Add(time.Hour))}
 	token, err := first.Sign(claims)
 	if err != nil {
 		t.Fatal(err)
@@ -219,9 +217,8 @@ func TestVerifierRejectsInvalidSignature(t *testing.T) {
 
 func TestVerifierDoesNotOwnClaimsPolicy(t *testing.T) {
 	signer := signerFromKey(t, newRSAKey(t))
-	token, err := signer.Sign(&customClaims{RegisteredClaims: jwtlib.RegisteredClaims{
-		ExpiresAt: jwtlib.NewNumericDate(time.Now().Add(-time.Hour)),
-	}})
+	token, err := signer.Sign(&customClaims{
+		ExpiresAt: jwtlib.NewNumericDate(time.Now().Add(-time.Hour))})
 	if err != nil {
 		t.Fatal(err)
 	}

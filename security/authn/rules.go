@@ -1,5 +1,7 @@
 package authn
 
+import "maps"
+
 import authnpb "github.com/Servora-Kit/plateau/api/gen/go/plateau/security/authn/v1"
 
 // Option configures generated AuthN route rules.
@@ -31,9 +33,7 @@ func NewRules(opts ...Option) map[string]*authnpb.AuthnRule {
 		if provider == nil {
 			continue
 		}
-		for operation, rule := range provider() {
-			rules[operation] = rule
-		}
+		maps.Copy(rules, provider())
 	}
 	return rules
 }

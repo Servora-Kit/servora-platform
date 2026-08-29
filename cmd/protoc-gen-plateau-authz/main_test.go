@@ -36,7 +36,7 @@ func runPluginScenario(t *testing.T, files []fileSpec) (*protogen.Plugin, error)
 	t.Helper()
 	request := &pluginpb.CodeGeneratorRequest{
 		ProtoFile: plugintest.DescriptorClosure(authzpb.File_plateau_security_authz_v1_annotations_proto),
-		Parameter: proto.String("paths=source_relative"),
+		Parameter: new("paths=source_relative"),
 	}
 	for _, file := range files {
 		request.ProtoFile = append(request.ProtoFile, authzFileDescriptor(file))
@@ -53,48 +53,48 @@ func runPluginScenario(t *testing.T, files []fileSpec) (*protogen.Plugin, error)
 
 func authzFileDescriptor(file fileSpec) *descriptorpb.FileDescriptorProto {
 	descriptor := &descriptorpb.FileDescriptorProto{
-		Name:       proto.String(file.name),
-		Package:    proto.String(file.protoPkg),
-		Syntax:     proto.String(protoreflect.Proto3.String()),
+		Name:       new(file.name),
+		Package:    new(file.protoPkg),
+		Syntax:     new(protoreflect.Proto3.String()),
 		Dependency: []string{"google/protobuf/descriptor.proto", "plateau/security/authz/v1/annotations.proto"},
-		Options:    &descriptorpb.FileOptions{GoPackage: proto.String(file.goPkg)},
+		Options:    &descriptorpb.FileOptions{GoPackage: new(file.goPkg)},
 	}
 	descriptor.MessageType = append(descriptor.MessageType,
 		&descriptorpb.DescriptorProto{
-			Name:      proto.String("Request"),
-			OneofDecl: []*descriptorpb.OneofDescriptorProto{{Name: proto.String("choice_target")}},
+			Name:      new("Request"),
+			OneofDecl: []*descriptorpb.OneofDescriptorProto{{Name: new("choice_target")}},
 			NestedType: []*descriptorpb.DescriptorProto{{
-				Name:    proto.String("LabelsEntry"),
-				Options: &descriptorpb.MessageOptions{MapEntry: proto.Bool(true)},
+				Name:    new("LabelsEntry"),
+				Options: &descriptorpb.MessageOptions{MapEntry: new(true)},
 				Field: []*descriptorpb.FieldDescriptorProto{
-					{Name: proto.String("key"), Number: proto.Int32(1), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum()},
-					{Name: proto.String("value"), Number: proto.Int32(2), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum()},
+					{Name: new("key"), Number: proto.Int32(1), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum()},
+					{Name: new("value"), Number: proto.Int32(2), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum()},
 				},
 			}},
 			Field: []*descriptorpb.FieldDescriptorProto{
-				{Name: proto.String("id"), Number: proto.Int32(1), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum()},
-				{Name: proto.String("nested"), Number: proto.Int32(2), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(), TypeName: proto.String("." + file.protoPkg + ".Nested")},
-				{Name: proto.String("tags"), Number: proto.Int32(3), Label: descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum()},
-				{Name: proto.String("number"), Number: proto.Int32(4), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_INT64.Enum()},
-				{Name: proto.String("enabled"), Number: proto.Int32(5), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_BOOL.Enum()},
-				{Name: proto.String("payload"), Number: proto.Int32(6), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_BYTES.Enum()},
-				{Name: proto.String("ratio"), Number: proto.Int32(7), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_DOUBLE.Enum()},
-				{Name: proto.String("kind"), Number: proto.Int32(8), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum(), TypeName: proto.String("." + file.protoPkg + ".Kind")},
-				{Name: proto.String("choice"), Number: proto.Int32(9), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(), OneofIndex: proto.Int32(0)},
-				{Name: proto.String("labels"), Number: proto.Int32(10), Label: descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(), TypeName: proto.String("." + file.protoPkg + ".Request.LabelsEntry")},
+				{Name: new("id"), Number: proto.Int32(1), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum()},
+				{Name: new("nested"), Number: proto.Int32(2), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(), TypeName: new("." + file.protoPkg + ".Nested")},
+				{Name: new("tags"), Number: proto.Int32(3), Label: descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum()},
+				{Name: new("number"), Number: proto.Int32(4), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_INT64.Enum()},
+				{Name: new("enabled"), Number: proto.Int32(5), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_BOOL.Enum()},
+				{Name: new("payload"), Number: proto.Int32(6), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_BYTES.Enum()},
+				{Name: new("ratio"), Number: proto.Int32(7), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_DOUBLE.Enum()},
+				{Name: new("kind"), Number: proto.Int32(8), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum(), TypeName: new("." + file.protoPkg + ".Kind")},
+				{Name: new("choice"), Number: proto.Int32(9), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(), OneofIndex: proto.Int32(0)},
+				{Name: new("labels"), Number: proto.Int32(10), Label: descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(), TypeName: new("." + file.protoPkg + ".Request.LabelsEntry")},
 			},
 		},
 		&descriptorpb.DescriptorProto{
-			Name:  proto.String("Nested"),
-			Field: []*descriptorpb.FieldDescriptorProto{{Name: proto.String("id"), Number: proto.Int32(1), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum()}},
+			Name:  new("Nested"),
+			Field: []*descriptorpb.FieldDescriptorProto{{Name: new("id"), Number: proto.Int32(1), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(), Type: descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum()}},
 		},
 	)
 	descriptor.EnumType = []*descriptorpb.EnumDescriptorProto{{
-		Name:  proto.String("Kind"),
-		Value: []*descriptorpb.EnumValueDescriptorProto{{Name: proto.String("KIND_UNSPECIFIED"), Number: proto.Int32(0)}},
+		Name:  new("Kind"),
+		Value: []*descriptorpb.EnumValueDescriptorProto{{Name: new("KIND_UNSPECIFIED"), Number: proto.Int32(0)}},
 	}}
 	for _, service := range file.services {
-		serviceDescriptor := &descriptorpb.ServiceDescriptorProto{Name: proto.String(service.name)}
+		serviceDescriptor := &descriptorpb.ServiceDescriptorProto{Name: new(service.name)}
 		if service.serviceDefault != nil {
 			options := &descriptorpb.ServiceOptions{}
 			proto.SetExtension(options, authzpb.E_ServiceDefault, service.serviceDefault)
@@ -102,9 +102,9 @@ func authzFileDescriptor(file fileSpec) *descriptorpb.FileDescriptorProto {
 		}
 		for _, method := range service.methods {
 			methodDescriptor := &descriptorpb.MethodDescriptorProto{
-				Name:       proto.String(method.name),
-				InputType:  proto.String("." + file.protoPkg + ".Request"),
-				OutputType: proto.String("." + file.protoPkg + ".Request"),
+				Name:       new(method.name),
+				InputType:  new("." + file.protoPkg + ".Request"),
+				OutputType: new("." + file.protoPkg + ".Request"),
 			}
 			if method.rule != nil {
 				options := &descriptorpb.MethodOptions{}

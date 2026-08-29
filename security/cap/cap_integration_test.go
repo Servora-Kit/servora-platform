@@ -30,9 +30,9 @@ func newTestCAPWithConfig(t *testing.T, config *capv1.CAP) (*Cap, *Cap, *minired
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	client, cleanup, err := rediscontrib.New(&redispb.Redis{
 		Addr:         server.Addr(),
-		DialTimeout:  durationpb.New(20 * time.Millisecond),
-		ReadTimeout:  durationpb.New(20 * time.Millisecond),
-		WriteTimeout: durationpb.New(20 * time.Millisecond),
+		DialTimeout:  durationpb.New(time.Second),
+		ReadTimeout:  durationpb.New(time.Second),
+		WriteTimeout: durationpb.New(time.Second),
 	}, logger)
 	if err != nil {
 		t.Fatalf("create Redis client: %v", err)
@@ -230,6 +230,33 @@ func TestRedisFailureClosesRedeemAndValidation(t *testing.T) {
 	validToken := "0000000000000000:000000000000000000000000000000"
 	if valid, validateErr := captcha.ValidateToken(t.Context(), validToken); validateErr == nil || valid {
 		t.Fatalf("ValidateToken() = %v, %v after Redis failure", valid, validateErr)
+	}
+}
+
+func TestCapRejectsAmbiguousJSONBodies(t *testing.T) {
+	captcha, _, _ := newTestCAP(t)
+	server := khttp.NewServer()
+	Register(server, captcha)
+
+	tests := []struct {
+		name string
+		body []byte
+	}{
+		{name: "duplicate member", body: []byte(`{"token":"x","token":"y","solutions":[]}`)},
+		{name: "multiple values", body: []byte(`{"token":"x","solutions":[]} {"token":"y"}`)},
+		{name: "invalid utf8", body: []byte{'{', '"', 't', 'o', 'k', 'e', 'n', '"', ':', '"', 0xff, '"', ',', '"', 's', 'o', 'l', 'u', 't', 'i', 'o', 'n', 's', '"', ':', '[', ']', '}'}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodPost, "/cap/redeem", bytes.NewReader(test.body))
+			request.Header.Set("Content-Type", "application/json")
+			recorder := httptest.NewRecorder()
+			server.ServeHTTP(recorder, request)
+			if recorder.Code != http.StatusBadRequest {
+				t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
+			}
+		})
 	}
 }
 

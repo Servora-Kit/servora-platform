@@ -114,7 +114,7 @@ func TestAuthenticateRejectsInvalidCredentialsAndProfiles(t *testing.T) {
 		{name: "wrong issuer", header: "Bearer " + mustToken(t, signer, claimsWithProfile("issuer-b", "audience-a", time.Now().Add(time.Hour))), want: ErrInvalidToken},
 		{name: "wrong audience", header: "Bearer " + mustToken(t, signer, claimsWithProfile("issuer-a", "audience-b", time.Now().Add(time.Hour))), want: ErrInvalidToken},
 		{name: "expired", header: "Bearer " + mustToken(t, signer, claimsWithProfile("issuer-a", "audience-a", time.Now().Add(-time.Minute))), want: ErrInvalidToken},
-		{name: "missing signed profile", header: "Bearer " + mustToken(t, signer, &testClaims{ActorType: "human", RegisteredClaims: jwtlib.RegisteredClaims{Subject: "user-1"}}), want: ErrInvalidToken},
+		{name: "missing signed profile", header: "Bearer " + mustToken(t, signer, &testClaims{ActorType: "human", Subject: "user-1"}), want: ErrInvalidToken},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -170,10 +170,9 @@ func TestLocalErrorsPreserveCause(t *testing.T) {
 }
 
 func validTestClaims(actorType, subject string) *testClaims {
-	return &testClaims{ActorType: actorType, RegisteredClaims: jwtlib.RegisteredClaims{
+	return &testClaims{ActorType: actorType,
 		Issuer: "issuer-a", Audience: jwtlib.ClaimStrings{"audience-a"}, Subject: subject,
-		ExpiresAt: jwtlib.NewNumericDate(time.Now().Add(time.Hour)),
-	}}
+		ExpiresAt: jwtlib.NewNumericDate(time.Now().Add(time.Hour))}
 }
 
 func claimsWithProfile(issuer, audience string, expiresAt time.Time) *testClaims {
