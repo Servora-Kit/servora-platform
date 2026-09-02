@@ -98,8 +98,8 @@ func NewDBClient(driver dialect.Driver) (*entmodel.Client, func(), error) {
 }
 
 // NewRedisClient creates and verifies the shared Redis client.
-func NewRedisClient(config *redispb.Redis, l *slog.Logger) (*redis.Client, func(), error) {
-	client, cleanup, err := rediscontrib.New(config, l)
+func NewRedisClient(config *redispb.Redis) (*redis.Client, func(), error) {
+	client, cleanup, err := rediscontrib.New(config)
 	if err != nil {
 		return nil, nil, err
 	}

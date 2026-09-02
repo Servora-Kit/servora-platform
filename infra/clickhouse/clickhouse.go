@@ -2,7 +2,7 @@
 //
 // Usage:
 //
-//	conn, err := clickhouse.NewConnOptional(ctx, cfg, logger)
+//	conn, err := clickhouse.NewConnOptional(ctx, cfg)
 //	if err != nil {
 //	    // configured but failed to connect — fail-fast or degrade
 //	}
@@ -15,13 +15,13 @@ package clickhouse
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	clickhousepb "github.com/Servora-Kit/plateau/api/gen/go/plateau/infra/clickhouse/v1"
 	svrtls "github.com/Servora-Kit/servora/security/tls"
+	"google.golang.org/protobuf/proto"
 )
 
 // NewConnOptional opens a ClickHouse connection from generated Plateau config.
@@ -32,37 +32,36 @@ import (
 //   - (conn, nil) — connected successfully.
 //
 // The caller is responsible for closing the connection via conn.Close().
-func NewConnOptional(ctx context.Context, cfg *clickhousepb.ClickHouse, l *slog.Logger) (driver.Conn, error) {
-	log := loggerOrDefault(l).With("scope", "clickhouse/db/contrib")
-
+func NewConnOptional(ctx context.Context, cfg *clickhousepb.ClickHouse) (driver.Conn, error) {
 	if cfg == nil || len(cfg.GetAddrs()) == 0 {
-		log.Info("ClickHouse not configured")
 		return nil, nil
 	}
-	if err := cfg.ApplyConf(); err != nil {
+
+	config := proto.Clone(cfg).(*clickhousepb.ClickHouse)
+	if err := config.ApplyConf(); err != nil {
 		return nil, err
 	}
 
 	opts := &clickhouse.Options{
-		Addr: cfg.GetAddrs(),
+		Addr: config.GetAddrs(),
 		Auth: clickhouse.Auth{
-			Database: cfg.GetDatabase(),
-			Username: cfg.GetUsername(),
-			Password: cfg.GetPassword(),
+			Database: config.GetDatabase(),
+			Username: config.GetUsername(),
+			Password: config.GetPassword(),
 		},
-		DialTimeout:      cfg.GetDialTimeout().AsDuration(),
-		ReadTimeout:      cfg.GetReadTimeout().AsDuration(),
-		MaxOpenConns:     int(cfg.GetMaxOpenConns()),
-		MaxIdleConns:     int(cfg.GetMaxIdleConns()),
-		ConnMaxLifetime:  cfg.GetConnMaxLifetime().AsDuration(),
+		DialTimeout:      config.GetDialTimeout().AsDuration(),
+		ReadTimeout:      config.GetReadTimeout().AsDuration(),
+		MaxOpenConns:     int(config.GetMaxOpenConns()),
+		MaxIdleConns:     int(config.GetMaxIdleConns()),
+		ConnMaxLifetime:  config.GetConnMaxLifetime().AsDuration(),
 		ConnOpenStrategy: clickhouse.ConnOpenInOrder,
 	}
 
-	if cfg.GetTls().GetEnable() {
+	if config.GetTls().GetEnable() {
 		tlsCfg, err := svrtls.NewClientConfig(svrtls.ClientConfigOptions{
-			CAPath:   cfg.GetTls().GetCaPath(),
-			CertPath: cfg.GetTls().GetCertPath(),
-			KeyPath:  cfg.GetTls().GetKeyPath(),
+			CAPath:   config.GetTls().GetCaPath(),
+			CertPath: config.GetTls().GetCertPath(),
+			KeyPath:  config.GetTls().GetKeyPath(),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("build ClickHouse TLS config: %w", err)
@@ -70,27 +69,28 @@ func NewConnOptional(ctx context.Context, cfg *clickhousepb.ClickHouse, l *slog.
 		opts.TLS = tlsCfg
 	}
 
-	applyCompression(opts, cfg.GetCompression(), log)
+	if err := applyCompression(opts, config.GetCompression()); err != nil {
+		return nil, err
+	}
 
 	conn, err := clickhouse.Open(opts)
 	if err != nil {
 		return nil, fmt.Errorf("open ClickHouse: %w", err)
 	}
 
-	pingCtx, cancel := context.WithTimeout(ctx, cfg.GetDialTimeout().AsDuration())
+	pingCtx, cancel := context.WithTimeout(ctx, config.GetDialTimeout().AsDuration())
 	defer cancel()
 	if err := conn.Ping(pingCtx); err != nil {
 		_ = conn.Close()
 		return nil, fmt.Errorf("ping ClickHouse: %w", err)
 	}
 
-	log.Info("ClickHouse connected")
 	return conn, nil
 }
 
-// applyCompression normalises the compress string and sets the appropriate
-// compression option. Warns on unrecognised values.
-func applyCompression(opts *clickhouse.Options, raw string, log *slog.Logger) {
+// applyCompression normalises the compression string and sets the appropriate
+// compression option. Unknown values are rejected as configuration errors.
+func applyCompression(opts *clickhouse.Options, raw string) error {
 	v := strings.TrimSpace(strings.ToLower(raw))
 	switch v {
 	case "", "none":
@@ -100,13 +100,7 @@ func applyCompression(opts *clickhouse.Options, raw string, log *slog.Logger) {
 	case "zstd":
 		opts.Compression = &clickhouse.Compression{Method: clickhouse.CompressionZSTD}
 	default:
-		log.Warn("unknown compress value, falling back to no compression", "value", raw)
+		return fmt.Errorf("ClickHouse: unsupported compression %q", raw)
 	}
-}
-
-func loggerOrDefault(l *slog.Logger) *slog.Logger {
-	if l != nil {
-		return l
-	}
-	return slog.Default()
+	return nil
 }

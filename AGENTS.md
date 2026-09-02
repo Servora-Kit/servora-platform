@@ -4,11 +4,13 @@ Servora 平台服务、主要参考应用与产品安全生态；当前包含安
 
 ## 约定
 
-- 根 `go.work` 连接生成模块与各微服务。
-- Proto 统一由根 `just gen` 刷新 Go、TypeScript、OpenAPI、Wire 与 Ent。
-- `api/gen/go/`、`api/gen/ts/`、服务 Web generated client 与 `wire_gen.go` 只由生成命令维护。
-- 修改 OpenFGA model 后运行 `just openfga-model-apply`。
-- AuthN/AuthZ 代码生成插件从当前 checkout 的 `cmd/` 本地安装。
+- 根 `go.work` 连接生成模块与各微服务；基础设施 provider 的业务日志由 data/bootstrap 边界决定
+- Proto 统一由根 `just gen` 刷新 Go、TypeScript、OpenAPI、Wire 与 Ent
+- `api/gen/go/`、`api/gen/ts/`、服务 Web generated client 与 `wire_gen.go` 只由生成命令维护
+- ClickHouse 连接使用 `infra/clickhouse.NewConnOptional(ctx, cfg)`，不传业务 logger；未知 compression 配置必须作为错误处理
+- Audit Kafka 通过显式 `kafka.WithSlogLogger(log.With("scope", "audit/kafka"))` 接入原生日志，并单独传入 consumer/producer 角色 Option
+- 修改 OpenFGA model 后运行 `just openfga-model-apply`
+- AuthN/AuthZ 代码生成插件从当前 checkout 的 `cmd/` 本地安装
 
 ## 目录结构
 

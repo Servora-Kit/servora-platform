@@ -58,7 +58,7 @@ func wireApp(runtime *bootstrap.Runtime, iam *iamconfv1.IAM, oidcconfv1OIDC *oid
 		cleanup()
 		return nil, nil, err
 	}
-	redisClient, cleanup3, err := data.NewRedisClient(redis, logger)
+	redisClient, cleanup3, err := data.NewRedisClient(redis)
 	if err != nil {
 		cleanup2()
 		cleanup()

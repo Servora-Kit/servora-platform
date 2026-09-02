@@ -43,7 +43,7 @@ func wireApp(runtime *bootstrap.Runtime, kafka *kafkapb.Kafka, clickHouse *click
 	if err != nil {
 		return nil, nil, err
 	}
-	conn, err := data.NewClickHouseClient(clickHouse, logger)
+	conn, err := data.NewClickHouseClient(clickHouse)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -78,5 +78,11 @@ func wireApp(runtime *bootstrap.Runtime, kafka *kafkapb.Kafka, clickHouse *click
 func newKafkaClient(cfg *kafkapb.Kafka, auditCfg *auditconfpb.AuditContract, l *slog.Logger) (*kgo.Client, error) {
 	topic := data.DefaultTopic(auditCfg)
 	group := data.DefaultConsumerGroup(cfg)
-	return kafka.NewClientOptional(context.Background(), cfg, l, kgo.ConsumerGroup(group), kgo.ConsumeTopics(topic), kgo.DisableAutoCommit())
+	loggerOpt := kafka.WithSlogLogger(l)
+	if l != nil {
+		loggerOpt = kafka.WithSlogLogger(l.With("scope", "audit/kafka"))
+	}
+	return kafka.NewClientOptional(context.Background(), cfg,
+		loggerOpt, kgo.ConsumerGroup(group), kgo.ConsumeTopics(topic), kgo.DisableAutoCommit(),
+	)
 }

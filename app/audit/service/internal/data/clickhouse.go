@@ -3,7 +3,6 @@ package data
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -14,8 +13,8 @@ import (
 // NewClickHouseClient opens a ClickHouse connection via infra/clickhouse.
 // Returns (nil, nil) when ClickHouse is not configured; returns an error when
 // configured but connection failed — ensuring fail-fast for a core dependency.
-func NewClickHouseClient(cfg *clickhousepb.ClickHouse, l *slog.Logger) (driver.Conn, error) {
-	conn, err := pkgch.NewConnOptional(context.Background(), cfg, l)
+func NewClickHouseClient(cfg *clickhousepb.ClickHouse) (driver.Conn, error) {
+	conn, err := pkgch.NewConnOptional(context.Background(), cfg)
 	if err != nil {
 		return nil, fmt.Errorf("clickhouse client: %w", err)
 	}

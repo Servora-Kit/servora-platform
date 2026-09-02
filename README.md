@@ -20,6 +20,17 @@
   - ClickHouse 持久化存储
   - 审计日志查询 API
 
+
+## 基础设施 provider 接线
+
+Servora/Plateau 的基础 client provider 使用 Proto 配置作为连接参数来源，不把业务 logger 混入位置参数：
+
+- Redis：`redis.New(cfg)` 返回官方 Redis client 和 cleanup；业务日志由 IAM data/bootstrap 边界决定。
+- Kafka：`kafka.NewClientOptional(ctx, cfg, kafka.WithSlogLogger(log.With("scope", "audit/kafka")), kgo.ConsumerGroup(group), kgo.ConsumeTopics(topic))`；未传日志 Option 时不绑定全局业务 logger。
+- ClickHouse：`clickhouse.NewConnOptional(ctx, cfg)` 保持三态返回；compression 支持空值/`none`、`lz4`、`zstd`，未知值直接返回配置错误。
+
+从旧签名迁移时，删除 Redis/Kafka/ClickHouse 构造函数中的 logger 位置参数；Kafka 原生日志改为显式 `WithSlogLogger` Option，业务 logger scope 在调用方建立。
+
 ## CAP 人机验证
 
 `security/cap` 是可由 IAM 或其他微服务直接挂载的 Go 模块，公开 `/cap/challenge` 与 `/cap/redeem`，不依赖外部 Cap Standalone 服务。使用方在组合根把生成的 `*capv1.CAP` 配置和共享 Redis client 传入 `cap.New(capConfig, redisClient)`。

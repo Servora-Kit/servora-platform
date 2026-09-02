@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"log/slog"
 	"testing"
 	"time"
 
@@ -131,13 +129,12 @@ func TestInTxCommitsRollsBackAndSupportsConditionalUpdate(t *testing.T) {
 func TestNewRedisClientPropagatesPingFailure(t *testing.T) {
 	t.Parallel()
 
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	client, cleanup, err := NewRedisClient(&redispb.Redis{
 		Addr:         "127.0.0.1:1",
 		DialTimeout:  durationpb.New(20 * time.Millisecond),
 		ReadTimeout:  durationpb.New(20 * time.Millisecond),
 		WriteTimeout: durationpb.New(20 * time.Millisecond),
-	}, logger)
+	})
 	if err == nil {
 		if cleanup != nil {
 			cleanup()

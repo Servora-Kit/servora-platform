@@ -3,8 +3,6 @@ package cap
 import (
 	"bytes"
 	"encoding/json"
-	"io"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -27,13 +25,12 @@ func newTestCAP(t *testing.T) (*Cap, *Cap, *miniredis.Miniredis) {
 func newTestCAPWithConfig(t *testing.T, config *capv1.CAP) (*Cap, *Cap, *miniredis.Miniredis) {
 	t.Helper()
 	server := miniredis.RunT(t)
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	client, cleanup, err := rediscontrib.New(&redispb.Redis{
 		Addr:         server.Addr(),
 		DialTimeout:  durationpb.New(time.Second),
 		ReadTimeout:  durationpb.New(time.Second),
 		WriteTimeout: durationpb.New(time.Second),
-	}, logger)
+	})
 	if err != nil {
 		t.Fatalf("create Redis client: %v", err)
 	}

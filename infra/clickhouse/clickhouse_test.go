@@ -2,8 +2,7 @@ package clickhouse
 
 import (
 	"context"
-	"io"
-	"log/slog"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,7 +13,7 @@ import (
 )
 
 func TestNewConnOptionalAbsent(t *testing.T) {
-	conn, err := NewConnOptional(context.Background(), nil, testLogger())
+	conn, err := NewConnOptional(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("NewConnOptional(nil) error = %v", err)
 	}
@@ -22,7 +21,7 @@ func TestNewConnOptionalAbsent(t *testing.T) {
 		t.Fatal("NewConnOptional(nil) returned non-nil conn")
 	}
 
-	conn, err = NewConnOptional(context.Background(), &clickhousepb.ClickHouse{}, testLogger())
+	conn, err = NewConnOptional(context.Background(), &clickhousepb.ClickHouse{})
 	if err != nil {
 		t.Fatalf("NewConnOptional(empty) error = %v", err)
 	}
@@ -64,7 +63,7 @@ func TestNewConnOptionalReturnsPingError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	conn, err := NewConnOptional(ctx, cfg, testLogger())
+	conn, err := NewConnOptional(ctx, cfg)
 	if err == nil {
 		if conn != nil {
 			_ = conn.Close()
@@ -85,7 +84,7 @@ func TestNewConnOptionalRejectsInvalidTLS(t *testing.T) {
 		},
 	}
 
-	conn, err := NewConnOptional(context.Background(), cfg, testLogger())
+	conn, err := NewConnOptional(context.Background(), cfg)
 	if err == nil {
 		if conn != nil {
 			_ = conn.Close()
@@ -97,20 +96,54 @@ func TestNewConnOptionalRejectsInvalidTLS(t *testing.T) {
 	}
 }
 
+func TestNewConnOptionalDoesNotMutateConfigOnCompressionError(t *testing.T) {
+	cfg := &clickhousepb.ClickHouse{
+		Addrs:       []string{"127.0.0.1:9000"},
+		Compression: "brotli",
+	}
+
+	_, err := NewConnOptional(context.Background(), cfg)
+	if err == nil {
+		t.Fatal("NewConnOptional() error = nil, want compression configuration error")
+	}
+	if cfg.GetDialTimeout() != nil || cfg.GetReadTimeout() != nil || cfg.GetCompression() != "brotli" {
+		t.Fatalf("config mutated after failed construction: %#v", cfg)
+	}
+}
+
 func TestApplyCompression(t *testing.T) {
 	opts := &ch.Options{}
-	applyCompression(opts, "zstd", testLogger())
+	if err := applyCompression(opts, "zstd"); err != nil {
+		t.Fatalf("applyCompression(zstd) error = %v", err)
+	}
 	if opts.Compression == nil || opts.Compression.Method != ch.CompressionZSTD {
 		t.Fatalf("Compression = %#v, want zstd", opts.Compression)
 	}
 
 	opts = &ch.Options{}
-	applyCompression(opts, "none", testLogger())
-	if opts.Compression != nil {
-		t.Fatalf("Compression = %#v, want nil", opts.Compression)
+	if err := applyCompression(opts, "lz4"); err != nil {
+		t.Fatalf("applyCompression(lz4) error = %v", err)
 	}
-}
+	if opts.Compression == nil || opts.Compression.Method != ch.CompressionLZ4 {
+		t.Fatalf("Compression = %#v, want lz4", opts.Compression)
+	}
 
-func testLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(io.Discard, nil))
+	for _, raw := range []string{"", "none"} {
+		opts = &ch.Options{}
+		if err := applyCompression(opts, raw); err != nil {
+			t.Fatalf("applyCompression(%q) error = %v", raw, err)
+		}
+		if opts.Compression != nil {
+			t.Fatalf("Compression = %#v for %q, want nil", opts.Compression, raw)
+		}
+	}
+
+	opts = &ch.Options{}
+	err := applyCompression(opts, "brotli")
+	if err == nil || !strings.Contains(err.Error(), "brotli") {
+		t.Fatalf("applyCompression(brotli) error = %v, want value in configuration error", err)
+	}
+	if opts.Compression != nil {
+		t.Fatalf("Compression = %#v after invalid value, want nil", opts.Compression)
+	}
 }
